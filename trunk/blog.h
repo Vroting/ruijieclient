@@ -1,11 +1,11 @@
- /************************************************************************\
- * RuijieClient -- A command-line Ruijie authentication program for Linux *
- *                                                                        *
- * Copyright (C) Gong Han, Chen Tingjun                                   *
- \************************************************************************/
+ /*******************************************************************************\
+ * RuijieClient -- a CLI based Ruijie Client authentication modified from mystar *
+ *                                                                               *
+ * Copyright (C) Gong Han, Chen Tingjun                                          *
+ \*******************************************************************************/
  
 /*
- * This program is based on MyStar, the original author is netxray@byhh.
+ * This program is modified from MyStar, the original author is netxray@byhh.
  * We just add something to make it more convinence.
  *
  * Many thanks to netxray@byhh
