@@ -1,3 +1,35 @@
+ /************************************************************************\
+ * RuijieClient -- A command-line Ruijie authentication program for Linux *
+ *                                                                        *
+ * Copyright (C) Gong Han, Chen Tingjun                                   *
+ \************************************************************************/
+ 
+/*
+ * This program is based on MyStar, the original author is netxray@byhh.
+ * We just add something to make it more convinence.
+ *
+ * Many thanks to netxray@byhh
+ *
+ * AUTHORS:
+ *   Gong Han  <gonghan1989@gmail.com> from CSE@FJNU CN
+ *   Chen Tingjun <chentingjun@gmail.com> from POET@FJNU CN
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	 See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the
+ * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+ * Boston, MA 02111-1307, USA.
+*/
+
 #include "sendpacket.h"
 #include "global.h"
 #include "blog.h"
@@ -69,13 +101,39 @@ int FillVersion(char * m_fakeVersion)
 {
   unsigned int c_ver1, c_ver2;
 
-  if (sscanf(m_fakeVersion, "%u.%u", &c_ver1, &c_ver2))
+  if (!m_fakeVersion == NULL && \
+      sscanf(m_fakeVersion, "%u.%u", &c_ver1, &c_ver2))
     {
 #ifdef DEBUG
       printf("## c_ver1=%u ## c_ver2=%u\n", c_ver1, c_ver2);
 #endif
       ackShida[0x3B] = broadPackage[0x4D] = ExitPacket[0x4D] = c_ver1;
       ackShida[0x3C] = broadPackage[0x4E] = ExitPacket[0x4E] = c_ver2;
+      return 0;
+    }
+  else
+    {
+      return -1;
+    }
+}
+
+int FillFakeMAC(char * m_fakeMAC, unsigned char * fMAC)
+{
+
+#ifdef DEBUG
+  int i;
+#endif
+
+  if (!m_fakeMAC == NULL &&
+      sscanf(m_fakeMAC, "%x:%x:%x:%x:%x:%x", &fMAC[0], &fMAC[1], &fMAC[2], \
+      &fMAC[3], &fMAC[4], &fMAC[5]))
+    {
+#ifdef DEBUG
+      for (i = 0; i<6; i++)
+        printf("## MAC%d=%u ", i, fMAC[i]);
+      putchar('\n');
+#endif
+
       return 0;
     }
   else
