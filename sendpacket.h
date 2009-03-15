@@ -1,4 +1,4 @@
- /*******************************************************************************\
+/*******************************************************************************\
  * RuijieClient -- a CLI based Ruijie Client authentication modified from mystar *
  *                                                                               *
  * Copyright (C) Gong Han, Chen Tingjun                                          *
@@ -28,7 +28,7 @@
  * License along with this library; if not, write to the
  * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
  * Boston, MA 02111-1307, USA.
-*/
+ */
 
 #ifndef SENDPACKET_H
 #define SENDPACKET_H
@@ -39,10 +39,10 @@
 #include <libnet.h>
 
 /**********************************************************************************************
-  Those 5 functions below return 0 if ok, -1 if fail. However they should never fail normally,
-  so we usually ignore the return values JUST FOR CONVENIENCE.
-  If detecting the errors,which might happen, is very important to your program, don't ingore it.
-**********************************************************************************************/
+ Those 5 functions below return 0 if ok, -1 if fail. However they should never fail normally,
+ so we usually ignore the return values JUST FOR CONVENIENCE.
+ If detecting the errors,which might happen, is very important to your program, don't ingore it.
+ **********************************************************************************************/
 
 unsigned char *
 ComputeHash(unsigned char * src, int i);
@@ -60,10 +60,10 @@ int
 SendNamePacket(libnet_t *l, const u_char *pkt_data);
 
 int
-SendPasswordPacket(libnet_t *l,const u_char *pkt_data);
+SendPasswordPacket(libnet_t *l, const u_char *pkt_data);
 
 int
-SendEchoPacket(libnet_t *l,const u_char *pkt_data);
+SendEchoPacket(libnet_t *l, const u_char *pkt_data);
 
 int
 SendEndCertPacket(libnet_t *l);

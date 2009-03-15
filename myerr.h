@@ -1,4 +1,4 @@
- /*******************************************************************************\
+/*******************************************************************************\
  * RuijieClient -- a CLI based Ruijie Client authentication modified from mystar *
  *                                                                               *
  * Copyright (C) Gong Han, Chen Tingjun                                          *
@@ -28,7 +28,7 @@
  * License along with this library; if not, write to the
  * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
  * Boston, MA 02111-1307, USA.
-*/
+ */
 
 /* This file comes from APUE, slightly edited by NetXRay@byhh */
 
@@ -41,10 +41,15 @@
 #include	<errno.h> 	/* for definition of errno */
 #include	<stdarg.h>		/* ANSI C header file */
 
-void	err_dump(const char *, ...);
-void	err_msg(const char *, ...);
-void	err_quit(const char *, ...);
-void	err_ret(const char *, ...);
-void	err_sys(const char *, ...);
+void
+err_dump(const char *, ...);
+void
+err_msg(const char *, ...);
+void
+err_quit(const char *, ...);
+void
+err_ret(const char *, ...);
+void
+err_sys(const char *, ...);
 
 #endif /* MYERR_H*/

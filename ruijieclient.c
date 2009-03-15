@@ -1,4 +1,4 @@
- /*******************************************************************************\
+/*******************************************************************************\
  * RuijieClient -- a CLI based Ruijie Client authentication modified from mystar *
  *                                                                               *
  * Copyright (C) Gong Han, Chen Tingjun                                          *
@@ -28,7 +28,7 @@
  * License along with this library; if not, write to the
  * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
  * Boston, MA 02111-1307, USA.
-*/
+ */
 
 /*
  Mystar is an 802.1x client tool for Linux, which is compatible with MentoSupplicant3.8 for Windows.
