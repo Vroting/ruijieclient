@@ -1,3 +1,35 @@
+ /************************************************************************\
+ * RuijieClient -- A command-line Ruijie authentication program for Linux *
+ *                                                                        *
+ * Copyright (C) Gong Han, Chen Tingjun                                   *
+ \************************************************************************/
+ 
+/*
+ * This program is based on MyStar, the original author is netxray@byhh.
+ * We just add something to make it more convinence.
+ *
+ * Many thanks to netxray@byhh
+ *
+ * AUTHORS:
+ *   Gong Han  <gonghan1989@gmail.com> from CSE@FJNU CN
+ *   Chen Tingjun <chentingjun@gmail.com> from POET@FJNU CN
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	 See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the
+ * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+ * Boston, MA 02111-1307, USA.
+*/
+
 /*
  Mystar is an 802.1x client tool for Linux, which is compatible with MentoSupplicant3.8 for Windows.
  This file contains the main() function of mystar.
@@ -23,6 +55,7 @@ static int m_echoInterval = -1; //echo间隔, set to 0 to disable echo
 static int m_intelligentReconnect = -1; // 0:don't use it, 1: ues it.  NOTE: not supported NOW!!
 static char *m_fakeAddress = NULL; // or set to "123.45.67.89" etc.
 static char *m_fakeVersion = NULL; // or set to "3.22" etc.
+static char *m_fakeMAC = NULL; // or set to "00:11:D8:44:D5:0D" etc.
 
 /* These information should be worked out by initialization portion. */
 unsigned char m_localMAC[6];//本机的MAC地址
@@ -100,6 +133,8 @@ main(int argc, char* argv[])
       err_msg("unable to get local mac address :%s\n", libnet_geterror(l));
       goto err2;
     };
+
+  FillFakeMAC(m_fakeMAC, m_localMAC);
   memcpy(m_localMAC, l_ether_addr, sizeof(m_localMAC));
 
   if (m_fakeAddress == NULL)
@@ -339,7 +374,8 @@ checkAndSetConfig(void)
   static char password[32];
   static char nic[32];
   static char fakeAddress[32];
-  static char fakeVersion[32];
+  static char fakeVersion[8];
+  static char fakeMAC[32];
 
   int intelligentReconnect = -1;
   int echoInterval = -1;
@@ -407,6 +443,12 @@ checkAndSetConfig(void)
           fakeVersion[sizeof(fakeVersion) - 1] = 0;
           m_fakeVersion = fakeVersion;
         }
+      else if (strcmp(buf, "fakemac") == 0)
+        {
+          strncpy(fakeMAC, p, sizeof(fakeMAC) - 1);
+          fakeMAC[sizeof(fakeMAC) - 1] = 0;
+          m_fakeMAC = fakeMAC;
+        }
       else if (strcmp(buf, "fakeaddress") == 0)
         {
           strncpy(fakeAddress, p, sizeof(fakeAddress) - 1);
@@ -447,6 +489,7 @@ checkAndSetConfig(void)
   printf("## m_intelligentReconnect=%d\n", m_intelligentReconnect);//NOT supported now!!
   printf("## m_fakeVersion=%s\n", m_fakeVersion);
   printf("## m_fakeAddress=%s\n", m_fakeAddress);
+  printf("## m_fakeMAC=%s\n", m_fakeMAC);
   puts("-- END");
 #endif
 
