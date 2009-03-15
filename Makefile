@@ -11,7 +11,7 @@
 # * Many thanks to netxray@byhh
 # *
 # * AUTHORS:
-# *   Gong Han  <gonghan1989@gmail.com> from CSE@FJNU CN
+# *   Gong Han  <gong@fedoraproject.org> from CSE@FJNU CN
 # *   Chen Tingjun <chentingjun@gmail.com> from POET@FJNU CN
 # *
 # * This program is free software; you can redistribute it and/or
