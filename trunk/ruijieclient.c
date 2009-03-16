@@ -401,7 +401,10 @@ checkAndSetConfig(void)
       for (i = 0; i < strlen(buf); i++)
         buf[i] = tolower(buf[i]);
 
+#ifdef DEBUG
+      puts("CAUGHT CONF STR:");
       puts(buf);
+#endif
       if (strcmp(buf, "name") == 0)
         {
           strncpy(name, p, sizeof(name) - 1);
