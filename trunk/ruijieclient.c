@@ -66,19 +66,24 @@ static unsigned char m_netgate[4];//当前选择的网卡的网关
 static unsigned char m_dns1[4]; //当前选择的网卡的DNS
 
 /* 当前认证状态
- 0:未找到服务器                      1:已找到服务器，未通过用户名认证
+ 0:未找到服务器                        1:已找到服务器，未通过用户名认证
  2:已通过用户名认证，未通过MD5认证   3:已通过MD5认证，通网成功         */
 static volatile sig_atomic_t m_state = 0;//当前认证状态
 
-ULONG_BYTEARRAY m_serialNo; //序列号,收到第一个有效的Authentication-Success-packet时初始化
-ULONG_BYTEARRAY m_key; //密码加密键值,在main()函数开始时初始化
+//序列号,收到第一个有效的Authentication-Success-packet时初始化
+ULONG_BYTEARRAY m_serialNo;
+//密码加密键值,在main()函数开始时初始化
+ULONG_BYTEARRAY m_key;
 
+/* cleanup on exit when detected Ctrl+C */
 static void
-sig_intr(int signo); //do some cleanup work on exit with Ctrl+C
+sig_intr(int signo);
+/* configure related parameters */
 static void
-checkAndSetConfig(void); //configure related parameters
+checkAndSetConfig(void);
+/* get server msg */
 static char *
-getServMsg(char* msgBuf, size_t msgBufLe, const unsigned char* pkt_data); // get server msg
+getServMsg(char* msgBuf, size_t msgBufLe, const unsigned char* pkt_data);
 
 
 int
@@ -101,11 +106,12 @@ main(int argc, char* argv[])
 
   /* message buffer define*/
   char *pmsgBuf;
-  char msgBuf[MAX_MSG_LEN];// orginal msg buf
-  char u_msgBuf[MAX_U_MSG_LEN];// utf-8 msg buf.
-  //int msgLen;   // orginal msg length
-  // note that each utf-8 char takes 4 bytes
-  u_int16_t offset;// msg offset
+  // orginal msg buf
+  char msgBuf[MAX_MSG_LEN];
+  // utf-8 msg buf. note that each utf-8 character takes 4 bytes
+  char u_msgBuf[MAX_U_MSG_LEN];
+  // msg offset
+  u_int16_t offset;
 
   ULONG_BYTEARRAY uTemp;
   int isFirstPacketFromServer = 1;
@@ -115,7 +121,8 @@ main(int argc, char* argv[])
   int packetCount_SentName = 0;
   int packetCount_SentPassword = 0;
 
-  m_serialNo.ulValue = 0x1000002a; //the initial serial number, a magic number!
+  //the initial serial number, a magic number!
+  m_serialNo.ulValue = 0x1000002a;
   checkAndSetConfig();
 
   if ((l = libnet_init(LIBNET_LINK, m_nic, l_errbuf)) == NULL)
@@ -124,18 +131,28 @@ main(int argc, char* argv[])
   if ((p = pcap_open_live(m_nic, 65536, 0, 500, p_errbuf)) == NULL)
     {
       err_msg("pcap_open_live: %s\n", p_errbuf);
-      goto err1;
+      libnet_destroy(l);
+      return 1;
     }
   p_fd = pcap_fileno(p); //we can pselect() it in the following code.
 
-  if ((l_ether_addr = libnet_get_hwaddr(l)) == NULL)
+  if (m_fakeMAC == NULL)
     {
-      err_msg("unable to get local mac address :%s\n", libnet_geterror(l));
-      goto err2;
-    };
-
-  FillFakeMAC(m_fakeMAC, m_localMAC);
-  memcpy(m_localMAC, l_ether_addr, sizeof(m_localMAC));
+      //copy the real MAC address to m_localMAC
+      if ((l_ether_addr = libnet_get_hwaddr(l)) == NULL)
+        {
+          err_msg("unable to get local mac address :%s\n", libnet_geterror(l));
+          pcap_close(p);
+          libnet_destroy(l);
+          return 1;
+        };
+      memcpy(m_localMAC, l_ether_addr, sizeof(m_localMAC));
+    }
+  else
+    {
+      //fill m_localMAC with a fake MAC address
+      FillFakeMAC(m_localMAC, m_fakeMAC);
+    }
 
   if (m_fakeAddress == NULL)
     {
@@ -147,9 +164,7 @@ main(int argc, char* argv[])
         }
       memcpy(m_ip, &l_ip, sizeof(m_ip));
     }
-  else
-  {}
-  ; //in this case , m_ip has been initialized in checkandSetConfig()
+//  else m_ip has been initialized in checkandSetConfig()
 
   if (pcap_lookupnet(m_nic, &p_netaddr, &p_netmask, p_errbuf) == -1)
     {
@@ -161,120 +176,159 @@ main(int argc, char* argv[])
   InitializeBlog(m_ip, m_netmask, m_netgate, m_dns1); //see blog.c and bloc.h for details
 
   //set the filter. Here I'm sure filter_buf is big enough.
-  snprintf(filter_buf, sizeof(filter_buf), FILTER_STR, m_localMAC[0],
-      m_localMAC[1], m_localMAC[2], m_localMAC[3], m_localMAC[4],
-      m_localMAC[5], m_localMAC[6]);
+  snprintf(filter_buf, sizeof(filter_buf), FILTER_STR,
+      m_localMAC[0], m_localMAC[1], m_localMAC[2],
+      m_localMAC[3], m_localMAC[4], m_localMAC[5]);
+
   if (pcap_compile(p, &filter_code, filter_buf, 0, p_netmask) == -1)
     {
       err_msg("pcap_compile(): %s", pcap_geterr(p));
-      goto err2;
+      pcap_close(p);
+      libnet_destroy(l);
+      return 1;
     }
   if (pcap_setfilter(p, &filter_code) == -1)
     {
       err_msg("pcap_setfilter(): %s", pcap_geterr(p));
-      goto err2;
+      pcap_close(p);
+      libnet_destroy(l);
+      return 1;
     }
   pcap_freecode(&filter_code); // avoid  memory-leak
 
-  (void) signal(SIGINT,sig_intr); //We can exit with Ctrl+C
-  (void) sigfillset(&sigset_full);
-  (void) sigprocmask(SIG_BLOCK,&sigset_full, NULL); //block all signals.
+  signal(SIGINT,sig_intr); // We can exit with Ctrl+C
+  sigfillset(&sigset_full);
+  sigprocmask(SIG_BLOCK,&sigset_full, NULL); //block all signals.
 
   //search for the server
-beginAuthentication: m_state = 0;
-  FillVersion(m_fakeVersion);
-  (void) SendFindServerPacket(l); //the first time to search for server
+beginAuthentication:
+  m_state = 0;
+  FillVersion(m_fakeVersion); // fill 2 bytes with fake version
+  SendFindServerPacket(l); // the first time to search for server
   packetCount_SentFindServer = 1;
   packetCount_SentName = 0;
   packetCount_SentPassword = 0;
 
   while (1)
     {
-      (void) sigfillset(&sigset_full);
-      (void) sigdelset(&sigset_full, SIGINT);
-      FD_ZERO(&read_set);FD_SET(p_fd, &read_set);
+      sigfillset(&sigset_full);
+      sigdelset(&sigset_full, SIGINT);
+      FD_ZERO(&read_set);
+      FD_SET(p_fd, &read_set);
       timeout.tv_sec = 1;
       timeout.tv_nsec = 0; // 1 second
 
       //wait with all signals(except SIGINT) blocked.
-      switch (pselect(p_fd + 1, &read_set, NULL,NULL,&timeout,&sigset_full) )
+      switch (pselect(p_fd + 1, &read_set, NULL,
+          NULL, &timeout, &sigset_full) )
         {
         case -1: //Normally, this case should not happen since sig_intr() never returns!
-          goto err2;
+          pcap_close(p);
+          libnet_destroy(l);
+          return 1;
         case 0: //timed out
           switch(m_state)
             {
             case 0:
-              if(++packetCount_SentFindServer>3)
-              { puts("Restarting authenticaton!"); goto beginAuthentication;}
-              (void)SendFindServerPacket(l);
+              if(++packetCount_SentFindServer > 3)
+              {
+                puts("Restarting authentication!");
+                goto beginAuthentication;
+              }
+              SendFindServerPacket(l);
               continue; //jump to next loop of while(1) to receive next packet
             case 1:
-              if(++packetCount_SentName>3)
-              { puts("Restarting authenticaton!"); goto beginAuthentication;}
-              (void)SendNamePacket(l, pkt_data);
+              if(++packetCount_SentName > 3)
+              {
+                puts("Restarting authentication!");
+                goto beginAuthentication;
+              }
+              SendNamePacket(l, pkt_data);
               continue;
             case 2:
-              if(++packetCount_SentPassword>3)
-              { puts("Restarting authenticaton!"); goto beginAuthentication;}
-              (void)SendPasswordPacket(l, pkt_data);
+              if(++packetCount_SentPassword > 3)
+              {
+                puts("Restarting authenticaition!");
+                goto beginAuthentication;
+              }
+              SendPasswordPacket(l, pkt_data);
               continue;
             default:
-              goto err2;
+              pcap_close(p);
+              libnet_destroy(l);
+              return 1;
             }
         }
 
       //Here return value of pselect must be 1
 
-      if((pcap_next_ex(p,&pkt_hdr,&pkt_data))!=1) continue;
+      if((pcap_next_ex(p,&pkt_hdr, &pkt_data)) != 1)
+        continue;
 
       //收到的第二个及其以后的有效packet的源MAC必须等于头次收到的有效分组的源MAC
-      if ((!isFirstPacketFromServer)&&(memcmp(m_destMAC,pkt_data+6,6)!=0)) continue;
+      if ((!isFirstPacketFromServer) && (memcmp(m_destMAC,pkt_data+6,6) != 0))
+        continue;
 
       //received a packet successfully. for convenience, SUPPOSE it's the RIGHT packet!! but maybe WRONG!!
       //for example, we have NEVER vefified the length of packet, fancying the packet's length is 0x11 ?!
 
-      switch( pkt_data[0x12] ) //分析EAP包类型
-
+      switch( pkt_data[0x12] ) // analysis EAP packet type
         {
-        case 0x01: //表示请求
-          switch( pkt_data[0x16] )
+        case 0x01: // means request
+          switch(pkt_data[0x16])
             {
-            case 0x01: //type 1,以用户名应答
-              if(m_state!=0) continue;
-              m_state=1;
-              fputs("@@ Server found, requesting user name...\n",stdout);
-              if (isFirstPacketFromServer) //获得服务器的MAC地址
-
-              { memcpy( m_destMAC, pkt_data+6, 6); isFirstPacketFromServer=0;}
+            case 0x01:
+            //type 1, response with username
+              if (m_state != 0)
+                continue;
+              m_state = 1;
+              fputs("@@ Server found, requesting user name...\n", stdout);
+              if (isFirstPacketFromServer)
+              {
+                //get server's MAC address.
+                memcpy( m_destMAC, pkt_data+6, 6);
+                isFirstPacketFromServer = 0;
+              }
               ++packetCount_SentName;
-              (void)SendNamePacket(l, pkt_data);
+              SendNamePacket(l, pkt_data);
               break;
-            case 0x04: //type 4,挑战，以MD5计算得到的值应答
-              if(m_state!=1) continue;
-              m_state=2;
-              fputs("@@ User name valid, requesting password...\n",stdout);
+            case 0x04:
+              //type 4, Challenge，response with the returned by MD5 algorithm
+              if(m_state != 1)
+                continue;
+              m_state = 2;
+              fputs("@@ User name valid, requesting password...\n", stdout);
               ++packetCount_SentPassword;
-              (void)SendPasswordPacket(l, pkt_data);
+              SendPasswordPacket(l, pkt_data);
               break;
             }
           break;
-        case 0x03: //认证成功
-          if(m_state!=2) continue;
+        case 0x03:
+          // Authenticate successfully
+          if(m_state != 2)
+            continue;
           m_state=3;
 
           pmsgBuf = getServMsg(msgBuf, sizeof(msgBuf), pkt_data);
           if (pmsgBuf == NULL)
             {
+              // if pmsgBuf doesn't exist.
               pmsgBuf = "";
             }
-          code_convert(pmsgBuf, strlen(pmsgBuf), u_msgBuf, MAX_U_MSG_LEN);// convert to utf8
-          fprintf(stdout,"@@ Password valid, authentication SUCCESS: %s\n",u_msgBuf);
+          // convert to utf8
+          code_convert(pmsgBuf, strlen(pmsgBuf), u_msgBuf, MAX_U_MSG_LEN);
+          fprintf(stdout,
+              "@@ Password valid, SUCCESS:\n Server Message: %s\n",
+              u_msgBuf);
 
-          if (m_echoInterval<=0) goto done; //user has echo disabled
+          if (m_echoInterval <= 0) {
+            pcap_close(p);
+            libnet_destroy(l);
+            return 0; //user has echo disabled
+          }
 
           //uTemp.ulValue = *(((u_long *)(pkt_data+0x9d)));
-          offset=ntohs( *((u_int16_t*)(pkt_data+0x10)) );
+          offset = ntohs( *((u_int16_t*)(pkt_data+0x10)) );
           uTemp.ulValue = *((u_int32_t *)(pkt_data+(0x11+offset)-0x08));
           m_key.btValue[0] = Alog(uTemp.btValue[3]);
           m_key.btValue[1] = Alog(uTemp.btValue[2]);
@@ -282,43 +336,37 @@ beginAuthentication: m_state = 0;
           m_key.btValue[3] = Alog(uTemp.btValue[0]);
 
           //unblock SIGINT, so we can exit with Ctrl+C
-          (void)sigemptyset(&sigset_zero);
-          (void)sigaddset(&sigset_zero,SIGINT);
-          (void)sigprocmask(SIG_UNBLOCK,&sigset_zero,NULL);
+          sigemptyset(&sigset_zero);
+          sigaddset(&sigset_zero,SIGINT);
+          sigprocmask(SIG_UNBLOCK,&sigset_zero,NULL);
           // continue echoing
           fputs("Keeping sending echo... \n",stdout);
-          while(SendEchoPacket(l,pkt_data)==0) sleep(m_echoInterval);
-          goto err2; //this should never happen.
+          while(SendEchoPacket(l,pkt_data)==0)
+            sleep(m_echoInterval);
+          pcap_close(p);
+          libnet_destroy(l);
+          return 1; //this should never happen.
 
           break;
-        case 0x04: //认证失败(用户名或密码错误/不在上网时段内/重复上网等)
-          if((m_state==0)||(m_state==3)) continue;
+        case 0x04:
+          // authenticate fail (用户名或密码错误/不在上网时段内/重复上网等)
+          if((m_state == 0) || (m_state == 3))
+            continue;
           m_state=0;
           pmsgBuf = getServMsg(msgBuf, sizeof(msgBuf), pkt_data);
           if (pmsgBuf == NULL)
             {
+              // if pmsgBuf doesn't exist.
               pmsgBuf = "";
             }
-          code_convert(pmsgBuf, strlen(pmsgBuf), u_msgBuf, MAX_U_MSG_LEN);// convert to utf8
-          fprintf(stdout,"@@ Authenticaton failed: %s\n",u_msgBuf);
-          (void)SendEndCertPacket(l);
-
+          code_convert(pmsgBuf, strlen(pmsgBuf), u_msgBuf, MAX_U_MSG_LEN);
+          // convert to utf8
+          fprintf(stdout,"@@ Authentication failed: %s\n",u_msgBuf);
+          SendEndCertPacket(l);
           goto beginAuthentication;
-
           break; //should never come here
-
         }// end switch
     }// end while
-
-done:
-  pcap_close(p); libnet_destroy(l);
-  return 0;
-
-err2:
-  pcap_close(p);
-err1:
-  libnet_destroy(l);
-  return 1;
 }
 
 static char *
@@ -326,7 +374,7 @@ getServMsg(char* msgBuf, size_t msgBufLen, const unsigned char* pkt_data)
 {
 
   /* message buffer define*/
-  int msgLen; // orginal msg length
+  int msgLen; // original msg length
 
   msgLen = ntohs(*((u_int16_t*) (pkt_data + 0x10))) - 10;
   if (msgLen > 0)
@@ -335,7 +383,7 @@ getServMsg(char* msgBuf, size_t msgBufLen, const unsigned char* pkt_data)
         msgLen = msgBufLen - 1;
       memset(msgBuf, '\0', msgBufLen);
       memcpy(msgBuf, pkt_data + 0x1c, msgLen);
-      //remove the leanding "\r\n" which seems alway to exist!
+      //remove the leading "\r\n" which seems always exist!
 #ifdef DEBUG
       puts("-- MSG INFO");
       printf("## msgBuf(GB) %s\n", msgBuf);
@@ -456,7 +504,7 @@ checkAndSetConfig(void)
         {
           strncpy(fakeAddress, p, sizeof(fakeAddress) - 1);
           fakeAddress[sizeof(fakeAddress) - 1] = 0;
-          if (inet_pton(AF_INET,fakeAddress, m_ip) <= 0)
+          if (inet_pton(AF_INET, fakeAddress, m_ip) <= 0)
             err_msg("invalid fakeAddress found in ruijie.conf, ignored...\n");
           else
             m_fakeAddress = fakeAddress;
@@ -510,7 +558,7 @@ sig_intr(int signo)
     {
       if ((l = libnet_init(LIBNET_LINK, m_nic, l_errbuf)) == NULL)
         _exit(0);
-      (void) SendEndCertPacket(l);
+      SendEndCertPacket(l);
       libnet_destroy(l);
     }
   _exit(0);

@@ -119,19 +119,20 @@ FillVersion(char * m_fakeVersion)
 }
 
 int
-FillFakeMAC(char * m_fakeMAC, unsigned char * fMAC)
+FillFakeMAC(unsigned char * fMAC, char * m_fakeMAC)
 {
 
 #ifdef DEBUG
   int i;
 #endif
 
-  if (!m_fakeMAC == NULL && sscanf(m_fakeMAC, "%x:%x:%x:%x:%x:%x", &fMAC[0],
+  if (m_fakeMAC && sscanf(m_fakeMAC, "%x:%x:%x:%x:%x:%x", &fMAC[0],
       &fMAC[1], &fMAC[2], &fMAC[3], &fMAC[4], &fMAC[5]))
     {
 #ifdef DEBUG
+      printf("## MAC =");
       for (i = 0; i < 6; i++)
-        printf("## MAC%d=%u ", i, fMAC[i]);
+        printf(" %2X ", fMAC[i]);
       putchar('\n');
 #endif
 

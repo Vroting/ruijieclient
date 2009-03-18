@@ -51,7 +51,7 @@ int
 FillVersion(char * m_fakeVersion);
 
 int
-FillFakeMAC(char * m_fakeMAC, unsigned char * des_MAC);
+FillFakeMAC(unsigned char * des_MAC, char * m_fakeMAC);
 
 int
 SendFindServerPacket(libnet_t *l);
