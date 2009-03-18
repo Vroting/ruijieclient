@@ -102,8 +102,7 @@ FillVersion(char * m_fakeVersion)
 {
   unsigned int c_ver1, c_ver2;
 
-  if (!m_fakeVersion == NULL
-      && sscanf(m_fakeVersion, "%u.%u", &c_ver1, &c_ver2))
+  if (m_fakeVersion && sscanf(m_fakeVersion, "%u.%u", &c_ver1, &c_ver2))
     {
 #ifdef DEBUG
       printf("## c_ver1=%u ## c_ver2=%u\n", c_ver1, c_ver2);

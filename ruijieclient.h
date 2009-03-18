@@ -32,8 +32,8 @@
 
 /*  mystar.h & mystar.c are writton by NetXRay */
 
-#ifndef MYSTAR_H
-#define MYSTAR_H
+#ifndef RUIJIECLIENT_H
+#define RUIJIECLIENT_H
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -64,4 +64,4 @@
 #define CONF_PATH "/etc/ruijieclient/ruijie.conf"
 #endif
 
-#endif /* MYSTAR_H */
+#endif /* RUIJIECLIENT_H */

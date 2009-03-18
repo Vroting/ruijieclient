@@ -46,7 +46,7 @@
  from here to the beginning of the definition of main() are referenced by sendpacket.c ( we
  reference them in the form of "extern ..." in sendpacket.c) */
 
-/* These info should be retrieved from mystar.conf */
+/* These info should be retrieved from ruijie.conf */
 char *m_name = NULL;//用户名
 char *m_password = NULL;//密码
 int m_authenticationMode = -1; //是哪种认证模式：0:标准 1:实达
@@ -106,7 +106,7 @@ main(int argc, char* argv[])
 
   /* message buffer define*/
   char *pmsgBuf;
-  // orginal msg buf
+  // original msg buf
   char msgBuf[MAX_MSG_LEN];
   // utf-8 msg buf. note that each utf-8 character takes 4 bytes
   char u_msgBuf[MAX_U_MSG_LEN];
@@ -136,23 +136,17 @@ main(int argc, char* argv[])
     }
   p_fd = pcap_fileno(p); //we can pselect() it in the following code.
 
-  if (m_fakeMAC == NULL)
+
+  if ((l_ether_addr = libnet_get_hwaddr(l)) == NULL)
     {
-      //copy the real MAC address to m_localMAC
-      if ((l_ether_addr = libnet_get_hwaddr(l)) == NULL)
-        {
-          err_msg("unable to get local mac address :%s\n", libnet_geterror(l));
-          pcap_close(p);
-          libnet_destroy(l);
-          return 1;
-        };
-      memcpy(m_localMAC, l_ether_addr, sizeof(m_localMAC));
-    }
-  else
-    {
-      //fill m_localMAC with a fake MAC address
-      FillFakeMAC(m_localMAC, m_fakeMAC);
-    }
+      err_msg("unable to get local mac address :%s\n", libnet_geterror(l));
+      pcap_close(p);
+      libnet_destroy(l);
+      return 1;
+    };
+
+  memcpy(m_localMAC, l_ether_addr, sizeof(m_localMAC));
+  //copy the real MAC address to m_localMAC
 
   if (m_fakeAddress == NULL)
     {
@@ -196,14 +190,19 @@ main(int argc, char* argv[])
     }
   pcap_freecode(&filter_code); // avoid  memory-leak
 
-  signal(SIGINT,sig_intr); // We can exit with Ctrl+C
+  signal(SIGINT, sig_intr); // We can exit with Ctrl+C
   sigfillset(&sigset_full);
-  sigprocmask(SIG_BLOCK,&sigset_full, NULL); //block all signals.
+  sigprocmask(SIG_BLOCK, &sigset_full, NULL); //block all signals.
 
   //search for the server
 beginAuthentication:
   m_state = 0;
   FillVersion(m_fakeVersion); // fill 2 bytes with fake version
+  if (m_fakeMAC != NULL)
+    {
+      //fill m_localMAC with a fake MAC address
+      FillFakeMAC(m_localMAC, m_fakeMAC);
+    }
   SendFindServerPacket(l); // the first time to search for server
   packetCount_SentFindServer = 1;
   packetCount_SentName = 0;
@@ -248,7 +247,7 @@ beginAuthentication:
             case 2:
               if(++packetCount_SentPassword > 3)
               {
-                puts("Restarting authenticaition!");
+                puts("Restarting authentication!");
                 goto beginAuthentication;
               }
               SendPasswordPacket(l, pkt_data);
@@ -266,7 +265,7 @@ beginAuthentication:
         continue;
 
       //收到的第二个及其以后的有效packet的源MAC必须等于头次收到的有效分组的源MAC
-      if ((!isFirstPacketFromServer) && (memcmp(m_destMAC,pkt_data+6,6) != 0))
+      if ((!isFirstPacketFromServer) && (memcmp(m_destMAC,pkt_data+6, 6) != 0))
         continue;
 
       //received a packet successfully. for convenience, SUPPOSE it's the RIGHT packet!! but maybe WRONG!!
@@ -290,6 +289,11 @@ beginAuthentication:
                 isFirstPacketFromServer = 0;
               }
               ++packetCount_SentName;
+              if (m_fakeMAC != NULL)
+                {
+                  //fill m_localMAC with a fake MAC address
+                  FillFakeMAC(m_localMAC, m_fakeMAC);
+                }
               SendNamePacket(l, pkt_data);
               break;
             case 0x04:
@@ -429,7 +433,7 @@ checkAndSetConfig(void)
   int echoInterval = -1;
   int authenticationMode = -1;
 
-  //the check and anylysis against ruijie.conf  *don't*  work perfectly.
+  //the check and analysis against ruijie.conf  *don't*  work perfectly.
   //this may be improved in the later version.
   if ((fp = fopen(CONF_PATH,"r")) == NULL)
     err_quit("cannot open file ruijie.conf ! check it.\n");
