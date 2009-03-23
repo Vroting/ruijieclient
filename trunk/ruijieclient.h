@@ -6,7 +6,6 @@
 
 /*
  * This program is modified from MyStar, the original author is netxray@byhh.
- * We just add something to make it more convinence.
  *
  * Many thanks to netxray@byhh
  *
@@ -51,6 +50,7 @@
 #include <arpa/inet.h>
 #include <pcap.h>
 #include <libnet.h>
+#include <libconfig.h>
 #include "global.h"
 
 #define FILTER_STR "ether[12:2]=0x888e and ether dst %02x:%02x:%02x:%02x:%02x:%02x"

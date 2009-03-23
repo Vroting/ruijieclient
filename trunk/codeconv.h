@@ -6,7 +6,6 @@
 
 /*
  * This program is modified from MyStar, the original author is netxray@byhh.
- * We just add something to make it more convinence.
  *
  * Many thanks to netxray@byhh
  *

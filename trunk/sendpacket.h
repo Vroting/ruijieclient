@@ -39,9 +39,9 @@
 #include <libnet.h>
 
 /**********************************************************************************************
- Those 5 functions below return 0 if ok, -1 if fail. However they should never fail normally,
- so we usually ignore the return values JUST FOR CONVENIENCE.
- If detecting the errors,which might happen, is very important to your program, don't ingore it.
+ The functions below return 0 for success while -1 for failure. However, they should never
+ return -1 normally, hence, we usually ignore return values FOR THE SAKE OF TAKING CONVENIENCE.
+ For the motive to debug, they might be helpful.
  **********************************************************************************************/
 
 unsigned char *
