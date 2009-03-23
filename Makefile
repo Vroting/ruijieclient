@@ -6,7 +6,6 @@
 # 
 #/*
 # * This program is modified from MyStar, the original author is netxray@byhh.
-# * We just add something to make it more convinence.
 # *
 # * Many thanks to netxray@byhh
 # *
@@ -35,14 +34,15 @@ Flags=-O2 -Wall
 
 all:ruijieclient
 
+# DO NOT ever intend to complie it static. It's HARMFUL
 ruijieclient: ruijieclient.o myerr.o blog.o sendpacket.o codeconv.o
-	$(CC) $(Flags) -o $@  $^ -lnet -lpcap -lssl
+	$(CC) $(Flags) -o $@  $^ -lpcap -lnet -lssl -lconfig
 
 myerr.o: myerr.c myerr.h
-	$(CC) $(Flags) -o $@ -c $<
+	$(CC) $(Flags) -o $@ -c $< 
 
 blog.o:  blog.c blog.h  myerr.h
-	$(CC) $(Flags) -o $@ -c $<
+	$(CC) $(Flags) -o $@ -c $< 
 
 sendpacket.o: sendpacket.c sendpacket.h global.h blog.h
 	$(CC) $(Flags) -o $@ -c $<
