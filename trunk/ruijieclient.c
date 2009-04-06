@@ -29,11 +29,6 @@
  * Boston, MA 02111-1307, USA.
  */
 
-/*
- Mystar is an 802.1x client tool for Linux, which is compatible with MentoSupplicant3.8 for Windows.
- This file contains the main() function of mystar.
- */
-
 #include "ruijieclient.h"
 #include "global.h"
 #include "sendpacket.h"
@@ -46,32 +41,52 @@
  reference them in the form of "extern ..." in sendpacket.c) */
 
 /* These info should be retrieved from ruijie.conf */
-char *m_name = NULL;//用户名
-char *m_password = NULL;//密码
-int m_authenticationMode = -1; //是哪种认证模式：0:标准 1:实达
-static char *m_nic = NULL;//网卡
-static int m_echoInterval = -1; //echo间隔, set to 0 to disable echo
-static int m_intelligentReconnect = -1; // 0:don't use it, 1: ues it.  NOTE: not supported NOW!!
-static char *m_fakeAddress = NULL; // or set to "123.45.67.89" etc.
-static char *m_fakeVersion = NULL; // or set to "3.22" etc.
-static char *m_fakeMAC = NULL; // or set to "00:11:D8:44:D5:0D" etc.
 
-/* These information should be worked out by initialization portion. */
-unsigned char m_localMAC[6];//本机的MAC地址
-unsigned char m_destMAC[6];//服务器的MAC地址.
-static unsigned char m_ip[4]; //当前选择的网卡的IP地址
-static unsigned char m_netmask[4];//当前选择的网卡的子网掩码
-static unsigned char m_netgate[4];//当前选择的网卡的网关
-static unsigned char m_dns1[4]; //当前选择的网卡的DNS
+// user name
+char *m_name = NULL;
+// password
+char *m_password = NULL;
+// auth mode: 0:standard 1:Star private
+int m_authenticationMode = -1;
+// indicator of adapter
+static char *m_nic = NULL;
+// echo interval, 0 means disable echo
+static int m_echoInterval = -1;
+// Intelligent Reconnect 0:disable, 1: enable.
+static int m_intelligentReconnect = -1;
+// fake ip, e.g. "123.45.67.89"
+static char *m_fakeAddress = NULL;
+// fake version, e.g. "3.22"
+static char *m_fakeVersion = NULL;
+// fake MAC, e.g. "00:11:D8:44:D5:0D"
+static char *m_fakeMAC = NULL;
 
-/* 当前认证状态
- 0:未找到服务器                        1:已找到服务器，未通过用户名认证
- 2:已通过用户名认证，未通过MD5认证   3:已通过MD5认证，通网成功         */
-static volatile sig_atomic_t m_state = 0;//当前认证状态
+/* These info should be worked out by initialization portion. */
 
-//序列号,收到第一个有效的Authentication-Success-packet时初始化
+// local MAC
+unsigned char m_localMAC[6];
+// server MAC
+unsigned char m_destMAC[6];
+// IP of selected adapter
+static unsigned char m_ip[4];
+// sub mask of selected adapter
+static unsigned char m_netmask[4];
+// default route of selected adapter
+static unsigned char m_netgate[4];
+// DNS of selected adapter
+static unsigned char m_dns1[4];
+
+/* Authenticate Status
+ * 0: fail to find server
+ * 1: fail to pass Authentication of user name
+ * 2: fail to pass Authentication of MD5 sum
+ * 3: success
+*/
+static volatile sig_atomic_t m_state = 0;
+
+// serial number, initialized when received the first valid Authentication-Success-packet
 ULONG_BYTEARRAY m_serialNo;
-//密码加密键值,在main()函数开始时初始化
+// password private key, initialized at the beginning of function main()
 ULONG_BYTEARRAY m_key;
 
 /* cleanup on exit when detected Ctrl+C */
@@ -120,7 +135,7 @@ main(int argc, char* argv[])
   int packetCount_SentName = 0;
   int packetCount_SentPassword = 0;
 
-  //the initial serial number, a magic number!
+  // the initial serial number, a magic number!
   m_serialNo.ulValue = 0x1000002a;
   checkAndSetConfig();
 
@@ -133,7 +148,7 @@ main(int argc, char* argv[])
       libnet_destroy(l);
       return 1;
     }
-  p_fd = pcap_fileno(p); //we can pselect() it in the following code.
+  p_fd = pcap_fileno(p); // we can pselect() it in the following code.
 
 
   if ((l_ether_addr = libnet_get_hwaddr(l)) == NULL)
@@ -145,7 +160,7 @@ main(int argc, char* argv[])
     };
 
   memcpy(m_localMAC, l_ether_addr, sizeof(m_localMAC));
-  //copy the real MAC address to m_localMAC
+  // copy the real MAC address to m_localMAC
 
   if (m_fakeAddress == NULL)
     {
@@ -157,7 +172,7 @@ main(int argc, char* argv[])
         }
       memcpy(m_ip, &l_ip, sizeof(m_ip));
     }
-//  else m_ip has been initialized in checkandSetConfig()
+// else m_ip has been initialized in checkandSetConfig()
 
   if (pcap_lookupnet(m_nic, &p_netaddr, &p_netmask, p_errbuf) == -1)
     {
@@ -166,9 +181,10 @@ main(int argc, char* argv[])
     }
   memcpy(m_netmask, &p_netmask, sizeof(m_netmask));
 
-  InitializeBlog(m_ip, m_netmask, m_netgate, m_dns1); //see blog.c and bloc.h for details
+  // check blog.c and bloc.h for details
+  InitializeBlog(m_ip, m_netmask, m_netgate, m_dns1);
 
-  //set the filter. Here I'm sure filter_buf is big enough.
+  // set the filter. Here I'm sure filter_buf is big enough.
   snprintf(filter_buf, sizeof(filter_buf), FILTER_STR,
       m_localMAC[0], m_localMAC[1], m_localMAC[2],
       m_localMAC[3], m_localMAC[4], m_localMAC[5]);
@@ -191,17 +207,20 @@ main(int argc, char* argv[])
 
   signal(SIGINT, sig_intr); // We can exit with Ctrl+C
   sigfillset(&sigset_full);
-  sigprocmask(SIG_BLOCK, &sigset_full, NULL); //block all signals.
+  sigprocmask(SIG_BLOCK, &sigset_full, NULL); // block all signals.
 
-  //search for the server
+  // search for the server
 beginAuthentication:
   m_state = 0;
   FillVersion(m_fakeVersion); // fill 2 bytes with fake version
+
+  /* comment out for futher usage
   if (m_fakeMAC != NULL)
     {
       //fill m_localMAC with a fake MAC address
       FillFakeMAC(m_localMAC, m_fakeMAC);
     }
+   */
   SendFindServerPacket(l); // the first time to search for server
   packetCount_SentFindServer = 1;
   packetCount_SentName = 0;
@@ -216,15 +235,15 @@ beginAuthentication:
       timeout.tv_sec = 1;
       timeout.tv_nsec = 0; // 1 second
 
-      //wait with all signals(except SIGINT) blocked.
+      // wait with all signals(except SIGINT) blocked.
       switch (pselect(p_fd + 1, &read_set, NULL,
           NULL, &timeout, &sigset_full) )
         {
-        case -1: //Normally, this case should not happen since sig_intr() never returns!
+        case -1: // Normally, this case should not happen since sig_intr() never returns!
           pcap_close(p);
           libnet_destroy(l);
           return 1;
-        case 0: //timed out
+        case 0: // timed out
           switch(m_state)
             {
             case 0:
@@ -234,7 +253,7 @@ beginAuthentication:
                 goto beginAuthentication;
               }
               SendFindServerPacket(l);
-              continue; //jump to next loop of while(1) to receive next packet
+              continue; // jump to next loop of while(1) to receive next packet
             case 1:
               if(++packetCount_SentName > 3)
               {
@@ -258,17 +277,21 @@ beginAuthentication:
             }
         }
 
-      //Here return value of pselect must be 1
+      // Here return value of pselect() must be 1
 
       if((pcap_next_ex(p,&pkt_hdr, &pkt_data)) != 1)
         continue;
 
-      //收到的第二个及其以后的有效packet的源MAC必须等于头次收到的有效分组的源MAC
+      /* source MAC of the second and the following valid packets should be identical
+       * to the source MAC of first valid server finding packet
+       */
       if ((!isFirstPacketFromServer) && (memcmp(m_destMAC,pkt_data+6, 6) != 0))
         continue;
 
-      //received a packet successfully. for convenience, SUPPOSE it's the RIGHT packet!! but maybe WRONG!!
-      //for example, we have NEVER vefified the length of packet, fancying the packet's length is 0x11 ?!
+      /* received a packet successfully. for convenience, SUPPOSE it's the RIGHT packet!!
+       * but maybe WRONG!! for example, we have NEVER verified the length of packet,
+       * fancying the packet's length is 0x11 ?!
+       */
 
       switch( pkt_data[0x12] ) // analysis EAP packet type
         {
@@ -276,27 +299,30 @@ beginAuthentication:
           switch(pkt_data[0x16])
             {
             case 0x01:
-            //type 1, response with username
+            // type 1, response with username
               if (m_state != 0)
                 continue;
               m_state = 1;
               fputs("@@ Server found, requesting user name...\n", stdout);
               if (isFirstPacketFromServer)
               {
-                //get server's MAC address.
+                // get server's MAC address.
                 memcpy( m_destMAC, pkt_data+6, 6);
                 isFirstPacketFromServer = 0;
               }
               ++packetCount_SentName;
+
+              /* comment out for further usage
               if (m_fakeMAC != NULL)
                 {
                   //fill m_localMAC with a fake MAC address
                   FillFakeMAC(m_localMAC, m_fakeMAC);
                 }
+                */
               SendNamePacket(l, pkt_data);
               break;
             case 0x04:
-              //type 4, Challenge，response with the returned by MD5 algorithm
+              // type 4, Challenge，response with the returned by MD5 algorithm
               if(m_state != 1)
                 continue;
               m_state = 2;
@@ -319,7 +345,7 @@ beginAuthentication:
               pmsgBuf = "";
             }
           // convert to utf8
-          code_convert(pmsgBuf, strlen(pmsgBuf), u_msgBuf, MAX_U_MSG_LEN);
+          code_convert(u_msgBuf, MAX_U_MSG_LEN, pmsgBuf, strlen(pmsgBuf));
           fprintf(stdout,
               "@@ Password valid, SUCCESS:\n Server Message: %s\n",
               u_msgBuf);
@@ -338,7 +364,7 @@ beginAuthentication:
           m_key.btValue[2] = Alog(uTemp.btValue[1]);
           m_key.btValue[3] = Alog(uTemp.btValue[0]);
 
-          //unblock SIGINT, so we can exit with Ctrl+C
+          // unblock SIGINT, so we can exit with Ctrl+C
           sigemptyset(&sigset_zero);
           sigaddset(&sigset_zero,SIGINT);
           sigprocmask(SIG_UNBLOCK,&sigset_zero,NULL);
@@ -348,11 +374,16 @@ beginAuthentication:
             sleep(m_echoInterval);
           pcap_close(p);
           libnet_destroy(l);
-          return 1; //this should never happen.
+          return 1; // this should never happen.
 
           break;
         case 0x04:
-          // authenticate fail (用户名或密码错误/不在上网时段内/重复上网等)
+          /* authenticate fail
+           * possible reasons:
+           * 1. user name and password mismatch
+           * 2. not in the right time-period of net accessing
+           * 3. account has been logged at other computers
+           */
           if((m_state == 0) || (m_state == 3))
             continue;
           m_state=0;
@@ -362,12 +393,12 @@ beginAuthentication:
               // if pmsgBuf doesn't exist.
               pmsgBuf = "";
             }
-          code_convert(pmsgBuf, strlen(pmsgBuf), u_msgBuf, MAX_U_MSG_LEN);
           // convert to utf8
+          code_convert(u_msgBuf, MAX_U_MSG_LEN, pmsgBuf, strlen(pmsgBuf));
           fprintf(stdout,"@@ Authentication failed: %s\n",u_msgBuf);
           SendEndCertPacket(l);
           goto beginAuthentication;
-          break; //should never come here
+          break; // should never come here
         }// end switch
     }// end while
 }
@@ -411,7 +442,7 @@ getServMsg(char* msgBuf, size_t msgBufLen, const unsigned char* pkt_data)
   else
     {
       return NULL;
-    } //这个估计是服务器告知静默或确认断网的包
+    } // this presumably is packet indicates silent or interrupt network
 }
 
 static void
@@ -432,8 +463,10 @@ checkAndSetConfig(void)
   int echoInterval = -1;
   int authenticationMode = -1;
 
-  //the check and analysis against ruijie.conf  *don't*  work perfectly.
-  //this may be improved in the later version.
+  /* the check and analysis with ruijie.conf do NOT work perfectly.
+   * this may be improved in the later version.
+   */
+
   if ((fp = fopen(CONF_PATH,"r")) == NULL)
     err_quit("cannot open file ruijie.conf ! check it.\n");
 
@@ -446,7 +479,6 @@ checkAndSetConfig(void)
         buf[len - 1] = '\0';
       if (((p = strchr(buf, '=')) == NULL) || (p == buf))
         continue;
-      //the code above doesn't detect ALL the errors!! it should be improved in future.
 
       *p++ = '\0';
       for (i = 0; i < strlen(buf); i++)
@@ -540,7 +572,7 @@ checkAndSetConfig(void)
   printf("## m_nic=%s\n", m_nic);
   printf("## m_authenticationMode=%d\n", m_authenticationMode);
   printf("## m_echoInterval=%d\n", m_echoInterval);
-  printf("## m_intelligentReconnect=%d\n", m_intelligentReconnect);//NOT supported now!!
+  printf("## m_intelligentReconnect=%d\n", m_intelligentReconnect);// NOT supported now!!
   printf("## m_fakeVersion=%s\n", m_fakeVersion);
   printf("## m_fakeAddress=%s\n", m_fakeAddress);
   printf("## m_fakeMAC=%s\n", m_fakeMAC);

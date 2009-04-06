@@ -32,7 +32,8 @@
 #ifndef GLOBAL_H
 #define GLOBAL_H
 
-#define DEBUG 1
+/* a macro defines debug status */
+//#define DEBUG 1
 
 typedef union
 {

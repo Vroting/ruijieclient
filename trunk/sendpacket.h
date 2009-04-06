@@ -38,36 +38,47 @@
 #include <sys/types.h>
 #include <libnet.h>
 
-/**********************************************************************************************
- The functions below return 0 for success while -1 for failure. However, they should never
- return -1 normally, hence, we usually ignore return values FOR THE SAKE OF TAKING CONVENIENCE.
- For the motive to debug, they might be helpful.
- **********************************************************************************************/
+/*
+ * The functions below return 0 for success while -1 for failure. However, they should never
+ * return -1 normally, hence, we usually ignore return values FOR CONVENIENCE. They might be
+ * helpful for debug.
+ */
 
+/* compute hash code from src */
 unsigned char *
 ComputeHash(unsigned char * src, int i);
 
+/* fill packets with 2 bytes indicates fake version */
 int
 FillVersion(char * m_fakeVersion);
 
+/* comment out for further usage
+ * Fill MAC bytes in packets with a fake one
 int
 FillFakeMAC(unsigned char * des_MAC, char * m_fakeMAC);
+*/
 
+/* send server finding packet */
 int
 SendFindServerPacket(libnet_t *l);
 
+/* send authenticate name packet */
 int
 SendNamePacket(libnet_t *l, const u_char *pkt_data);
 
+/* send authenticate password packet */
 int
 SendPasswordPacket(libnet_t *l, const u_char *pkt_data);
 
+/* send periodical keep-alive echo packet */
 int
 SendEchoPacket(libnet_t *l, const u_char *pkt_data);
 
+/* send end certification packet */
 int
 SendEndCertPacket(libnet_t *l);
 
+/* default version bytes macro */
 #define ver1 0x0F
 #define ver2 0xFF
 

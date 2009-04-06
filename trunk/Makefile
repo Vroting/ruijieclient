@@ -31,12 +31,14 @@
 
 CC=gcc
 Flags=-O2 -Wall
+BinPath=/usr/local/bin
+ConfPath=/etc/ruijieclient
 
 all:ruijieclient
 
 # DO NOT ever intend to complie it static. It's HARMFUL
 ruijieclient: ruijieclient.o myerr.o blog.o sendpacket.o codeconv.o
-	$(CC) $(Flags) -o $@  $^ -lpcap -lnet -lssl -lconfig
+	$(CC) $(Flags) -o $@  $^ -lpcap -lnet -lssl
 
 myerr.o: myerr.c myerr.h
 	$(CC) $(Flags) -o $@ -c $< 
@@ -58,3 +60,21 @@ clean:
 
 rebuild:
 	make clean all
+
+install:
+cp ruijieclient $(BinPath)
+if [ ! -d $(ConfPath) ] then
+mkdir -p $(ConfPath)
+fi
+cp ruijie.conf $(ConfPath)
+
+uninstall:
+if [ -f "$(BinPath)/ruijieclient" ]; then
+rm -f $(BinPath)/ruijieclient
+fi
+if [ -d "$(ConfPath)" ]; then
+if [ -f "$(ConfPath)/ruijie.conf" ]; then
+rm -f $(ConfPath)/ruijie.conf
+fi
+rm -f $(ConfPath)
+fi
