@@ -1,0 +1,8 @@
+version 0.1
+- NEW: recieve messages from server
+- NEW: fake version
+- NEW: fake IP
+- NEW: fake MAC
+- CHG: coding style
+- CHG: openssl
+- CHG: debug mode
