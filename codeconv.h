@@ -5,9 +5,7 @@
  \*******************************************************************************/
 
 /*
- * This program is modified from MyStar, the original author is netxray@byhh.
- *
- * Many thanks to netxray@byhh
+ * Convert GB codes into UTF-8
  *
  * AUTHORS:
  *   Gong Han  <gong@fedoraproject.org> from CSE@FJNU CN
@@ -29,8 +27,6 @@
  * Boston, MA 02111-1307, USA.
  */
 
-/* convert GB into utf-8 */
-
 #ifndef CODECONV_H
 #define CODECONV_H
 
@@ -38,7 +34,8 @@
 #include <string.h>
 #include <stdio.h>
 
+/* convert GB codes into UTF-8 */
 int
-code_convert(char *inbuf, size_t inlen, char *outbuf, size_t outlen);//将GB2312 转化为 UTF-8
+code_convert(char *outbuf, size_t outlen, char *inbuf, size_t inlen);
 
 #endif

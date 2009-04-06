@@ -33,7 +33,7 @@
 #include "global.h"
 #include "blog.h"
 
-//实达专有响应附加包
+// additional Star private echo packet
 static
 uint8_t ackShida[] =
 {
@@ -46,7 +46,7 @@ uint8_t ackShida[] =
   0x64,0x64,0x65,0x66,0x68,0x94,0x98,0xA7,0x61,0x67,0x65,0x67,0x9C,0x6B
 };
 
-//广播包，用于寻找服务器
+// broadcast packet for finding server
 static
 uint8_t broadPackage[0x3E8] =
 {
@@ -60,7 +60,7 @@ uint8_t broadPackage[0x3E8] =
   0x64,0x61,0x64,0x64,0x65,0x66,0x68,0x94,0x98,0xA7,0x61,0x67,0x65,0x67,0x9C,0x6B
 };
 
-//退出包。
+// end certification packet
 static
 uint8_t ExitPacket[]=
 {
@@ -74,7 +74,7 @@ uint8_t ExitPacket[]=
   0x95,0x64,0x68,0x91,0x62,0x68,0x62,0x94,0x9A,0xD6,0x94,0x68,0x66,0x69,0x6C,0x65
 };
 
-//应答包，包括用户名和MD5
+// echo packet incorporating user name and MD5 sum
 static
 uint8_t ackPackage[0x3E8] =
 {
@@ -87,7 +87,7 @@ uint8_t ackPackage[0x3E8] =
   0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
 };
 
-//echo包，用于每5秒钟激活一次
+// keep-alive echo packet
 static
 uint8_t echoPackage[] =
 {
@@ -116,6 +116,7 @@ FillVersion(char * m_fakeVersion)
     }
 }
 
+/* comment out for further usage
 int
 FillFakeMAC(unsigned char * fMAC, char * m_fakeMAC)
 {
@@ -141,6 +142,7 @@ FillFakeMAC(unsigned char * fMAC, char * m_fakeMAC)
       return -1;
     }
 }
+*/
 
 unsigned char *
 ComputeHash(unsigned char * src, int i)
@@ -169,7 +171,7 @@ SendFindServerPacket(libnet_t *l)
     memcpy(broadPackage, StarAddr, 6);
   else
     memcpy(broadPackage, StandardAddr, 6);
-  memcpy(broadPackage + 6, m_localMAC, 6); //填充MAC地址
+  memcpy(broadPackage + 6, m_localMAC, 6); // fill local MAC
 
   FillNetParamater(&broadPackage[0x17]);
 
@@ -188,13 +190,13 @@ SendNamePacket(libnet_t *l, const u_char *pkt_data)
   int nameLen;
 
   nameLen = strlen(m_name);
-  memcpy(ackPackage, m_destMAC, 6); //将目的MAC地址填入组织回复的包
-  memcpy(ackPackage + 6, m_localMAC, 6); //将本机MAC地址填入组织回复的包
-  ackPackage[0x12] = 0x02; //code,2代表应答
+  memcpy(ackPackage, m_destMAC, 6); // fill destined MAC
+  memcpy(ackPackage + 6, m_localMAC, 6); // fill local MAC
+  ackPackage[0x12] = 0x02; // code, 2 indicates response
   ackPackage[0x13] = pkt_data[0x13]; //id, HERE as if it's alway 1 from ShiDa ??
-  *(short *) (ackPackage + 0x10) = htons((short) (5 + nameLen));//len
-  *(short *) (ackPackage + 0x14) = *(short *) (ackPackage + 0x10);//len
-  memcpy(ackPackage + 0x17, m_name, nameLen); //填入用户名
+  *(short *) (ackPackage + 0x10) = htons((short) (5 + nameLen));// length
+  *(short *) (ackPackage + 0x14) = *(short *) (ackPackage + 0x10);// length
+  memcpy(ackPackage + 0x17, m_name, nameLen); // fill name
 
   FillNetParamater(&ackShida[0x05]);
   memcpy(ackPackage + 0x17 + nameLen, ackShida, 0x6e);
@@ -208,8 +210,8 @@ int
 SendPasswordPacket(libnet_t *l, const u_char *pkt_data)
 {
 
-  unsigned char md5Data[256]; //密码,md5 buffer
-  unsigned char *md5Dig; //result of md5 sum
+  unsigned char md5Data[256]; // password,md5 buffer
+  unsigned char *md5Dig; // result of md5 sum
   int md5Len = 0;
 
   extern char *m_name;
@@ -222,23 +224,24 @@ SendPasswordPacket(libnet_t *l, const u_char *pkt_data)
   passwordLen = strlen(m_password);
 
   memcpy(ackPackage, m_destMAC, 6);
-  memcpy(ackPackage + 6, m_localMAC, 6); //将本机MAC地址填入组织回复的包
+  memcpy(ackPackage + 6, m_localMAC, 6); // fill local MAC
 
-  ackPackage[0x12] = 0x02; //code,2代表应答
+  ackPackage[0x12] = 0x02; // code, 2 indicates response
   ackPackage[0x13] = pkt_data[0x13]; //id
-  *(ackPackage + 0x16) = *(pkt_data + 0x16); //type，即应答方式,HERE should alway be 4
+  *(ackPackage + 0x16) = *(pkt_data + 0x16); // type，namely response method,
+                                             // HERE should always be 4
 
-  *(short *) (ackPackage + 0x10) = htons((short) (22 + nameLen)); //len
+  *(short *) (ackPackage + 0x10) = htons((short) (22 + nameLen)); // length
   *(short *) (ackPackage + 0x14) = *(short *) (ackPackage + 0x10);
 
   md5Data[md5Len++] = ackPackage[0x13];//ID
   memcpy(md5Data + md5Len, m_password, passwordLen);
-  md5Len += passwordLen; //密码
+  md5Len += passwordLen; // password
   memcpy(md5Data + md5Len, pkt_data + 0x18, pkt_data[0x17]);
-  md5Len += pkt_data[0x17]; //密匙
+  md5Len += pkt_data[0x17]; // private key
   md5Dig = (unsigned char *) ComputeHash(md5Data, md5Len);
 
-  ackPackage[0x17] = 16; //length of md5sum is always 16.
+  ackPackage[0x17] = 16; // length of md5 sum is always 16.
   memcpy(ackPackage + 0x18, md5Dig, 16);
 
   memcpy(ackPackage + 0x28, m_name, nameLen);
@@ -261,8 +264,10 @@ SendEchoPacket(libnet_t *l, const u_char *pkt_data)
   extern uint8_t m_localMAC[6];
 
   m_serialNo.ulValue++;
-  //m_serialNo is initialized at the beginning of main() of mystar.c, and
-  //m_key is initialized in mystar.c when the 1st Authentication-Success packet is received.
+/* m_serialNo is initialized at the beginning of main() of ruijieclient.c, and
+ * m_key is initialized in ruijieclient.c when the 1st Authentication-Success
+ * packet is received.
+ * */
 
   uCrypt1.ulValue = m_key.ulValue + m_serialNo.ulValue;
   uCrypt2.ulValue = m_serialNo.ulValue;
