@@ -1,0 +1,40 @@
+#labels Featured,Phase-Deploy
+#描述了如何安装配置ruijieclient
+
+*适用版本：0.1*
+
+  * 源码安装(tar.gz)
+     * 下载并编辑配置
+{{{
+wget http://ruijieclient.googlecode.com/svn/trunk/src/ruijie.conf
+gedit ruijie.conf
+}}}
+     * 复制配置文件
+     打开终端，输入su，进入root状态后
+{{{
+mkdir -p /etc/ruijieclient
+cp ruijie.conf /etc/ruijieclient
+}}}
+     * 编译并安装程序
+{{{
+./configure
+make
+make install
+}}}
+  * 安装包安装(rpm, deb etc..)
+    * 直接编辑配置
+{{{
+gedit /etc/ruijieclient/ruijie.conf
+}}}
+
+  * 启动程序
+    * su方式
+    打开终端，输入su，进入root状态后
+{{{
+ruijieclient
+}}}
+    * sudo方式 (前提是已经设置好sudoer，ubuntu已经默认设置好了)
+    打开终端，输入
+{{{
+sudo ruijieclient
+}}}
