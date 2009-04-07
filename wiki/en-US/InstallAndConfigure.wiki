@@ -1,0 +1,40 @@
+#labels Featured,Phase-Deploy
+#describes how to install and configure ruijieclient
+
+*suitable version：0.1*
+
+  * install from source(tar.gz)
+     * download and edit configuration
+{{{
+wget http://ruijieclient.googlecode.com/svn/trunk/src/ruijie.conf
+gedit ruijie.conf
+}}}
+     * copy configuration
+     open terminal, input 'su'
+{{{
+mkdir -p /etc/ruijieclient
+cp ruijie.conf /etc/ruijieclient
+}}}
+     * compile and install
+{{{
+./configure
+make
+make install
+}}}
+  * install from complied package(rpm, deb etc..)
+    * edit configuration
+{{{
+gedit /etc/ruijieclient/ruijie.conf
+}}}
+
+  * run
+    * by 'su'
+    open terminal, input 'su'
+{{{
+ruijieclient
+}}}
+    * by 'sudo' (provided that sudoer has been set correctly. ubuntu has set it by default)
+    open terminal, input the following
+{{{
+sudo ruijieclient
+}}}
