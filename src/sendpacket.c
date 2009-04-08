@@ -212,7 +212,8 @@ SendFindServerPacket(libnet_t *l)
     memcpy(broadPackage, StandardAddr, 6);
   memcpy(broadPackage + 6, m_localMAC, 6); // fill local MAC
 
-  memcpy (broadPackage+18,OEMExtra,sizeof(OEMExtra));
+  memcpy(broadPackage+18, ackShida, sizeof(ackShida));
+//  memcpy(broadPackage+18, OEMExtra, sizeof(OEMExtra));
 
   FillNetParamater(&broadPackage[0x17]);
 
@@ -239,8 +240,8 @@ SendNamePacket(libnet_t *l, const u_char *pkt_data)
   *(short *) (ackPackage + 0x14) = *(short *) (ackPackage + 0x10);// length
   memcpy(ackPackage + 0x17, m_name, nameLen); // fill name
 
-  FillNetParamater(&ackShida[0x05]);
-  memcpy(ackPackage + 0x17 + nameLen, ackShida, 0x6e);
+  FillNetParamater(&OEMExtra[0x05]);
+  memcpy(ackPackage + 0x17 + nameLen, OEMExtra, 0x6e);
 
   fputs(">> Sending user name...\n", stdout);
 
@@ -289,6 +290,9 @@ SendPasswordPacket(libnet_t *l, const u_char *pkt_data)
 
   FillNetParamater(&ackShida[0x05]);
   memcpy(ackPackage + 0x28 + nameLen, ackShida, 0x6e);
+
+//  FillNetParamater( &OEMExtra[0x05] );
+//  memcpy(ackPackage+0x28+nameLen,OEMExtra,0x6e);
 
   fputs(">> Sending password... \n", stdout);
   return (libnet_write_link(l, ackPackage, 0x3E8) == 0x3E8) ? 0 : -1;
@@ -339,6 +343,9 @@ SendEndCertPacket(libnet_t *l)
 
   memcpy(ExitPacket, m_destMAC, 6);
   memcpy(ExitPacket + 6, m_localMAC, 6);
+
+  memcpy(ExitPacket+18, OEMExtra, sizeof(OEMExtra));
+
   FillNetParamater(&ExitPacket[0x17]);
   fputs(">> Logouting... \n", stdout);
   return (libnet_write_link(l, ExitPacket, 0x80) == 0x80) ? 0 : -1;
