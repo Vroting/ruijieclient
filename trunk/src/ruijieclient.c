@@ -477,7 +477,7 @@ get_element(xmlNode * a_node)
         node_name = (char *)(cur_node->name);
         if (cur_node->type == XML_ELEMENT_NODE &&
             xmlChildElementCount(cur_node) == 0 &&
-            node_content != "null" &&
+            strcmp(node_content, "null") &&
             node_name != NULL
             )
           {
