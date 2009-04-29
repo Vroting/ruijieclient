@@ -6,6 +6,9 @@
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 
+/* Define to 1 if you have the `libxml2' library (-llibxml2). */
+#undef HAVE_LIBLIBXML2
+
 /* Define to 1 if you have the `net' library (-lnet). */
 #undef HAVE_LIBNET
 

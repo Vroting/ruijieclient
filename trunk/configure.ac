@@ -18,6 +18,10 @@ AC_CHECK_LIB([net], [main])
 AC_CHECK_LIB([pcap], [main])
 # FIXME: Replace `main' with a function in `-lssl':
 AC_CHECK_LIB([ssl], [main])
+# FIXME: Replace `main' with a function in `-libxml2':
+AC_CHECK_LIB([libxml2], [main])
+
+AM_PATH_XML2(2.4.0)
 
 # Checks for header files.
 AC_CHECK_HEADERS([arpa/inet.h netinet/in.h stdlib.h string.h sys/socket.h sys/time.h unistd.h])

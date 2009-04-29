@@ -61,6 +61,17 @@ static char *m_fakeVersion = NULL;
 // fake MAC, e.g. "00:11:D8:44:D5:0D"
 static char *m_fakeMAC = NULL;
 
+static char name[32];
+static char password[32];
+static char nic[32];
+static char fakeAddress[32];
+static char fakeVersion[8];
+static char fakeMAC[32];
+
+static int intelligentReconnect = -1;
+static int echoInterval = -1;
+static int authenticationMode = -1;
+
 /* These info should be worked out by initialization portion. */
 
 // local MAC
@@ -92,13 +103,19 @@ ULONG_BYTEARRAY m_key;
 /* cleanup on exit when detected Ctrl+C */
 static void
 sig_intr(int signo);
+#if defined(LIBXML_TREE_ENABLED) && defined(LIBXML_OUTPUT_ENABLED)
 /* configure related parameters */
 static void
 checkAndSetConfig(void);
+/* generate default setting file */
+static int
+GenSetting(void);
+static void
+get_element(xmlNode * a_node);
+#endif
 /* get server msg */
 static char *
 getServMsg(char* msgBuf, size_t msgBufLe, const unsigned char* pkt_data);
-
 
 int
 main(int argc, char* argv[])
@@ -445,143 +462,223 @@ getServMsg(char* msgBuf, size_t msgBufLen, const unsigned char* pkt_data)
     } // this presumably is packet indicates silent or interrupt network
 }
 
+#ifdef LIBXML_TREE_ENABLED
+
+static void
+get_element(xmlNode * a_node)
+  {
+    xmlNode *cur_node = NULL;
+    char *node_content, *node_name;
+    int i, len;
+
+    for (cur_node = a_node; cur_node != NULL; cur_node = cur_node->next)
+      {
+        node_content = (char *)xmlNodeGetContent(cur_node);
+        node_name = (char *)(cur_node->name);
+        if (cur_node->type == XML_ELEMENT_NODE &&
+            xmlChildElementCount(cur_node) == 0 &&
+            node_content != "null" &&
+            node_name != NULL
+            )
+          {
+            if (strcmp(node_name, "Name") == 0)
+              {
+                strncpy(name, node_content, sizeof(name) - 1);
+                name[sizeof(name) - 1] = 0;
+                m_name = name;
+              }
+            else if (strcmp(node_name, "Password") == 0)
+              {
+                strncpy(password, node_content, sizeof(password) - 1);
+                password[sizeof(password) - 1] = 0;
+                m_password = password;
+              }
+            else if (strcmp(node_name, "AuthenticationMode") == 0)
+              {
+                authenticationMode = atoi(node_content);
+                m_authenticationMode = authenticationMode;
+              }
+            else if (strcmp(node_name, "NIC") == 0)
+              {
+                for (i = 0; i < strlen(node_content); i++)
+                  node_content[i] = tolower(node_content[i]);
+                strncpy(nic, node_content, sizeof(nic) - 1);
+                nic[sizeof(nic) - 1] = 0;
+                m_nic = nic;
+              }
+            else if (strcmp(node_name, "EchoInterval") == 0)
+              {
+                echoInterval = atoi(node_content);
+                m_echoInterval = echoInterval;
+              }
+            else if (strcmp(node_name, "IntelligentReconnect") == 0)
+              {
+                intelligentReconnect = atoi(node_content);
+                m_intelligentReconnect = intelligentReconnect;
+              }
+            else if (strcmp(node_name, "FakeVersion") == 0)
+              {
+                strncpy(fakeVersion, node_content, sizeof(fakeVersion) - 1);
+                fakeVersion[sizeof(fakeVersion) - 1] = 0;
+                m_fakeVersion = fakeVersion;
+              }
+            else if (strcmp(node_name, "FakeMAC") == 0)
+              {
+                strncpy(fakeMAC, node_content, sizeof(fakeMAC) - 1);
+                fakeMAC[sizeof(fakeMAC) - 1] = 0;
+                m_fakeMAC = fakeMAC;
+              }
+            else if (strcmp(node_name, "FakeAddress") == 0)
+              {
+                strncpy(fakeAddress, node_content, sizeof(fakeAddress) - 1);
+                fakeAddress[sizeof(fakeAddress) - 1] = 0;
+                if (inet_pton(AF_INET, fakeAddress, m_ip) <= 0)
+                err_msg("invalid fakeAddress found in ruijie.conf, ignored...\n");
+                else
+                m_fakeAddress = fakeAddress;
+              }
+          }
+
+        get_element(cur_node->children);
+      }
+  }
+
 static void
 checkAndSetConfig(void)
-{
-  FILE *fp;
-  char buf[4096];
-  char *p;
-  int i, len;
-  static char name[32];
-  static char password[32];
-  static char nic[32];
-  static char fakeAddress[32];
-  static char fakeVersion[8];
-  static char fakeMAC[32];
+  {
 
-  int intelligentReconnect = -1;
-  int echoInterval = -1;
-  int authenticationMode = -1;
+    xmlDoc *doc = NULL;
+    xmlNode *root_element = NULL;
 
-  /* the check and analysis with ruijie.conf do NOT work perfectly.
-   * this may be improved in the later version.
-   */
+    /*
+     * this initialize the library and check potential ABI mismatches
+     * between the version it was compiled for and the actual shared
+     * library used.
+     */
+    LIBXML_TEST_VERSION
 
-  if ((fp = fopen(CONF_PATH,"r")) == NULL)
-    err_quit("cannot open file ruijie.conf ! check it.\n");
+    /*parse the file and get the DOM */
+    doc = xmlReadFile(CONF_PATH, NULL, 0);
 
-  while (fgets(buf, sizeof(buf), fp) != NULL)
-    {
-      if ((buf[0] == '#') || (buf[0] == '\n'))
-        continue;
-      len = strlen(buf);
-      if (buf[len - 1] == '\n')
-        buf[len - 1] = '\0';
-      if (((p = strchr(buf, '=')) == NULL) || (p == buf))
-        continue;
+    if (doc == NULL)
+      {
+        puts("Could not parse or find file. A sample file will be generated "
+            "automatically. Try 'gedit /etc/ruijie.conf'");
+        if (GenSetting() != -1)
+          {
+            puts("Configuration file has generated.");
+            exit(0);
+          }
+        else
+          {
+            err_quit("Configuration file fail in generating.");
+          }
 
-      *p++ = '\0';
-      for (i = 0; i < strlen(buf); i++)
-        buf[i] = tolower(buf[i]);
+      }
 
-#ifdef DEBUG
-      puts("CAUGHT CONF STR:");
-      puts(buf);
-#endif
-      if (strcmp(buf, "name") == 0)
-        {
-          strncpy(name, p, sizeof(name) - 1);
-          name[sizeof(name) - 1] = 0;
-          m_name = name;
-        }
-      else if (strcmp(buf, "password") == 0)
-        {
-          strncpy(password, p, sizeof(password) - 1);
-          password[sizeof(password) - 1] = 0;
-          m_password = password;
-        }
-      else if (strcmp(buf, "authenticationmode") == 0)
-        {
-          authenticationMode = atoi(p);
-          m_authenticationMode = authenticationMode;
-        }
-      else if (strcmp(buf, "nic") == 0)
-        {
-          for (i = 0; i < strlen(p); i++)
-            p[i] = tolower(p[i]);
-          strncpy(nic, p, sizeof(nic) - 1);
-          nic[sizeof(nic) - 1] = 0;
-          m_nic = nic;
-        }
-      else if (strcmp(buf, "echointerval") == 0)
-        {
-          echoInterval = atoi(p);
-          m_echoInterval = echoInterval;
-        }
-      else if (strcmp(buf, "intelligentreconnect") == 0)
-        {
-          intelligentReconnect = atoi(p);
-          m_intelligentReconnect = intelligentReconnect;
-        }
-      else if (strcmp(buf, "fakeversion") == 0)
-        {
-          strncpy(fakeVersion, p, sizeof(fakeVersion) - 1);
-          fakeVersion[sizeof(fakeVersion) - 1] = 0;
-          m_fakeVersion = fakeVersion;
-        }
-      else if (strcmp(buf, "fakemac") == 0)
-        {
-          strncpy(fakeMAC, p, sizeof(fakeMAC) - 1);
-          fakeMAC[sizeof(fakeMAC) - 1] = 0;
-          m_fakeMAC = fakeMAC;
-        }
-      else if (strcmp(buf, "fakeaddress") == 0)
-        {
-          strncpy(fakeAddress, p, sizeof(fakeAddress) - 1);
-          fakeAddress[sizeof(fakeAddress) - 1] = 0;
-          if (inet_pton(AF_INET, fakeAddress, m_ip) <= 0)
-            err_msg("invalid fakeAddress found in ruijie.conf, ignored...\n");
-          else
-            m_fakeAddress = fakeAddress;
-        }
-      else
-        continue;
-    }
-  if (ferror(fp))
-    err_quit("cannot read ruijie.conf ! check it.\n");
-  fclose(fp);
+    /*Get the root element node */
+    root_element = xmlDocGetRootElement(doc);
 
-  if ((m_name == NULL) || (m_name[0] == 0))
+    get_element(root_element);
+
+    /*free the document */
+    xmlFreeDoc(doc);
+
+    /*
+     *Free the global variables that may
+     *have been allocated by the parser.
+     */
+    xmlCleanupParser();
+
+    if ((m_name == NULL) || (m_name[0] == 0))
     err_quit("invalid name found in ruijie.conf!\n");
-  if ((m_password == NULL) || (m_password[0] == 0))
+    if ((m_password == NULL) || (m_password[0] == 0))
     err_quit("invalid password found in ruijie.conf!\n");
-  if ((m_authenticationMode < 0) || (m_authenticationMode > 1))
+    if ((m_authenticationMode < 0) || (m_authenticationMode> 1))
     err_quit("invalid authenticationMode found in ruijie.conf!\n");
-  if ((m_nic == NULL) || (strcmp(m_nic, "") == 0)
-      || (strcmp(m_nic, "any") == 0))
+    if ((m_nic == NULL) || (strcmp(m_nic, "") == 0)
+        || (strcmp(m_nic, "any") == 0))
     err_quit("invalid nic found in ruijie.conf!\n");
-  if ((m_echoInterval < 0) || (m_echoInterval > 100))
+    if ((m_echoInterval < 0) || (m_echoInterval> 100))
     err_quit("invalid echo interval found in ruijie.conf!\n");
-  if ((m_intelligentReconnect < 0) || (m_intelligentReconnect > 1))
+    if ((m_intelligentReconnect < 0) || (m_intelligentReconnect> 1))
     err_quit("invalid intelligentReconnect found in ruijie.conf!\n");
 
 #ifdef DEBUG
-  puts("-- CONF INFO");
-  printf("## m_name=%s\n", m_name);
-  printf("## m_password=%s\n", m_password);
-  printf("## m_nic=%s\n", m_nic);
-  printf("## m_authenticationMode=%d\n", m_authenticationMode);
-  printf("## m_echoInterval=%d\n", m_echoInterval);
-  printf("## m_intelligentReconnect=%d\n", m_intelligentReconnect);// NOT supported now!!
-  printf("## m_fakeVersion=%s\n", m_fakeVersion);
-  printf("## m_fakeAddress=%s\n", m_fakeAddress);
-  printf("## m_fakeMAC=%s\n", m_fakeMAC);
-  puts("-- END");
+    puts("-- CONF INFO");
+    printf("## m_name=%s\n", m_name);
+    printf("## m_password=%s\n", m_password);
+    printf("## m_nic=%s\n", m_nic);
+    printf("## m_authenticationMode=%d\n", m_authenticationMode);
+    printf("## m_echoInterval=%d\n", m_echoInterval);
+    printf("## m_intelligentReconnect=%d\n", m_intelligentReconnect);// NOT supported now!!
+    printf("## m_fakeVersion=%s\n", m_fakeVersion);
+    printf("## m_fakeAddress=%s\n", m_fakeAddress);
+    printf("## m_fakeMAC=%s\n", m_fakeMAC);
+    puts("-- END");
 #endif
 
-  memset(m_netgate, 0, sizeof(m_netgate));
-  memset(m_dns1, 0, sizeof(m_dns1));
-}
+    memset(m_netgate, 0, sizeof(m_netgate));
+    memset(m_dns1, 0, sizeof(m_dns1));
+  }
+
+static int
+GenSetting(void)
+  {
+
+    xmlDocPtr doc = NULL; /* document pointer */
+
+    xmlNodePtr root_node = NULL, account_node = NULL,
+    setting_node = NULL, msg_node = NULL;/* node pointers */
+
+    int rc;
+
+    // Creates a new document, a node and set it as a root node
+
+    doc = xmlNewDoc(BAD_CAST "1.0");
+
+    root_node = xmlNewNode(NULL, BAD_CAST CONF_NAME);
+    xmlNewProp(root_node, BAD_CAST "version", BAD_CAST C_VERSION);
+    xmlAddChild(root_node, xmlNewComment((xmlChar *)
+            "This is a sample configuration file of RuijieClient, "
+            "change it appropriately according to your settings."));
+
+    xmlDocSetRootElement(doc, root_node);
+
+    //creates a new node, which is "attached" as child node of root_node node.
+    account_node = xmlNewChild(root_node, NULL, BAD_CAST "account", NULL);
+    xmlNewChild(account_node, NULL, BAD_CAST "Name", BAD_CAST "null");
+    xmlNewChild(account_node, NULL, BAD_CAST "Password", BAD_CAST "null");
+
+    setting_node = xmlNewChild(root_node, NULL, BAD_CAST "settings", NULL);
+    xmlAddChild(setting_node, xmlNewComment((xmlChar *) "0: Standard, 1: Private"));
+    xmlNewChild(setting_node, NULL, BAD_CAST "AuthenticationMode", BAD_CAST "1");
+    xmlNewChild(setting_node, NULL, BAD_CAST "NIC", BAD_CAST "eth0");
+    xmlNewChild(setting_node, NULL, BAD_CAST "EchoInterval", BAD_CAST "4");
+    xmlNewChild(setting_node, NULL, BAD_CAST "IntelligentReconnect", BAD_CAST "on");
+    xmlAddChild(setting_node, xmlNewComment((xmlChar *) "Fake Version for cheating server"));
+    xmlNewChild(setting_node, NULL, BAD_CAST "FakeVersion", BAD_CAST "3.99");
+    xmlAddChild(setting_node, xmlNewComment((xmlChar *) "Fake IP for cheating server"));
+    xmlNewChild(setting_node, NULL, BAD_CAST "FakeAddress", BAD_CAST "null");
+    msg_node = xmlNewChild(setting_node, NULL, BAD_CAST "message", NULL);
+    xmlNewProp(msg_node, BAD_CAST "LastTime", BAD_CAST "null");
+
+    //Dumping document to stdio or file
+    rc = xmlSaveFormatFileEnc(CONF_PATH, doc, "UTF-8", 1);
+
+    if (rc == -1)
+      return -1;
+    /*free the document */
+
+    xmlFreeDoc(doc);
+
+    xmlCleanupParser();
+
+    xmlMemoryDump(); // debug memory for regression tests
+
+    return 0;
+  }
+#endif
 
 static void
 sig_intr(int signo)
