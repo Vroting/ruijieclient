@@ -33,7 +33,8 @@
 #include "global.h"
 #include "blog.h"
 
-// additional Star private echo packet
+/* comment out for further usage
+//additional Star private echo packet
 static
 uint8_t ackShida[] =
 {
@@ -45,6 +46,7 @@ uint8_t ackShida[] =
   0x64,0x66,0x92,0x94,0x62,0x66,0x91,0x93,0x95,0x62,0x93,0x93,0x91,0x94,0x64,0x61,
   0x64,0x64,0x65,0x66,0x68,0x94,0x98,0xA7,0x61,0x67,0x65,0x67,0x9C,0x6B
 };
+*/
 
 // broadcast packet for finding server
 static
@@ -113,7 +115,7 @@ static uint8_t OEMExtra[144] = {
 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
 0x00,0x00,0x00,0x00,
 // 59 --> 77
-0x02,0x38,0x00,0x00, // 8021x.exe File Version (2.56.00)
+ver1,ver2,0x00,0x00, // 8021x.exe File Version (2.56.00)
                      // base16 code.add by lsyer
 0x00,                // unknow flag
 // Const strings
@@ -145,8 +147,10 @@ FillVersion(char * m_fakeVersion)
 #ifdef DEBUG
       printf("## c_ver1=%u ## c_ver2=%u\n", c_ver1, c_ver2);
 #endif
-      ackShida[0x3B] = broadPackage[0x4D] = ExitPacket[0x4D] = c_ver1;
-      ackShida[0x3C] = broadPackage[0x4E] = ExitPacket[0x4E] = c_ver2;
+//      ackShida[0x3B] = broadPackage[0x4D] = ExitPacket[0x4D] = c_ver1;
+//      ackShida[0x3C] = broadPackage[0x4E] = ExitPacket[0x4E] = c_ver2;
+      OEMExtra[0x3B] = broadPackage[0x4D] = ExitPacket[0x4D] = c_ver1;
+      OEMExtra[0x3C] = broadPackage[0x4E] = ExitPacket[0x4E] = c_ver2;
       return 0;
     }
   else
@@ -212,8 +216,8 @@ SendFindServerPacket(libnet_t *l)
     memcpy(broadPackage, StandardAddr, 6);
   memcpy(broadPackage + 6, m_localMAC, 6); // fill local MAC
 
-  memcpy(broadPackage+18, ackShida, sizeof(ackShida));
-//  memcpy(broadPackage+18, OEMExtra, sizeof(OEMExtra));
+//  memcpy(broadPackage+18, ackShida, sizeof(ackShida));
+  memcpy(broadPackage+18, OEMExtra, sizeof(OEMExtra));
 
   FillNetParamater(&broadPackage[0x17]);
 
@@ -288,11 +292,11 @@ SendPasswordPacket(libnet_t *l, const u_char *pkt_data)
 
   memcpy(ackPackage + 0x28, m_name, nameLen);
 
-  FillNetParamater(&ackShida[0x05]);
-  memcpy(ackPackage + 0x28 + nameLen, ackShida, 0x6e);
+//  FillNetParamater(&ackShida[0x05]);
+//  memcpy(ackPackage + 0x28 + nameLen, ackShida, 0x6e);
 
-//  FillNetParamater( &OEMExtra[0x05] );
-//  memcpy(ackPackage+0x28+nameLen,OEMExtra,0x6e);
+  FillNetParamater( &OEMExtra[0x05] );
+  memcpy(ackPackage+0x28+nameLen,OEMExtra,0x6e);
 
   fputs(">> Sending password... \n", stdout);
   return (libnet_write_link(l, ackPackage, 0x3E8) == 0x3E8) ? 0 : -1;
