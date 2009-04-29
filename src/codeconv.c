@@ -44,7 +44,7 @@ code_convert(char *outbuf, size_t outlen, char *inbuf, size_t inlen)
   memset(outbuf, '\0', outlen);
   if (iconv(cd, pin, &inlen, pout, &outlen) == -1)
     {
-      perror("code_convert failed.");
+      err_msg("code_convert failed.");
       return -1;
     }
   iconv_close(cd);

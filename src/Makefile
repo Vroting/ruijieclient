@@ -43,10 +43,14 @@ CONFIG_CLEAN_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
-am_ruijieclient_OBJECTS = blog.$(OBJEXT) myerr.$(OBJEXT) \
-	codeconv.$(OBJEXT) ruijieclient.$(OBJEXT) sendpacket.$(OBJEXT)
+am_ruijieclient_OBJECTS = ruijieclient-blog.$(OBJEXT) \
+	ruijieclient-myerr.$(OBJEXT) ruijieclient-codeconv.$(OBJEXT) \
+	ruijieclient-ruijieclient.$(OBJEXT) \
+	ruijieclient-sendpacket.$(OBJEXT)
 ruijieclient_OBJECTS = $(am_ruijieclient_OBJECTS)
 ruijieclient_DEPENDENCIES =
+ruijieclient_LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
+	$(ruijieclient_LDFLAGS) $(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I. -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -102,6 +106,9 @@ SET_MAKE =
 SHELL = /bin/sh
 STRIP = 
 VERSION = 0.1
+XML2_CONFIG = /usr/bin/xml2-config
+XML_CPPFLAGS = -I/usr/include/libxml2
+XML_LIBS = -lxml2 -lz -lm
 abs_builddir = /home/han/workspace/ruijieclient/src
 abs_srcdir = /home/han/workspace/ruijieclient/src
 abs_top_builddir = /home/han/workspace/ruijieclient
@@ -146,7 +153,9 @@ top_builddir = ..
 top_srcdir = ..
 AUTOMAKE_OPTIONS = foreign
 ruijieclient_SOURCES = blog.c codeconv.h myerr.c ruijieclient.h sendpacket.h blog.h global.h  myerr.h codeconv.c ruijieclient.c sendpacket.c
-ruijieclient_LDADD = -lpcap -lnet -lssl
+ruijieclient_LDADD = -lpcap -lnet -lssl -lxml2
+ruijieclient_CPPFLAGS = -I /usr/include/libxml2
+ruijieclient_LDFLAGS = -lxml2
 all: all-am
 
 .SUFFIXES:
@@ -205,7 +214,7 @@ clean-binPROGRAMS:
 	-test -z "$(bin_PROGRAMS)" || rm -f $(bin_PROGRAMS)
 ruijieclient$(EXEEXT): $(ruijieclient_OBJECTS) $(ruijieclient_DEPENDENCIES) 
 	@rm -f ruijieclient$(EXEEXT)
-	$(LINK) $(ruijieclient_OBJECTS) $(ruijieclient_LDADD) $(LIBS)
+	$(ruijieclient_LINK) $(ruijieclient_OBJECTS) $(ruijieclient_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -213,11 +222,11 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-include ./$(DEPDIR)/blog.Po
-include ./$(DEPDIR)/codeconv.Po
-include ./$(DEPDIR)/myerr.Po
-include ./$(DEPDIR)/ruijieclient.Po
-include ./$(DEPDIR)/sendpacket.Po
+include ./$(DEPDIR)/ruijieclient-blog.Po
+include ./$(DEPDIR)/ruijieclient-codeconv.Po
+include ./$(DEPDIR)/ruijieclient-myerr.Po
+include ./$(DEPDIR)/ruijieclient-ruijieclient.Po
+include ./$(DEPDIR)/ruijieclient-sendpacket.Po
 
 .c.o:
 	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -232,6 +241,76 @@ include ./$(DEPDIR)/sendpacket.Po
 #	source='$<' object='$@' libtool=no \
 #	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
 #	$(COMPILE) -c `$(CYGPATH_W) '$<'`
+
+ruijieclient-blog.o: blog.c
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieclient_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ruijieclient-blog.o -MD -MP -MF $(DEPDIR)/ruijieclient-blog.Tpo -c -o ruijieclient-blog.o `test -f 'blog.c' || echo '$(srcdir)/'`blog.c
+	mv -f $(DEPDIR)/ruijieclient-blog.Tpo $(DEPDIR)/ruijieclient-blog.Po
+#	source='blog.c' object='ruijieclient-blog.o' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieclient_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ruijieclient-blog.o `test -f 'blog.c' || echo '$(srcdir)/'`blog.c
+
+ruijieclient-blog.obj: blog.c
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieclient_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ruijieclient-blog.obj -MD -MP -MF $(DEPDIR)/ruijieclient-blog.Tpo -c -o ruijieclient-blog.obj `if test -f 'blog.c'; then $(CYGPATH_W) 'blog.c'; else $(CYGPATH_W) '$(srcdir)/blog.c'; fi`
+	mv -f $(DEPDIR)/ruijieclient-blog.Tpo $(DEPDIR)/ruijieclient-blog.Po
+#	source='blog.c' object='ruijieclient-blog.obj' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieclient_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ruijieclient-blog.obj `if test -f 'blog.c'; then $(CYGPATH_W) 'blog.c'; else $(CYGPATH_W) '$(srcdir)/blog.c'; fi`
+
+ruijieclient-myerr.o: myerr.c
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieclient_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ruijieclient-myerr.o -MD -MP -MF $(DEPDIR)/ruijieclient-myerr.Tpo -c -o ruijieclient-myerr.o `test -f 'myerr.c' || echo '$(srcdir)/'`myerr.c
+	mv -f $(DEPDIR)/ruijieclient-myerr.Tpo $(DEPDIR)/ruijieclient-myerr.Po
+#	source='myerr.c' object='ruijieclient-myerr.o' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieclient_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ruijieclient-myerr.o `test -f 'myerr.c' || echo '$(srcdir)/'`myerr.c
+
+ruijieclient-myerr.obj: myerr.c
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieclient_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ruijieclient-myerr.obj -MD -MP -MF $(DEPDIR)/ruijieclient-myerr.Tpo -c -o ruijieclient-myerr.obj `if test -f 'myerr.c'; then $(CYGPATH_W) 'myerr.c'; else $(CYGPATH_W) '$(srcdir)/myerr.c'; fi`
+	mv -f $(DEPDIR)/ruijieclient-myerr.Tpo $(DEPDIR)/ruijieclient-myerr.Po
+#	source='myerr.c' object='ruijieclient-myerr.obj' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieclient_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ruijieclient-myerr.obj `if test -f 'myerr.c'; then $(CYGPATH_W) 'myerr.c'; else $(CYGPATH_W) '$(srcdir)/myerr.c'; fi`
+
+ruijieclient-codeconv.o: codeconv.c
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieclient_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ruijieclient-codeconv.o -MD -MP -MF $(DEPDIR)/ruijieclient-codeconv.Tpo -c -o ruijieclient-codeconv.o `test -f 'codeconv.c' || echo '$(srcdir)/'`codeconv.c
+	mv -f $(DEPDIR)/ruijieclient-codeconv.Tpo $(DEPDIR)/ruijieclient-codeconv.Po
+#	source='codeconv.c' object='ruijieclient-codeconv.o' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieclient_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ruijieclient-codeconv.o `test -f 'codeconv.c' || echo '$(srcdir)/'`codeconv.c
+
+ruijieclient-codeconv.obj: codeconv.c
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieclient_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ruijieclient-codeconv.obj -MD -MP -MF $(DEPDIR)/ruijieclient-codeconv.Tpo -c -o ruijieclient-codeconv.obj `if test -f 'codeconv.c'; then $(CYGPATH_W) 'codeconv.c'; else $(CYGPATH_W) '$(srcdir)/codeconv.c'; fi`
+	mv -f $(DEPDIR)/ruijieclient-codeconv.Tpo $(DEPDIR)/ruijieclient-codeconv.Po
+#	source='codeconv.c' object='ruijieclient-codeconv.obj' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieclient_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ruijieclient-codeconv.obj `if test -f 'codeconv.c'; then $(CYGPATH_W) 'codeconv.c'; else $(CYGPATH_W) '$(srcdir)/codeconv.c'; fi`
+
+ruijieclient-ruijieclient.o: ruijieclient.c
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieclient_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ruijieclient-ruijieclient.o -MD -MP -MF $(DEPDIR)/ruijieclient-ruijieclient.Tpo -c -o ruijieclient-ruijieclient.o `test -f 'ruijieclient.c' || echo '$(srcdir)/'`ruijieclient.c
+	mv -f $(DEPDIR)/ruijieclient-ruijieclient.Tpo $(DEPDIR)/ruijieclient-ruijieclient.Po
+#	source='ruijieclient.c' object='ruijieclient-ruijieclient.o' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieclient_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ruijieclient-ruijieclient.o `test -f 'ruijieclient.c' || echo '$(srcdir)/'`ruijieclient.c
+
+ruijieclient-ruijieclient.obj: ruijieclient.c
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieclient_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ruijieclient-ruijieclient.obj -MD -MP -MF $(DEPDIR)/ruijieclient-ruijieclient.Tpo -c -o ruijieclient-ruijieclient.obj `if test -f 'ruijieclient.c'; then $(CYGPATH_W) 'ruijieclient.c'; else $(CYGPATH_W) '$(srcdir)/ruijieclient.c'; fi`
+	mv -f $(DEPDIR)/ruijieclient-ruijieclient.Tpo $(DEPDIR)/ruijieclient-ruijieclient.Po
+#	source='ruijieclient.c' object='ruijieclient-ruijieclient.obj' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieclient_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ruijieclient-ruijieclient.obj `if test -f 'ruijieclient.c'; then $(CYGPATH_W) 'ruijieclient.c'; else $(CYGPATH_W) '$(srcdir)/ruijieclient.c'; fi`
+
+ruijieclient-sendpacket.o: sendpacket.c
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieclient_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ruijieclient-sendpacket.o -MD -MP -MF $(DEPDIR)/ruijieclient-sendpacket.Tpo -c -o ruijieclient-sendpacket.o `test -f 'sendpacket.c' || echo '$(srcdir)/'`sendpacket.c
+	mv -f $(DEPDIR)/ruijieclient-sendpacket.Tpo $(DEPDIR)/ruijieclient-sendpacket.Po
+#	source='sendpacket.c' object='ruijieclient-sendpacket.o' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieclient_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ruijieclient-sendpacket.o `test -f 'sendpacket.c' || echo '$(srcdir)/'`sendpacket.c
+
+ruijieclient-sendpacket.obj: sendpacket.c
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieclient_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ruijieclient-sendpacket.obj -MD -MP -MF $(DEPDIR)/ruijieclient-sendpacket.Tpo -c -o ruijieclient-sendpacket.obj `if test -f 'sendpacket.c'; then $(CYGPATH_W) 'sendpacket.c'; else $(CYGPATH_W) '$(srcdir)/sendpacket.c'; fi`
+	mv -f $(DEPDIR)/ruijieclient-sendpacket.Tpo $(DEPDIR)/ruijieclient-sendpacket.Po
+#	source='sendpacket.c' object='ruijieclient-sendpacket.obj' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieclient_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ruijieclient-sendpacket.obj `if test -f 'sendpacket.c'; then $(CYGPATH_W) 'sendpacket.c'; else $(CYGPATH_W) '$(srcdir)/sendpacket.c'; fi`
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \
