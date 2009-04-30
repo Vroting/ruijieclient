@@ -144,6 +144,8 @@ main(int argc, char* argv[])
   char u_msgBuf[MAX_U_MSG_LEN];
   // msg offset
   u_int16_t offset;
+  // system command
+  char cmd[32] = "dhclient ";
 
   ULONG_BYTEARRAY uTemp;
   int isFirstPacketFromServer = 1;
@@ -157,8 +159,10 @@ main(int argc, char* argv[])
   m_serialNo.ulValue = 0x1000002a;
   checkAndSetConfig();
 
+  strcat(cmd, m_nic);
+
   if(m_dhcpmode == 1){
-      if (system(strcat("dhclient ", m_nic)) == -1)
+      if (system(cmd) == -1)
         {
           err_quit("Fail in retrieving network configuration from DHCP server");
         }
@@ -363,7 +367,7 @@ beginAuthentication:
             continue;
 
           if(m_dhcpmode == 2){
-              if (system(strcat("dhclient ", m_nic)) == -1)
+              if (system(cmd) == -1)
                 {
                   err_quit("Fail in retrieving network configuration from DHCP server");
                 }
@@ -402,7 +406,7 @@ beginAuthentication:
           sigaddset(&sigset_zero,SIGINT);
           sigprocmask(SIG_UNBLOCK,&sigset_zero,NULL);
           // continue echoing
-          fputs("Keeping sending echo... \n",stdout);
+          fputs("Keeping sending echo...\nPress Ctrl+C to logoff \n", stdout);
           while(SendEchoPacket(l,pkt_data)==0)
             sleep(m_echoInterval);
           pcap_close(p);
