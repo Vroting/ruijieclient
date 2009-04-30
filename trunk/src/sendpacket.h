@@ -79,7 +79,8 @@ int
 SendEndCertPacket(libnet_t *l);
 
 /* default version bytes macro */
-#define ver1 0x0F
-#define ver2 0xFF
+#define VER1 0x0F
+#define VER2 0xFF
+#define DHCP_FLAG 0xFF
 
 #endif

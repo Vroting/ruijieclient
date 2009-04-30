@@ -60,6 +60,10 @@ static char *m_fakeAddress = NULL;
 static char *m_fakeVersion = NULL;
 // fake MAC, e.g. "00:11:D8:44:D5:0D"
 static char *m_fakeMAC = NULL;
+// DHCP mode: 0: Off, 1:On, DHCP before authentication, 2: On, DHCP after authentication
+static int m_dhcpmode = 0;
+// flag of afterward DHCP status
+int noip_afterauth=1;
 
 static char name[32];
 static char password[32];
@@ -68,9 +72,6 @@ static char fakeAddress[32];
 static char fakeVersion[8];
 static char fakeMAC[32];
 
-static int intelligentReconnect = -1;
-static int echoInterval = -1;
-static int authenticationMode = -1;
 
 /* These info should be worked out by initialization portion. */
 
@@ -155,6 +156,13 @@ main(int argc, char* argv[])
   // the initial serial number, a magic number!
   m_serialNo.ulValue = 0x1000002a;
   checkAndSetConfig();
+
+  if(m_dhcpmode == 1){
+      if (system(strcat("dhclient ", m_nic)) == -1)
+        {
+          err_quit("Fail in retrieving network configuration from DHCP server");
+        }
+  }
 
   if ((l = libnet_init(LIBNET_LINK, m_nic, l_errbuf)) == NULL)
     err_quit("libnet_init: %s\n", l_errbuf);
@@ -353,6 +361,14 @@ beginAuthentication:
           // Authenticate successfully
           if(m_state != 2)
             continue;
+
+          if(m_dhcpmode == 2){
+              if (system(strcat("dhclient ", m_nic)) == -1)
+                {
+                  err_quit("Fail in retrieving network configuration from DHCP server");
+                }
+          }
+
           m_state=3;
 
           pmsgBuf = getServMsg(msgBuf, sizeof(msgBuf), pkt_data);
@@ -476,7 +492,6 @@ get_element(xmlNode * a_node)
         node_content = (char *)xmlNodeGetContent(cur_node);
         node_name = (char *)(cur_node->name);
         if (cur_node->type == XML_ELEMENT_NODE &&
-            xmlChildElementCount(cur_node) == 0 &&
             strcmp(node_content, "null") &&
             node_name != NULL
             )
@@ -495,8 +510,7 @@ get_element(xmlNode * a_node)
               }
             else if (strcmp(node_name, "AuthenticationMode") == 0)
               {
-                authenticationMode = atoi(node_content);
-                m_authenticationMode = authenticationMode;
+                m_authenticationMode = atoi(node_content);
               }
             else if (strcmp(node_name, "NIC") == 0)
               {
@@ -508,13 +522,11 @@ get_element(xmlNode * a_node)
               }
             else if (strcmp(node_name, "EchoInterval") == 0)
               {
-                echoInterval = atoi(node_content);
-                m_echoInterval = echoInterval;
+                m_echoInterval = atoi(node_content);
               }
             else if (strcmp(node_name, "IntelligentReconnect") == 0)
               {
-                intelligentReconnect = atoi(node_content);
-                m_intelligentReconnect = intelligentReconnect;
+                m_intelligentReconnect = atoi(node_content);
               }
             else if (strcmp(node_name, "FakeVersion") == 0)
               {
@@ -522,12 +534,18 @@ get_element(xmlNode * a_node)
                 fakeVersion[sizeof(fakeVersion) - 1] = 0;
                 m_fakeVersion = fakeVersion;
               }
+            else if (strcmp(node_name, "DHCPmode") == 0)
+              {
+                m_dhcpmode = atoi(node_content);
+              }
+             /* comment out for further useage
             else if (strcmp(node_name, "FakeMAC") == 0)
               {
                 strncpy(fakeMAC, node_content, sizeof(fakeMAC) - 1);
                 fakeMAC[sizeof(fakeMAC) - 1] = 0;
                 m_fakeMAC = fakeMAC;
               }
+              */
             else if (strcmp(node_name, "FakeAddress") == 0)
               {
                 strncpy(fakeAddress, node_content, sizeof(fakeAddress) - 1);
@@ -566,7 +584,7 @@ checkAndSetConfig(void)
             "automatically. Try 'gedit /etc/ruijie.conf'");
         if (GenSetting() != -1)
           {
-            puts("Configuration file has generated.");
+            puts("Configuration file has been generated.");
             exit(0);
           }
         else
@@ -660,8 +678,9 @@ GenSetting(void)
     xmlNewChild(setting_node, NULL, BAD_CAST "FakeVersion", BAD_CAST "3.99");
     xmlAddChild(setting_node, xmlNewComment((xmlChar *) "Fake IP for cheating server"));
     xmlNewChild(setting_node, NULL, BAD_CAST "FakeAddress", BAD_CAST "null");
-    msg_node = xmlNewChild(setting_node, NULL, BAD_CAST "message", NULL);
-    xmlNewProp(msg_node, BAD_CAST "LastTime", BAD_CAST "null");
+    xmlAddChild(setting_node, xmlNewComment((xmlChar *) "DHCP mode 0: Disable, "
+        "1: Enable DHCP before authentication, 2: Enable DHCP after authentication "));
+    xmlNewChild(setting_node, NULL, BAD_CAST "DHCPmode", BAD_CAST "0");
 
     //Dumping document to stdio or file
     rc = xmlSaveFormatFileEnc(CONF_PATH, doc, "UTF-8", 1);
