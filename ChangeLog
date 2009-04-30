@@ -1,3 +1,7 @@
+version 0.1.1
+- NEW: add support for DHCP
+- CHG: exert XML to manage configuration and it can be generated automatically
+- DEL: fake MAC (useless)
 version 0.1
 - NEW: recieve messages from server
 - NEW: fake version
