@@ -1,4 +1,4 @@
-This program is modified from on MyStar, the original author is netxray@byhh.
+This program is modified from MyStar, the original author is netxray@byhh.
 
 Here's the original Readme.
 
@@ -17,8 +17,4 @@ Here's the original Readme.
 netxray@byhh 2004/9/7 15:20
 
 mystar Ver0.1
-================                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               
-
-
-ps: 本程序在redhat7.2/9.0 + libnet v1.1.1 + libpcap v0.8.3 + 沁园 + 2004.09下通过
-代码写的很糟糕，不要笑偶 ^_^
+================
