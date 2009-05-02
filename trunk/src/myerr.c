@@ -10,8 +10,8 @@
  * Many thanks to netxray@byhh
  *
  * AUTHORS:
- *   Gong Han  <gong@fedoraproject.org> from CSE@FJNU CN
- *   Chen Tingjun <chentingjun@gmail.com> from POET@FJNU CN
+ *   Gong Han  <gong AT fedoraproject.org> from CSE@FJNU CN
+ *   Chen Tingjun <chentingjun AT gmail.com> from POET@FJNU CN
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public

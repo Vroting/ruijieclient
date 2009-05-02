@@ -10,8 +10,8 @@
  * Many thanks to netxray@byhh
  *
  * AUTHORS:
- *   Gong Han  <gong@fedoraproject.org> from CSE@FJNU CN
- *   Chen Tingjun <chentingjun@gmail.com> from POET@FJNU CN
+ *   Gong Han  <gong AT fedoraproject.org> from CSE@FJNU CN
+ *   Chen Tingjun <chentingjun AT gmail.com> from POET@FJNU CN
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -235,6 +235,8 @@ main(int argc, char* argv[])
   pcap_freecode(&filter_code); // avoid  memory-leak
 
   signal(SIGINT, sig_intr); // We can exit with Ctrl+C
+  signal(SIGQUIT, sig_intr);
+  signal(SIGSTOP, sig_intr);
   sigfillset(&sigset_full);
   sigprocmask(SIG_BLOCK, &sigset_full, NULL); // block all signals.
 
@@ -259,12 +261,14 @@ beginAuthentication:
     {
       sigfillset(&sigset_full);
       sigdelset(&sigset_full, SIGINT);
+      sigdelset(&sigset_full, SIGQUIT);
+      sigdelset(&sigset_full, SIGSTOP);
       FD_ZERO(&read_set);
       FD_SET(p_fd, &read_set);
       timeout.tv_sec = 1;
       timeout.tv_nsec = 0; // 1 second
 
-      // wait with all signals(except SIGINT) blocked.
+      // wait with all signals(except SIGINT SIGQUIT SIGSTOP) blocked.
       switch (pselect(p_fd + 1, &read_set, NULL,
           NULL, &timeout, &sigset_full) )
         {
@@ -401,13 +405,15 @@ beginAuthentication:
           m_key.btValue[2] = Alog(uTemp.btValue[1]);
           m_key.btValue[3] = Alog(uTemp.btValue[0]);
 
-          // unblock SIGINT, so we can exit with Ctrl+C
+          // unblock SIGINT SIGSTOP SIGQUIT, so we can exit with Ctrl+C
           sigemptyset(&sigset_zero);
-          sigaddset(&sigset_zero,SIGINT);
-          sigprocmask(SIG_UNBLOCK,&sigset_zero,NULL);
+          sigaddset(&sigset_zero, SIGINT);
+          sigaddset(&sigset_zero,SIGSTOP);
+          sigaddset(&sigset_zero,SIGQUIT);
+          sigprocmask(SIG_UNBLOCK, &sigset_zero, NULL);
           // continue echoing
           fputs("Keeping sending echo...\nPress Ctrl+C to logoff \n", stdout);
-          while(SendEchoPacket(l,pkt_data)==0)
+          while(SendEchoPacket(l, pkt_data) == 0)
             sleep(m_echoInterval);
           pcap_close(p);
           libnet_destroy(l);
