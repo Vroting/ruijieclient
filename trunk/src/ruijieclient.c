@@ -157,16 +157,25 @@ main(int argc, char* argv[])
 
   // the initial serial number, a magic number!
   m_serialNo.ulValue = 0x1000002a;
+
+  // if '-g' is passed as argument then generate a sample configuration
+  if (argc>1 && strcmp(argv[1], "g"))
+    {
+      GenSetting();
+      exit(EXIT_SUCCESS);
+    }
+
   checkAndSetConfig();
 
   strcat(cmd, m_nic);
 
-  if(m_dhcpmode == 1){
+  if (m_dhcpmode == 1)
+    {
       if (system(cmd) == -1)
         {
           err_quit("Fail in retrieving network configuration from DHCP server");
         }
-  }
+    }
 
   if ((l = libnet_init(LIBNET_LINK, m_nic, l_errbuf)) == NULL)
     err_quit("libnet_init: %s\n", l_errbuf);
@@ -502,7 +511,7 @@ get_element(xmlNode * a_node)
         node_content = (char *)xmlNodeGetContent(cur_node);
         node_name = (char *)(cur_node->name);
         if (cur_node->type == XML_ELEMENT_NODE &&
-            strcmp(node_content, "null") &&
+            strcmp(node_content, "") &&
             node_name != NULL
             )
           {
@@ -675,8 +684,8 @@ GenSetting(void)
 
     //creates a new node, which is "attached" as child node of root_node node.
     account_node = xmlNewChild(root_node, NULL, BAD_CAST "account", NULL);
-    xmlNewChild(account_node, NULL, BAD_CAST "Name", BAD_CAST "null");
-    xmlNewChild(account_node, NULL, BAD_CAST "Password", BAD_CAST "null");
+    xmlNewChild(account_node, NULL, BAD_CAST "Name", BAD_CAST "");
+    xmlNewChild(account_node, NULL, BAD_CAST "Password", BAD_CAST "");
 
     setting_node = xmlNewChild(root_node, NULL, BAD_CAST "settings", NULL);
     xmlAddChild(setting_node, xmlNewComment((xmlChar *) "0: Standard, 1: Private"));
