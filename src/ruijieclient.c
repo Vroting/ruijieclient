@@ -388,7 +388,7 @@ beginAuthentication:
           // convert to utf8
           code_convert(u_msgBuf, MAX_U_MSG_LEN, pmsgBuf, strlen(pmsgBuf));
           fprintf(stdout,
-              "@@ Password valid, SUCCESS:\n Server Message: %s\n",
+              "@@ Password valid, SUCCESS:\n## Server Message: %s\n",
               u_msgBuf);
 
           if (m_echoInterval <= 0) {
@@ -683,11 +683,17 @@ GenSetting(void)
     xmlNewChild(setting_node, NULL, BAD_CAST "AuthenticationMode", BAD_CAST "1");
     xmlNewChild(setting_node, NULL, BAD_CAST "NIC", BAD_CAST "eth0");
     xmlNewChild(setting_node, NULL, BAD_CAST "EchoInterval", BAD_CAST "4");
-    xmlNewChild(setting_node, NULL, BAD_CAST "IntelligentReconnect", BAD_CAST "on");
+    xmlAddChild(setting_node, xmlNewComment((xmlChar *) "IntelligentReconnect: "
+        "0: Disable IntelligentReconnect, 1: Enable IntelligentReconnect "));
+    xmlNewChild(setting_node, NULL, BAD_CAST "IntelligentReconnect", BAD_CAST "1");
+    xmlAddChild(setting_node, xmlNewComment((xmlChar *) "AutoConnect: "
+        "0: Disable AutoConnect, 1: Enable AutoConnect (only available in"
+        " gruijieclient) "));
+    xmlNewChild(setting_node, NULL, BAD_CAST "AutoConnect", BAD_CAST "0");
     xmlAddChild(setting_node, xmlNewComment((xmlChar *) "Fake Version for cheating server"));
     xmlNewChild(setting_node, NULL, BAD_CAST "FakeVersion", BAD_CAST "3.99");
     xmlAddChild(setting_node, xmlNewComment((xmlChar *) "Fake IP for cheating server"));
-    xmlNewChild(setting_node, NULL, BAD_CAST "FakeAddress", BAD_CAST "null");
+    xmlNewChild(setting_node, NULL, BAD_CAST "FakeAddress", BAD_CAST "");
     xmlAddChild(setting_node, xmlNewComment((xmlChar *) "DHCP mode 0: Disable, "
         "1: Enable DHCP before authentication, 2: Enable DHCP after authentication "));
     xmlNewChild(setting_node, NULL, BAD_CAST "DHCPmode", BAD_CAST "0");
