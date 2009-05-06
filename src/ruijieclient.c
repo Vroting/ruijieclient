@@ -169,14 +169,18 @@ main(int argc, char* argv[])
 
   strcat(cmd, m_nic);
 
-  if (m_dhcpmode == 1)
+  if (m_dhcpmode > 0)
     {
-      if (system(cmd) == -1)
+//      system("kill cat /var/run/dhclient.pid");
+      if (m_dhcpmode == 1)
         {
-          err_quit("Fail in retrieving network configuration from DHCP server");
+          if (system(cmd) == -1)
+            {
+              err_quit(
+                  "Fail in retrieving network configuration from DHCP server");
+            }
         }
     }
-
   if ((l = libnet_init(LIBNET_LINK, m_nic, l_errbuf)) == NULL)
     err_quit("libnet_init: %s\n", l_errbuf);
 
