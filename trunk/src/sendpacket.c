@@ -349,7 +349,7 @@ SendEndCertPacket(libnet_t *l)
   memcpy(ExitPacket, m_destMAC, 6);
   memcpy(ExitPacket + 6, m_localMAC, 6);
 
-//  memcpy(ExitPacket+18, OEMExtra, sizeof(OEMExtra));
+  memcpy(ExitPacket+18, ackShida, sizeof(ackShida));
 
   FillNetParamater(&ExitPacket[0x17]);
   fputs(">> Logouting... \n", stdout);
