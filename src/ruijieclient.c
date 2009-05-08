@@ -103,7 +103,7 @@ ULONG_BYTEARRAY m_key;
 
 /* cleanup on exit when detected Ctrl+C */
 static void
-sig_intr(int signo);
+logoff(int signo);
 #if defined(LIBXML_TREE_ENABLED) && defined(LIBXML_OUTPUT_ENABLED)
 /* configure related parameters */
 static void
@@ -117,6 +117,9 @@ get_element(xmlNode * a_node);
 /* get server msg */
 static char *
 getServMsg(char* msgBuf, size_t msgBufLe, const unsigned char* pkt_data);
+/* kill other processes (modified from newstar) */
+static void
+kill_all(char* process);
 
 int
 main(int argc, char* argv[])
@@ -158,6 +161,9 @@ main(int argc, char* argv[])
   // the initial serial number, a magic number!
   m_serialNo.ulValue = 0x1000002a;
 
+  // kill all other ruijieclints which are running
+  kill_all("ruijieclient");
+
   // if '-g' is passed as argument then generate a sample configuration
   if (argc>1 && strcmp(argv[1], "g"))
     {
@@ -171,7 +177,8 @@ main(int argc, char* argv[])
 
   if (m_dhcpmode > 0)
     {
-//      system("kill cat /var/run/dhclient.pid");
+      // kill all other dhclients which are running
+      kill_all("dhclient");
       if (m_dhcpmode == 1)
         {
           if (system(cmd) == -1)
@@ -181,6 +188,7 @@ main(int argc, char* argv[])
             }
         }
     }
+
   if ((l = libnet_init(LIBNET_LINK, m_nic, l_errbuf)) == NULL)
     err_quit("libnet_init: %s\n", l_errbuf);
 
@@ -247,9 +255,15 @@ main(int argc, char* argv[])
     }
   pcap_freecode(&filter_code); // avoid  memory-leak
 
-  signal(SIGINT, sig_intr); // We can exit with Ctrl+C
-  signal(SIGQUIT, sig_intr);
-  signal(SIGSTOP, sig_intr);
+  signal(SIGHUP, logoff);
+  signal(SIGINT, logoff);
+  signal(SIGQUIT, logoff);
+  signal(SIGABRT, logoff);
+  signal(SIGKILL, logoff);
+  signal(SIGTERM, logoff);
+  signal(SIGSTOP, logoff);
+  signal(SIGTSTP, logoff);
+
   sigfillset(&sigset_full);
   sigprocmask(SIG_BLOCK, &sigset_full, NULL); // block all signals.
 
@@ -273,9 +287,15 @@ beginAuthentication:
   while (1)
     {
       sigfillset(&sigset_full);
+      sigdelset(&sigset_full, SIGHUP);
       sigdelset(&sigset_full, SIGINT);
       sigdelset(&sigset_full, SIGQUIT);
+      sigdelset(&sigset_full, SIGABRT);
+      sigdelset(&sigset_full, SIGKILL);
+      sigdelset(&sigset_full, SIGTERM);
       sigdelset(&sigset_full, SIGSTOP);
+      sigdelset(&sigset_full, SIGTSTP);
+
       FD_ZERO(&read_set);
       FD_SET(p_fd, &read_set);
       timeout.tv_sec = 1;
@@ -420,9 +440,15 @@ beginAuthentication:
 
           // unblock SIGINT SIGSTOP SIGQUIT, so we can exit with Ctrl+C
           sigemptyset(&sigset_zero);
+          sigaddset(&sigset_zero, SIGHUP);
           sigaddset(&sigset_zero, SIGINT);
-          sigaddset(&sigset_zero,SIGSTOP);
-          sigaddset(&sigset_zero,SIGQUIT);
+          sigaddset(&sigset_zero, SIGQUIT);
+          sigaddset(&sigset_zero, SIGABRT);
+          sigaddset(&sigset_zero, SIGABRT);
+          sigaddset(&sigset_zero, SIGKILL);
+          sigaddset(&sigset_zero, SIGTERM);
+          sigaddset(&sigset_zero, SIGSTOP);
+          sigaddset(&sigset_zero, SIGTSTP);
           sigprocmask(SIG_UNBLOCK, &sigset_zero, NULL);
           // continue echoing
           fputs("Keeping sending echo...\nPress Ctrl+C to logoff \n", stdout);
@@ -729,7 +755,7 @@ GenSetting(void)
 #endif
 
 static void
-sig_intr(int signo)
+logoff(int signo)
 {
   libnet_t *l = NULL;
   char l_errbuf[LIBNET_ERRBUF_SIZE];
@@ -742,4 +768,31 @@ sig_intr(int signo)
       libnet_destroy(l);
     }
   _exit(0);
+}
+
+static void
+kill_all(char * process)
+{
+  char cmd[1024] = "";
+  FILE *fp;
+  pid_t pid, pid_tmp;
+
+  pid = getpid();
+  printf("%d killed\n", process);
+  sprintf(cmd, "ps aux | grep %s | grep -v grep | awk '{print $2}' > %s",
+      process, TMP_FILE);
+  system(cmd);
+  fp = fopen(TMP_FILE, "r");
+  while (fscanf(fp, "%d", &pid_tmp) != EOF)
+    {
+      if (pid == pid_tmp)
+        continue;
+      kill(pid_tmp, SIGINT);
+#ifdef DEBUG
+      printf("PID %d killed\n", pid_tmp);
+#endif
+    }
+  fclose(fp);
+  sprintf(cmd, "rm -rf %s", TMP_FILE);
+  system(cmd);
 }
