@@ -62,5 +62,6 @@
 #define C_VERSION "0.1.1"
 #define CONF_NAME "ruijie.conf"
 #define CONF_PATH "/etc/ruijie.conf"
+#define TMP_FILE "/tmp/ruijieclient_tmp"
 
 #endif /* RUIJIECLIENT_H */
