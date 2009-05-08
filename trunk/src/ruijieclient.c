@@ -779,7 +779,7 @@ kill_all(char * process)
 
   pid = getpid();
   printf("%d killed\n", process);
-  sprintf(cmd, "ps aux | grep %s | grep -v grep | awk '{print $2}' > %s",
+  sprintf(cmd, "ps aux | grep \b%s\b | awk '{print $2}' > %s",
       process, TMP_FILE);
   system(cmd);
   fp = fopen(TMP_FILE, "r");
