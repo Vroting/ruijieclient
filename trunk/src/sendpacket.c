@@ -33,7 +33,7 @@
 #include "global.h"
 #include "blog.h"
 
-
+/* comment out for further usage
 //additional Star private echo packet
 static
 uint8_t ackShida[] =
@@ -46,6 +46,7 @@ uint8_t ackShida[] =
   0x64,0x66,0x92,0x94,0x62,0x66,0x91,0x93,0x95,0x62,0x93,0x93,0x91,0x94,0x64,0x61,
   0x64,0x64,0x65,0x66,0x68,0x94,0x98,0xA7,0x61,0x67,0x65,0x67,0x9C,0x6B
 };
+*/
 
 // broadcast packet for finding server
 static
@@ -97,9 +98,10 @@ uint8_t echoPackage[] =
   0x7F,0x9F,0xF7,0xFF,0x00,0x00,0xFF,0xFF,0x37,0x77,0x7F,0x3F,0xFF
 };
 
-/* comment out for further usage
+static uint8_t OEMExtra[0x200];
+
 //Ruijie OEM Extra （V2.56）  by soar
-static uint8_t OEMExtra[] = {
+static uint8_t RuijieExtra[144] = {
 // OEM Extra
 // 0 --> 22
   0xff,0xff,0x37,0x77, // Encode( 0x00,0x00,0x13,0x11 )  //求反并头尾颠倒.add by lsyer
@@ -136,7 +138,7 @@ static uint8_t OEMExtra[] = {
   0x00,0x00,0x00,0x00,0x00,0x00,            // True NIC MAC
   0x1A,0x08,0x00,0x00,0x13,0x11,0x2F,0x02   // Const strings
 };
-*/
+
 
 int
 FillVersion(char * m_fakeVersion)
@@ -148,10 +150,10 @@ FillVersion(char * m_fakeVersion)
 #ifdef DEBUG
       printf("## c_ver1=%u ## c_ver2=%u\n", c_ver1, c_ver2);
 #endif
-      ackShida[0x3B] = broadPackage[0x4D] = ExitPacket[0x4D] = c_ver1;
-      ackShida[0x3C] = broadPackage[0x4E] = ExitPacket[0x4E] = c_ver2;
-//      OEMExtra[0x3B] = broadPackage[0x4D] = ExitPacket[0x4D] = c_ver1;
-//      OEMExtra[0x3C] = broadPackage[0x4E] = ExitPacket[0x4E] = c_ver2;
+//      ackShida[0x3B] = broadPackage[0x4D] = ExitPacket[0x4D] = c_ver1;
+//      ackShida[0x3C] = broadPackage[0x4E] = ExitPacket[0x4E] = c_ver2;
+      OEMExtra[0x3B] = broadPackage[0x4D] = ExitPacket[0x4D] = c_ver1;
+      OEMExtra[0x3C] = broadPackage[0x4E] = ExitPacket[0x4E] = c_ver2;
       return 0;
     }
   else
@@ -217,8 +219,9 @@ SendFindServerPacket(libnet_t *l)
     memcpy(broadPackage, StandardAddr, 6);
   memcpy(broadPackage + 6, m_localMAC, 6); // fill local MAC
 
-  memcpy(broadPackage+18, ackShida, sizeof(ackShida));
-//  memcpy(broadPackage+18, OEMExtra, sizeof(OEMExtra));
+  memcpy(OEMExtra, RuijieExtra, sizeof(RuijieExtra));
+//  memcpy(broadPackage+18, ackShida, sizeof(ackShida));
+  memcpy(broadPackage+18, OEMExtra, sizeof(OEMExtra));
 
   FillNetParamater(&broadPackage[0x17]);
 
@@ -245,8 +248,10 @@ SendNamePacket(libnet_t *l, const u_char *pkt_data)
   *(short *) (ackPackage + 0x14) = *(short *) (ackPackage + 0x10);// length
   memcpy(ackPackage + 0x17, m_name, nameLen); // fill name
 
-  FillNetParamater(&ackShida[0x05]);
-  memcpy(ackPackage + 0x17 + nameLen, ackShida, 0x6e);
+  FillNetParamater( &OEMExtra[0x05] );
+  memcpy(ackPackage+0x17+nameLen,OEMExtra,0x6e);
+//  FillNetParamater(&ackShida[0x05]);
+//  memcpy(ackPackage + 0x17 + nameLen, ackShida, 0x6e);
 
   fputs(">> Sending user name...\n", stdout);
 
@@ -293,11 +298,11 @@ SendPasswordPacket(libnet_t *l, const u_char *pkt_data)
 
   memcpy(ackPackage + 0x28, m_name, nameLen);
 
-  FillNetParamater(&ackShida[0x05]);
-  memcpy(ackPackage + 0x28 + nameLen, ackShida, 0x6e);
+//  FillNetParamater(&ackShida[0x05]);
+//  memcpy(ackPackage + 0x28 + nameLen, ackShida, 0x6e);
 
-//  FillNetParamater( &OEMExtra[0x05] );
-//  memcpy(ackPackage+0x28+nameLen,OEMExtra,0x6e);
+  FillNetParamater(&OEMExtra[0x05]);
+  memcpy(ackPackage + 0x28 + nameLen, OEMExtra, 0x6e);
 
   fputs(">> Sending password... \n", stdout);
   return (libnet_write_link(l, ackPackage, 0x3E8) == 0x3E8) ? 0 : -1;
@@ -349,7 +354,8 @@ SendEndCertPacket(libnet_t *l)
   memcpy(ExitPacket, m_destMAC, 6);
   memcpy(ExitPacket + 6, m_localMAC, 6);
 
-  memcpy(ExitPacket+18, ackShida, sizeof(ackShida));
+//  memcpy(ExitPacket+18, ackShida, sizeof(ackShida));
+  memcpy(ExitPacket+18, OEMExtra, sizeof(OEMExtra));
 
   FillNetParamater(&ExitPacket[0x17]);
   fputs(">> Logouting... \n", stdout);
