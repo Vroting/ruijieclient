@@ -3422,9 +3422,13 @@ fi
 # FIXME: Replace `main' with a function in `-lnet':
 
 
-{ $as_echo "$as_me:$LINENO: checking for main in -lnet" >&5
-$as_echo_n "checking for main in -lnet... " >&6; }
-if test "${ac_cv_lib_net_main+set}" = set; then
+{ $as_echo "$as_me:$LINENO: checking for libnet_init libnet_destroy
+libnet_get_hwaddr libnet_get_ipaddr4
+libnet_geterror libnet_write_link in -lnet" >&5
+$as_echo_n "checking for libnet_init libnet_destroy
+libnet_get_hwaddr libnet_get_ipaddr4
+libnet_geterror libnet_write_link in -lnet... " >&6; }
+if test "${ac_cv_lib_net_libnet_init_libnet_destroy__libnet_get_hwaddr_libnet_get_ipaddr4__libnet_geterror_libnet_write_link+set}" = set; then
   $as_echo_n "(cached) " >&6
 else
   ac_check_lib_save_LIBS=$LIBS
@@ -3436,11 +3440,21 @@ cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
 
-
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char libnet_init libnet_destroy
+libnet_get_hwaddr libnet_get_ipaddr4
+libnet_geterror libnet_write_link ();
 int
 main ()
 {
-return main ();
+return libnet_init libnet_destroy
+libnet_get_hwaddr libnet_get_ipaddr4
+libnet_geterror libnet_write_link ();
   ;
   return 0;
 }
@@ -3466,12 +3480,12 @@ $as_echo "$ac_try_echo") >&5
 	 test "$cross_compiling" = yes ||
 	 $as_test_x conftest$ac_exeext
        }; then
-  ac_cv_lib_net_main=yes
+  ac_cv_lib_net_libnet_init_libnet_destroy__libnet_get_hwaddr_libnet_get_ipaddr4__libnet_geterror_libnet_write_link=yes
 else
   $as_echo "$as_me: failed program was:" >&5
 sed 's/^/| /' conftest.$ac_ext >&5
 
-	ac_cv_lib_net_main=no
+	ac_cv_lib_net_libnet_init_libnet_destroy__libnet_get_hwaddr_libnet_get_ipaddr4__libnet_geterror_libnet_write_link=no
 fi
 
 rm -rf conftest.dSYM
@@ -3479,9 +3493,9 @@ rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
       conftest$ac_exeext conftest.$ac_ext
 LIBS=$ac_check_lib_save_LIBS
 fi
-{ $as_echo "$as_me:$LINENO: result: $ac_cv_lib_net_main" >&5
-$as_echo "$ac_cv_lib_net_main" >&6; }
-if test "x$ac_cv_lib_net_main" = x""yes; then
+{ $as_echo "$as_me:$LINENO: result: $ac_cv_lib_net_libnet_init_libnet_destroy__libnet_get_hwaddr_libnet_get_ipaddr4__libnet_geterror_libnet_write_link" >&5
+$as_echo "$ac_cv_lib_net_libnet_init_libnet_destroy__libnet_get_hwaddr_libnet_get_ipaddr4__libnet_geterror_libnet_write_link" >&6; }
+if test "x$ac_cv_lib_net_libnet_init_libnet_destroy__libnet_get_hwaddr_libnet_get_ipaddr4__libnet_geterror_libnet_write_link" = x""yes; then
   cat >>confdefs.h <<_ACEOF
 #define HAVE_LIBNET 1
 _ACEOF
@@ -3492,9 +3506,17 @@ fi
 
 # FIXME: Replace `main' with a function in `-lpcap':
 
-{ $as_echo "$as_me:$LINENO: checking for main in -lpcap" >&5
-$as_echo_n "checking for main in -lpcap... " >&6; }
-if test "${ac_cv_lib_pcap_main+set}" = set; then
+{ $as_echo "$as_me:$LINENO: checking for pcap_open_live pcap_fileno
+pcap_close pcap_lookupnet
+pcap_compile pcap_geterr
+pcap_setfilter pcap_freecode
+pcap_next_ex in -lpcap" >&5
+$as_echo_n "checking for pcap_open_live pcap_fileno
+pcap_close pcap_lookupnet
+pcap_compile pcap_geterr
+pcap_setfilter pcap_freecode
+pcap_next_ex in -lpcap... " >&6; }
+if test "${ac_cv_lib_pcap_pcap_open_live_pcap_fileno__pcap_close_pcap_lookupnet__pcap_compile_pcap_geterr__pcap_setfilter_pcap_freecode_pcap_next_ex+set}" = set; then
   $as_echo_n "(cached) " >&6
 else
   ac_check_lib_save_LIBS=$LIBS
@@ -3506,11 +3528,25 @@ cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
 
-
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char pcap_open_live pcap_fileno
+pcap_close pcap_lookupnet
+pcap_compile pcap_geterr
+pcap_setfilter pcap_freecode
+pcap_next_ex ();
 int
 main ()
 {
-return main ();
+return pcap_open_live pcap_fileno
+pcap_close pcap_lookupnet
+pcap_compile pcap_geterr
+pcap_setfilter pcap_freecode
+pcap_next_ex ();
   ;
   return 0;
 }
@@ -3536,12 +3572,12 @@ $as_echo "$ac_try_echo") >&5
 	 test "$cross_compiling" = yes ||
 	 $as_test_x conftest$ac_exeext
        }; then
-  ac_cv_lib_pcap_main=yes
+  ac_cv_lib_pcap_pcap_open_live_pcap_fileno__pcap_close_pcap_lookupnet__pcap_compile_pcap_geterr__pcap_setfilter_pcap_freecode_pcap_next_ex=yes
 else
   $as_echo "$as_me: failed program was:" >&5
 sed 's/^/| /' conftest.$ac_ext >&5
 
-	ac_cv_lib_pcap_main=no
+	ac_cv_lib_pcap_pcap_open_live_pcap_fileno__pcap_close_pcap_lookupnet__pcap_compile_pcap_geterr__pcap_setfilter_pcap_freecode_pcap_next_ex=no
 fi
 
 rm -rf conftest.dSYM
@@ -3549,9 +3585,9 @@ rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
       conftest$ac_exeext conftest.$ac_ext
 LIBS=$ac_check_lib_save_LIBS
 fi
-{ $as_echo "$as_me:$LINENO: result: $ac_cv_lib_pcap_main" >&5
-$as_echo "$ac_cv_lib_pcap_main" >&6; }
-if test "x$ac_cv_lib_pcap_main" = x""yes; then
+{ $as_echo "$as_me:$LINENO: result: $ac_cv_lib_pcap_pcap_open_live_pcap_fileno__pcap_close_pcap_lookupnet__pcap_compile_pcap_geterr__pcap_setfilter_pcap_freecode_pcap_next_ex" >&5
+$as_echo "$ac_cv_lib_pcap_pcap_open_live_pcap_fileno__pcap_close_pcap_lookupnet__pcap_compile_pcap_geterr__pcap_setfilter_pcap_freecode_pcap_next_ex" >&6; }
+if test "x$ac_cv_lib_pcap_pcap_open_live_pcap_fileno__pcap_close_pcap_lookupnet__pcap_compile_pcap_geterr__pcap_setfilter_pcap_freecode_pcap_next_ex" = x""yes; then
   cat >>confdefs.h <<_ACEOF
 #define HAVE_LIBPCAP 1
 _ACEOF
@@ -3562,9 +3598,9 @@ fi
 
 # FIXME: Replace `main' with a function in `-lssl':
 
-{ $as_echo "$as_me:$LINENO: checking for main in -lssl" >&5
-$as_echo_n "checking for main in -lssl... " >&6; }
-if test "${ac_cv_lib_ssl_main+set}" = set; then
+{ $as_echo "$as_me:$LINENO: checking for MD5_Init MD5_Update MD5_Final in -lssl" >&5
+$as_echo_n "checking for MD5_Init MD5_Update MD5_Final in -lssl... " >&6; }
+if test "${ac_cv_lib_ssl_MD5_Init_MD5_Update_MD5_Final+set}" = set; then
   $as_echo_n "(cached) " >&6
 else
   ac_check_lib_save_LIBS=$LIBS
@@ -3576,11 +3612,17 @@ cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
 
-
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char MD5_Init MD5_Update MD5_Final ();
 int
 main ()
 {
-return main ();
+return MD5_Init MD5_Update MD5_Final ();
   ;
   return 0;
 }
@@ -3606,12 +3648,12 @@ $as_echo "$ac_try_echo") >&5
 	 test "$cross_compiling" = yes ||
 	 $as_test_x conftest$ac_exeext
        }; then
-  ac_cv_lib_ssl_main=yes
+  ac_cv_lib_ssl_MD5_Init_MD5_Update_MD5_Final=yes
 else
   $as_echo "$as_me: failed program was:" >&5
 sed 's/^/| /' conftest.$ac_ext >&5
 
-	ac_cv_lib_ssl_main=no
+	ac_cv_lib_ssl_MD5_Init_MD5_Update_MD5_Final=no
 fi
 
 rm -rf conftest.dSYM
@@ -3619,9 +3661,9 @@ rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
       conftest$ac_exeext conftest.$ac_ext
 LIBS=$ac_check_lib_save_LIBS
 fi
-{ $as_echo "$as_me:$LINENO: result: $ac_cv_lib_ssl_main" >&5
-$as_echo "$ac_cv_lib_ssl_main" >&6; }
-if test "x$ac_cv_lib_ssl_main" = x""yes; then
+{ $as_echo "$as_me:$LINENO: result: $ac_cv_lib_ssl_MD5_Init_MD5_Update_MD5_Final" >&5
+$as_echo "$ac_cv_lib_ssl_MD5_Init_MD5_Update_MD5_Final" >&6; }
+if test "x$ac_cv_lib_ssl_MD5_Init_MD5_Update_MD5_Final" = x""yes; then
   cat >>confdefs.h <<_ACEOF
 #define HAVE_LIBSSL 1
 _ACEOF
@@ -3632,9 +3674,15 @@ fi
 
 # FIXME: Replace `main' with a function in `-lxml2':
 
-{ $as_echo "$as_me:$LINENO: checking for main in -lxml2" >&5
-$as_echo_n "checking for main in -lxml2... " >&6; }
-if test "${ac_cv_lib_xml2_main+set}" = set; then
+{ $as_echo "$as_me:$LINENO: checking for xmlNodeGetContent xmlReadFile xmlDocGetRootElement
+xmlFreeDoc xmlCleanupParser xmlNewDoc xmlNewNode xmlNewProp
+xxmlNewChild mlAddChild xmlDocSetRootElement xmlSaveFormatFileEnc
+xmlMemoryDump in -lxml2" >&5
+$as_echo_n "checking for xmlNodeGetContent xmlReadFile xmlDocGetRootElement
+xmlFreeDoc xmlCleanupParser xmlNewDoc xmlNewNode xmlNewProp
+xxmlNewChild mlAddChild xmlDocSetRootElement xmlSaveFormatFileEnc
+xmlMemoryDump in -lxml2... " >&6; }
+if test "${ac_cv_lib_xml2_xmlNodeGetContent_xmlReadFile_xmlDocGetRootElement__xmlFreeDoc_xmlCleanupParser_xmlNewDoc_xmlNewNode_xmlNewProp__xxmlNewChild_mlAddChild_xmlDocSetRootElement_xmlSaveFormatFileEnc__xmlMemoryDump+set}" = set; then
   $as_echo_n "(cached) " >&6
 else
   ac_check_lib_save_LIBS=$LIBS
@@ -3646,11 +3694,23 @@ cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
 
-
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char xmlNodeGetContent xmlReadFile xmlDocGetRootElement
+xmlFreeDoc xmlCleanupParser xmlNewDoc xmlNewNode xmlNewProp
+xxmlNewChild mlAddChild xmlDocSetRootElement xmlSaveFormatFileEnc
+xmlMemoryDump ();
 int
 main ()
 {
-return main ();
+return xmlNodeGetContent xmlReadFile xmlDocGetRootElement
+xmlFreeDoc xmlCleanupParser xmlNewDoc xmlNewNode xmlNewProp
+xxmlNewChild mlAddChild xmlDocSetRootElement xmlSaveFormatFileEnc
+xmlMemoryDump ();
   ;
   return 0;
 }
@@ -3676,12 +3736,12 @@ $as_echo "$ac_try_echo") >&5
 	 test "$cross_compiling" = yes ||
 	 $as_test_x conftest$ac_exeext
        }; then
-  ac_cv_lib_xml2_main=yes
+  ac_cv_lib_xml2_xmlNodeGetContent_xmlReadFile_xmlDocGetRootElement__xmlFreeDoc_xmlCleanupParser_xmlNewDoc_xmlNewNode_xmlNewProp__xxmlNewChild_mlAddChild_xmlDocSetRootElement_xmlSaveFormatFileEnc__xmlMemoryDump=yes
 else
   $as_echo "$as_me: failed program was:" >&5
 sed 's/^/| /' conftest.$ac_ext >&5
 
-	ac_cv_lib_xml2_main=no
+	ac_cv_lib_xml2_xmlNodeGetContent_xmlReadFile_xmlDocGetRootElement__xmlFreeDoc_xmlCleanupParser_xmlNewDoc_xmlNewNode_xmlNewProp__xxmlNewChild_mlAddChild_xmlDocSetRootElement_xmlSaveFormatFileEnc__xmlMemoryDump=no
 fi
 
 rm -rf conftest.dSYM
@@ -3689,9 +3749,9 @@ rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
       conftest$ac_exeext conftest.$ac_ext
 LIBS=$ac_check_lib_save_LIBS
 fi
-{ $as_echo "$as_me:$LINENO: result: $ac_cv_lib_xml2_main" >&5
-$as_echo "$ac_cv_lib_xml2_main" >&6; }
-if test "x$ac_cv_lib_xml2_main" = x""yes; then
+{ $as_echo "$as_me:$LINENO: result: $ac_cv_lib_xml2_xmlNodeGetContent_xmlReadFile_xmlDocGetRootElement__xmlFreeDoc_xmlCleanupParser_xmlNewDoc_xmlNewNode_xmlNewProp__xxmlNewChild_mlAddChild_xmlDocSetRootElement_xmlSaveFormatFileEnc__xmlMemoryDump" >&5
+$as_echo "$ac_cv_lib_xml2_xmlNodeGetContent_xmlReadFile_xmlDocGetRootElement__xmlFreeDoc_xmlCleanupParser_xmlNewDoc_xmlNewNode_xmlNewProp__xxmlNewChild_mlAddChild_xmlDocSetRootElement_xmlSaveFormatFileEnc__xmlMemoryDump" >&6; }
+if test "x$ac_cv_lib_xml2_xmlNodeGetContent_xmlReadFile_xmlDocGetRootElement__xmlFreeDoc_xmlCleanupParser_xmlNewDoc_xmlNewNode_xmlNewProp__xxmlNewChild_mlAddChild_xmlDocSetRootElement_xmlSaveFormatFileEnc__xmlMemoryDump" = x""yes; then
   cat >>confdefs.h <<_ACEOF
 #define HAVE_LIBXML2 1
 _ACEOF

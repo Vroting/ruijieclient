@@ -183,8 +183,7 @@ main(int argc, char* argv[])
         {
           if (system(cmd) == -1)
             {
-              err_quit(
-                  "Fail in retrieving network configuration from DHCP server");
+              err_quit("Fail in retrieving network configuration from DHCP server");
             }
         }
     }
@@ -403,11 +402,12 @@ beginAuthentication:
           if(m_state != 2)
             continue;
 
-          if(m_dhcpmode == 2){
+          if(m_dhcpmode == 2 && noip_afterauth){
               if (system(cmd) == -1)
                 {
                   err_quit("Fail in retrieving network configuration from DHCP server");
                 }
+              noip_afterauth = 0;
           }
 
           m_state=3;
@@ -685,6 +685,7 @@ checkAndSetConfig(void)
     puts("-- END");
 #endif
 
+    //just set them to zero since they don't seem to be important.
     memset(m_netgate, 0, sizeof(m_netgate));
     memset(m_dns1, 0, sizeof(m_dns1));
   }

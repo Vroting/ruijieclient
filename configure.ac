@@ -12,13 +12,22 @@ AC_PROG_CC
 
 # Checks for libraries.
 # FIXME: Replace `main' with a function in `-lnet':
-AC_CHECK_LIB([net], [main])
+AC_CHECK_LIB([net], [libnet_init libnet_destroy 
+libnet_get_hwaddr libnet_get_ipaddr4 
+libnet_geterror libnet_write_link])
 # FIXME: Replace `main' with a function in `-lpcap':
-AC_CHECK_LIB([pcap], [main])
+AC_CHECK_LIB([pcap], [pcap_open_live pcap_fileno 
+pcap_close pcap_lookupnet 
+pcap_compile pcap_geterr 
+pcap_setfilter pcap_freecode
+pcap_next_ex])
 # FIXME: Replace `main' with a function in `-lssl':
-AC_CHECK_LIB([ssl], [main])
+AC_CHECK_LIB([ssl], [MD5_Init MD5_Update MD5_Final])
 # FIXME: Replace `main' with a function in `-lxml2':
-AC_CHECK_LIB([xml2], [main])
+AC_CHECK_LIB([xml2], [xmlNodeGetContent xmlReadFile xmlDocGetRootElement 
+xmlFreeDoc xmlCleanupParser xmlNewDoc xmlNewNode xmlNewProp 
+xxmlNewChild mlAddChild xmlDocSetRootElement xmlSaveFormatFileEnc 
+xmlMemoryDump])
 
 # Checks for header files.
 AC_CHECK_HEADERS([arpa/inet.h netinet/in.h stdlib.h string.h sys/socket.h sys/time.h unistd.h])
