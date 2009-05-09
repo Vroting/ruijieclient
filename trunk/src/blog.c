@@ -105,7 +105,7 @@ void
 FillNetParamater(unsigned char ForFill[])
 {
   if (blogIsInitialized == 0)
-    err_quit("Blog algorithm not initialied yet \n");
+    err_quit("Blog algorithm has not been initialised yet \n");
 
   ForFill[0] = Alog(m_IP[0]);
   ForFill[1] = Alog(m_IP[1]);

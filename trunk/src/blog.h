@@ -41,7 +41,8 @@
 
 void
 InitializeBlog(const unsigned char *m_ip, const unsigned char *m_netmask,
-    const unsigned char *m_netgate, const unsigned char *m_dns1, const int m_dhcpmode);
+    const unsigned char *m_netgate, const unsigned char *m_dns1,
+    const int m_dhcpmode);
 
 void
 FillNetParamater(unsigned char ForFill[]);
