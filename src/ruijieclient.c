@@ -177,6 +177,7 @@ main(int argc, char* argv[])
 
   if (m_dhcpmode > 0)
     {
+      EnableDHCP();
       // kill all other dhclients which are running
       kill_all("dhclient");
       if (m_dhcpmode == 1)
@@ -231,7 +232,7 @@ main(int argc, char* argv[])
   memcpy(m_netmask, &p_netmask, sizeof(m_netmask));
 
   // check blog.c and bloc.h for details
-  InitializeBlog(m_ip, m_netmask, m_netgate, m_dns1);
+  InitializeBlog(m_ip, m_netmask, m_netgate, m_dns1, m_dhcpmode);
 
   // set the filter. Here I'm sure filter_buf is big enough.
   snprintf(filter_buf, sizeof(filter_buf), FILTER_STR,
