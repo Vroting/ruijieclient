@@ -84,12 +84,15 @@ Blog(void);
 //configure the 4 parameters Blog() and FillNetParameter() need.
 void
 InitializeBlog(const unsigned char *m_ip, const unsigned char *m_netmask,
-    const unsigned char *m_netgate, const unsigned char *m_dns1)
+    const unsigned char *m_netgate, const unsigned char *m_dns1, const int m_dhcpmode)
 {
   memcpy(m_IP, m_ip, 4);
   memcpy(m_NetMask, m_netmask, 4);
   memcpy(m_NetGate, m_netgate, 4);
   memcpy(m_DNS1, m_dns1, 4);
+
+  if (m_dhcpmode > 0)//Dhcp Enabled
+    sCircleBase[0x04] = 0x01;
 
   Blog();
 
