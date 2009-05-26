@@ -117,7 +117,7 @@ get_element(xmlNode * a_node);
 /* get server msg */
 static char *
 getServMsg(char* msgBuf, size_t msgBufLe, const unsigned char* pkt_data);
-/* kill other processes (modified from newstar) */
+/* kill other processes */
 static void
 kill_all(char* process);
 
@@ -775,26 +775,8 @@ logoff(int signo)
 static void
 kill_all(char * process)
 {
-  char cmd[1024] = "";
-  FILE *fp;
-  pid_t pid, pid_tmp;
+  char cmd[256] = "";
 
-  pid = getpid();
-  printf("%d killed\n", process);
-  sprintf(cmd, "ps aux | grep \b%s\b | awk '{print $2}' > %s",
-      process, TMP_FILE);
-  system(cmd);
-  fp = fopen(TMP_FILE, "r");
-  while (fscanf(fp, "%d", &pid_tmp) != EOF)
-    {
-      if (pid == pid_tmp)
-        continue;
-      kill(pid_tmp, SIGINT);
-#ifdef DEBUG
-      printf("PID %d killed\n", pid_tmp);
-#endif
-    }
-  fclose(fp);
-  sprintf(cmd, "rm -rf %s", TMP_FILE);
+  sprintf(cmd, "killall --signal 2 %s", process);
   system(cmd);
 }
