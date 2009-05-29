@@ -37,7 +37,7 @@ code_convert(char *outbuf, size_t outlen, char *inbuf, size_t inlen)
   char **pout = &outbuf;
 
   // initial iconv
-  cd = iconv_open("UTF-8", "GB18030");
+  cd = iconv_open("UTF-8", "GBK");
   if (cd == 0)
     return -1;
 

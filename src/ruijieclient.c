@@ -7,7 +7,7 @@
 /*
  * This program is modified from MyStar, the original author is netxray@byhh.
  *
- * Many thanks to netxray@byhh
+ * Many thanks to netxray@byhh, 'a lonely Wild Goose under the afterglow'(夕霞孤雁)
  *
  * AUTHORS:
  *   Gong Han  <gong AT fedoraproject.org> from CSE@FJNU CN
@@ -35,6 +35,7 @@
 #include "myerr.h"
 #include "blog.h"
 #include "codeconv.h"
+#include "conn_monitor.h"
 
 /*   Note that: in this file, the global variables (defined without a leading "static")
  from here to the beginning of the definition of main() are referenced by sendpacket.c ( we
@@ -60,6 +61,8 @@ static char *m_fakeAddress = NULL;
 static char *m_fakeVersion = NULL;
 // fake MAC, e.g. "00:11:D8:44:D5:0D"
 static char *m_fakeMAC = NULL;
+// detective gateway address
+static char m_intelligentHost[16] = "4.2.2.2";
 // DHCP mode: 0: Off, 1:On, DHCP before authentication, 2: On, DHCP after authentication
 static int m_dhcpmode = 0;
 // flag of afterward DHCP status
@@ -73,7 +76,7 @@ static char fakeVersion[8];
 static char fakeMAC[32];
 
 
-/* These info should be worked out by initialization portion. */
+/* These info should be worked out by initialisation portion. */
 
 // local MAC
 unsigned char m_localMAC[6];
@@ -96,9 +99,9 @@ static unsigned char m_dns1[4];
 */
 static volatile sig_atomic_t m_state = 0;
 
-// serial number, initialized when received the first valid Authentication-Success-packet
+// serial number, initialised when received the first valid Authentication-Success-packet
 ULONG_BYTEARRAY m_serialNo;
-// password private key, initialized at the beginning of function main()
+// password private key, initialised at the beginning of function main()
 ULONG_BYTEARRAY m_key;
 
 /* cleanup on exit when detected Ctrl+C */
@@ -161,7 +164,7 @@ main(int argc, char* argv[])
   // the initial serial number, a magic number!
   m_serialNo.ulValue = 0x1000002a;
 
-  // kill all other ruijieclints which are running
+  // kill all other ruijieclients which are running
   kill_all("ruijieclient");
 
   // if '-g' is passed as argument then generate a sample configuration
@@ -180,13 +183,6 @@ main(int argc, char* argv[])
       EnableDHCP();
       // kill all other dhclients which are running
       kill_all("dhclient");
-      if (m_dhcpmode == 1)
-        {
-          if (system(cmd) == -1)
-            {
-              err_quit("Fail in retrieving network configuration from DHCP server");
-            }
-        }
     }
 
   if ((l = libnet_init(LIBNET_LINK, m_nic, l_errbuf)) == NULL)
@@ -453,8 +449,27 @@ beginAuthentication:
           sigprocmask(SIG_UNBLOCK, &sigset_zero, NULL);
           // continue echoing
           fputs("Keeping sending echo...\nPress Ctrl+C to logoff \n", stdout);
-          while(SendEchoPacket(l, pkt_data) == 0)
+          // start ping monitoring
+          if (m_intelligentReconnect == 1)
+          {
+              ConnectionMonitor_init(m_intelligentHost);
+              SetInterval(6);
+              StartConnectionMonitor();
+          }
+          while (SendEchoPacket(l, pkt_data) == 0)
+          {
+            MySleep(m_echoInterval);
+            if (m_intelligentReconnect == 1)
+              {
+                if (IsStillConnected() == 0)
+                  {
+                    StopConnectionMonitor();
+                    //SendEndCertPacket(l);
+                    goto beginAuthentication;
+                  }// if IsStillConnected()
+              } // if m_intelligentReconnect
             sleep(m_echoInterval);
+          }
           pcap_close(p);
           libnet_destroy(l);
           return 1; // this should never happen.
@@ -723,7 +738,7 @@ GenSetting(void)
     xmlAddChild(setting_node, xmlNewComment((xmlChar *) "0: Standard, 1: Private"));
     xmlNewChild(setting_node, NULL, BAD_CAST "AuthenticationMode", BAD_CAST "1");
     xmlNewChild(setting_node, NULL, BAD_CAST "NIC", BAD_CAST "eth0");
-    xmlNewChild(setting_node, NULL, BAD_CAST "EchoInterval", BAD_CAST "4");
+    xmlNewChild(setting_node, NULL, BAD_CAST "EchoInterval", BAD_CAST "25");
     xmlAddChild(setting_node, xmlNewComment((xmlChar *) "IntelligentReconnect: "
         "0: Disable IntelligentReconnect, 1: Enable IntelligentReconnect "));
     xmlNewChild(setting_node, NULL, BAD_CAST "IntelligentReconnect", BAD_CAST "1");

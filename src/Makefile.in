@@ -46,7 +46,8 @@ PROGRAMS = $(bin_PROGRAMS)
 am_ruijieclient_OBJECTS = ruijieclient-blog.$(OBJEXT) \
 	ruijieclient-myerr.$(OBJEXT) ruijieclient-codeconv.$(OBJEXT) \
 	ruijieclient-ruijieclient.$(OBJEXT) \
-	ruijieclient-sendpacket.$(OBJEXT)
+	ruijieclient-sendpacket.$(OBJEXT) \
+	ruijieclient-conn_monitor.$(OBJEXT)
 ruijieclient_OBJECTS = $(am_ruijieclient_OBJECTS)
 ruijieclient_DEPENDENCIES =
 ruijieclient_LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
@@ -149,8 +150,8 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-ruijieclient_SOURCES = blog.c codeconv.h myerr.c ruijieclient.h sendpacket.h blog.h global.h  myerr.h codeconv.c ruijieclient.c sendpacket.c
-ruijieclient_LDADD = -lpcap -lnet -lssl -lxml2
+ruijieclient_SOURCES = blog.c codeconv.h myerr.c ruijieclient.h sendpacket.h blog.h global.h  myerr.h codeconv.c ruijieclient.c sendpacket.c conn_monitor.c conn_monitor.h
+ruijieclient_LDADD = -lpcap -lnet -lssl -lxml2 -lpthread
 ruijieclient_CPPFLAGS = -I /usr/include/libxml2
 ruijieclient_LDFLAGS = -lxml2
 all: all-am
@@ -221,6 +222,7 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ruijieclient-blog.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ruijieclient-codeconv.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ruijieclient-conn_monitor.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ruijieclient-myerr.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ruijieclient-ruijieclient.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ruijieclient-sendpacket.Po@am__quote@
@@ -308,6 +310,20 @@ ruijieclient-sendpacket.obj: sendpacket.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sendpacket.c' object='ruijieclient-sendpacket.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieclient_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ruijieclient-sendpacket.obj `if test -f 'sendpacket.c'; then $(CYGPATH_W) 'sendpacket.c'; else $(CYGPATH_W) '$(srcdir)/sendpacket.c'; fi`
+
+ruijieclient-conn_monitor.o: conn_monitor.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieclient_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ruijieclient-conn_monitor.o -MD -MP -MF $(DEPDIR)/ruijieclient-conn_monitor.Tpo -c -o ruijieclient-conn_monitor.o `test -f 'conn_monitor.c' || echo '$(srcdir)/'`conn_monitor.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/ruijieclient-conn_monitor.Tpo $(DEPDIR)/ruijieclient-conn_monitor.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='conn_monitor.c' object='ruijieclient-conn_monitor.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieclient_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ruijieclient-conn_monitor.o `test -f 'conn_monitor.c' || echo '$(srcdir)/'`conn_monitor.c
+
+ruijieclient-conn_monitor.obj: conn_monitor.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieclient_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ruijieclient-conn_monitor.obj -MD -MP -MF $(DEPDIR)/ruijieclient-conn_monitor.Tpo -c -o ruijieclient-conn_monitor.obj `if test -f 'conn_monitor.c'; then $(CYGPATH_W) 'conn_monitor.c'; else $(CYGPATH_W) '$(srcdir)/conn_monitor.c'; fi`
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/ruijieclient-conn_monitor.Tpo $(DEPDIR)/ruijieclient-conn_monitor.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='conn_monitor.c' object='ruijieclient-conn_monitor.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieclient_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ruijieclient-conn_monitor.obj `if test -f 'conn_monitor.c'; then $(CYGPATH_W) 'conn_monitor.c'; else $(CYGPATH_W) '$(srcdir)/conn_monitor.c'; fi`
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \
