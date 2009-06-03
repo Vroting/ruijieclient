@@ -22,10 +22,12 @@ sudo chmod 4755 /usr/local/bin/ruijieclient
     * 生成配置文件模板(第一次使用时)
 {{{
 sudo ruijieclient -g
-}}}
-   或者直接
-{{{
+
+或者直接
+
 sudo ruijieclient
+
+效果相同。
 }}}
     * 编辑配置
 {{{

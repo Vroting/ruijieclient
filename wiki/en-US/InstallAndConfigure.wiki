@@ -15,19 +15,20 @@ make install
 
   * instructions about configuring
     * simplify startup procedure (optional)
-   Thus, prefix 'sudo' is not necessary to executing ruijieclient next time.
+    Thus, prefix 'sudo' is not necessary to executing ruijieclient next time.
 {{{
 sudo chmod 4755 /usr/local/bin/ruijieclient
 }}}
     * generate configuration template (needed the first time you use it)
 {{{
 sudo ruijieclient -g
-}}}
-   or directly execute
-{{{
+
+or directly execute
+
 sudo ruijieclient
+
+which produces the same result as the former one.
 }}}
-   which produces the same result as the former one.
     * edit configuration
 {{{
 gedit /etc/ruijie.conf
