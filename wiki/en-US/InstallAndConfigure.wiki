@@ -3,12 +3,17 @@
 
 *corresponding version：0.1.1*
 
-     * install from source(tar.gz)
+  * install from source(tar.gz)
 {{{
 ./configure
 make
 make install
 }}}
+
+  * install from complied package(rpm, deb etc..)
+    exert your package managing program to install it.
+
+  * instructions about configuring
      * simplify startup procedure (optional)
 {{{
 sudo chmod 4755 /usr/local/bin/ruijieclient
@@ -53,12 +58,6 @@ gedit /etc/ruijie.conf
     <DHCPmode>0</DHCPmode>
   </settings>
 </ruijie.conf>
-}}}
-
-  * install from complied package(rpm, deb etc..)
-    * edit configuration
-{{{
-gedit /etc/ruijie.conf
 }}}
 
   * run
