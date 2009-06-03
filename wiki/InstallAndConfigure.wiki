@@ -15,16 +15,16 @@ make install
 
   * 配置说明
     * 简化启动（可选）
-    这样下次调用ruijieclient就不需要再加sudo了。
 {{{
 sudo chmod 4755 /usr/local/bin/ruijieclient
 }}}
+    这样下次调用ruijieclient就不需要再加sudo了。
     * 生成配置文件模板(第一次使用时)
 {{{
 sudo ruijieclient -g
 }}}
+   或者直接
 {{{
-或者直接
 sudo ruijieclient
 }}}
     * 编辑配置
@@ -70,7 +70,7 @@ ruijieclient
 {{{
 sudo ruijieclient
 }}}
-	* 简化方式（如果已经完成了可选配置）
+    * 简化方式（如果已经完成了可选配置）
     打开终端，直接输入
 {{{
 ruijieclient

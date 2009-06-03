@@ -23,11 +23,11 @@ sudo chmod 4755 /usr/local/bin/ruijieclient
 {{{
 sudo ruijieclient -g
 }}}
+   or directly execute
 {{{
-or directly execute
 sudo ruijieclient
 }}}
-which produces the same result as the former one.
+   which produces the same result as the former one.
     * edit configuration
 {{{
 gedit /etc/ruijie.conf
@@ -71,8 +71,8 @@ ruijieclient
 {{{
 sudo ruijieclient
 }}}
-	* simplified method (with the prerequisite that you have done optional steps mentioned before)
-    open terminal, directly run
+    * simplified method (with the prerequisite that you have done optional steps mentioned before)
+   open terminal, directly run
 {{{
 ruijieclient
 }}}
