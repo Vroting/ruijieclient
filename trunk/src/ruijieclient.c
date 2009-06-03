@@ -183,6 +183,7 @@ main(int argc, char* argv[])
       EnableDHCP();
       // kill all other dhclients which are running
       kill_all("dhclient");
+      kill_all("xgrsu");
     }
 
   if ((l = libnet_init(LIBNET_LINK, m_nic, l_errbuf)) == NULL)
@@ -455,20 +456,32 @@ beginAuthentication:
               ConnectionMonitor_init(m_intelligentHost);
               SetInterval(6);
               StartConnectionMonitor();
-          }
-          while (SendEchoPacket(l, pkt_data) == 0)
-          {
-            MySleep(m_echoInterval);
-            if (m_intelligentReconnect == 1)
+              while (SendEchoPacket(l, pkt_data) == 0)
               {
-                if (IsStillConnected() == 0)
-                  {
-                    StopConnectionMonitor();
-                    //SendEndCertPacket(l);
-                    goto beginAuthentication;
-                  }// if IsStillConnected()
-              } // if m_intelligentReconnect
-            sleep(m_echoInterval);
+            	  MySleep(m_echoInterval);
+            	  if (m_intelligentReconnect == 1)
+            	  {
+            		  if (IsStillConnected() == 0)
+            		  {
+            			  StopConnectionMonitor();
+            			  SendEndCertPacket(l);
+            			  goto beginAuthentication;
+            		  }// if IsStillConnected()
+            	  } // if m_intelligentReconnect
+            	  sleep(m_echoInterval);
+              }
+          }
+          if (m_intelligentReconnect > 10)
+          {
+        	  time_t time_recon = time(NULL);
+        	  while (1){
+        		  long time_count = time(NULL)-time_recon ;
+        		  if (time_count >=  m_intelligentReconnect){
+            	  fputs("Time to reconect!\n",stdout);
+            	  goto beginAuthentication;
+              }
+              sleep(m_echoInterval);
+          }
           }
           pcap_close(p);
           libnet_destroy(l);
@@ -684,7 +697,8 @@ checkAndSetConfig(void)
     err_quit("invalid nic found in ruijie.conf!\n");
     if ((m_echoInterval < 0) || (m_echoInterval> 100))
     err_quit("invalid echo interval found in ruijie.conf!\n");
-    if ((m_intelligentReconnect < 0) || (m_intelligentReconnect> 1))
+    //if ((m_intelligentReconnect < 0) || (m_intelligentReconnect> 1))
+    if ((m_intelligentReconnect < 0))
     err_quit("invalid intelligentReconnect found in ruijie.conf!\n");
 
 #ifdef DEBUG
@@ -790,8 +804,12 @@ logoff(int signo)
 static void
 kill_all(char * process)
 {
-  char cmd[256] = "";
+	  char cmd[256] = "";
+	  int cmd_return = 0 ;
 
-  sprintf(cmd, "killall --signal 2 %s", process);
-  system(cmd);
+	  sprintf(cmd, "killall --signal 2 %s", process);
+	  cmd_return = system(cmd);
+	  if ( cmd_return < 0) {
+		  err_sys("Killall Failure !") ;
+	  }
 }
