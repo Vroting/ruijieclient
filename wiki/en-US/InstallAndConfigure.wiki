@@ -1,7 +1,84 @@
 #labels Featured,Phase-Deploy
 #describes how to install and configure ruijieclient
 
-*suitable version：0.1*
+*corresponding version：0.1.1*
+
+     * install from source(tar.gz)
+{{{
+./configure
+make
+make install
+}}}
+     * simplify startup procedure (optional)
+{{{
+sudo chmod 4755 /usr/local/bin/ruijieclient
+}}}
+Thus, prefix 'sudo' is not necessary to executing ruijieclient next time。
+     * generate configuration template (needed the first time you use it)
+{{{
+sudo ruijieclient -g
+}}}
+{{{
+or directly execute
+sudo ruijieclient
+}}}
+which produces the same result as the former one.
+     * edit configuration
+{{{
+gedit /etc/ruijie.conf
+}}}
+      * configuration file format specification
+{{{
+<?xml version="1.0" ?>
+<ruijie.conf version="0.1.1">
+  <!--This is a sample configuration file of RuijieClient, change it appropriately according to your settings.-->
+  <account>
+    <Name>123012007078</Name>
+    <Password>888888</Password>
+  </account>
+  <settings>
+    <!--0: Standard, 1: Private-->
+    <AuthenticationMode>1</AuthenticationMode>
+    <NIC>eth0</NIC>
+    <EchoInterval>4</EchoInterval>
+    <!--IntelligentReconnect: 0: Disable IntelligentReconnect, 1: Enable IntelligentReconnect -->
+    <IntelligentReconnect>1</IntelligentReconnect> 
+    <!--AutoConnect: 0: Disable AutoConnect, 1: Enable AutoConnect (only available in gruijieclient) -->
+    <AutoConnect>0</AutoConnect>
+    <!--Fake Version for cheating server-->
+    <FakeVersion>3.99</FakeVersion>
+    <!--Fake IP for cheating server-->
+    <FakeAddress></FakeAddress>
+    <!--DHCP mode 0: Disable, 1: Enable DHCP before authentication, 2: Enable DHCP after authentication -->
+    <DHCPmode>0</DHCPmode>
+  </settings>
+</ruijie.conf>
+}}}
+
+  * install from complied package(rpm, deb etc..)
+    * edit configuration
+{{{
+gedit /etc/ruijie.conf
+}}}
+
+  * run
+    * by 'su'
+    open terminal, input 'su'
+{{{
+ruijieclient
+}}}
+    * by 'sudo' (provided that sudoer has been set correctly. ubuntu has set it by default)
+    open terminal, input the following
+{{{
+sudo ruijieclient
+}}}
+	* simplified method (with the prerequisite that you have done optional steps mentioned before)
+    open terminal, directly run
+{{{
+ruijieclient
+}}}
+
+*corresponding version：0.1*
 
   * install from source(tar.gz)
      * download and edit configuration

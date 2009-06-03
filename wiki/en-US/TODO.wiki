@@ -2,7 +2,6 @@
 #TODO list
 
 development plan:
-  * manage conf file by xml, accordingly, it will be generated in home directory automatically.
   * auto-start in start-up
   * improve intelligent re-connect
   * some auxiliary HACKs ;-)

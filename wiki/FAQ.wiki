@@ -1,6 +1,16 @@
 #labels Featured,Phase-QA
 #FAQ
 
+*适用版本：0.1.1*
+
+  * 客户端在find server阶段停滞？
+  很有可能是xp关机后将网卡休眠导致(wake on after shutdown)。
+  参考解法[http://forum.ubuntu.org.cn/viewtopic.php?t=72737]
+  * gnome的网络管理器不能保存配置状态？（如IP）
+  请在管理器里面新建一个配置，然后默认它为系统配置。
+  * ./configure 失败，有错误。
+  一般情况下，主要需要libnet-devel, openssl-devel(or libssl-devel), libpcap-devel, libxml2 这4个开发库。此外，请不要尝试静态编译，这是危险的！
+
 *适用版本：0.1*
 
   * 客户端在find server阶段停滞？

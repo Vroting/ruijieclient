@@ -1,26 +1,87 @@
 #labels Featured,Phase-Deploy
 #描述了如何安装配置ruijieclient
 
-*适用版本：0.1*
+*适用版本：0.1.1*
 
-  * 源码安装(tar.gz)
-     * 下载并编辑配置
-{{{
-wget http://ruijieclient.googlecode.com/svn/trunk/src/ruijie.conf
-gedit ruijie.conf
-}}}
-     * 复制配置文件
-     打开终端，输入su，进入root状态后
-{{{
-mkdir -p /etc/ruijieclient
-cp ruijie.conf /etc/ruijieclient
-}}}
      * 编译并安装程序
 {{{
 ./configure
 make
 make install
 }}}
+     * 简化启动（可选）
+{{{
+sudo chmod 4755 /usr/local/bin/ruijieclient
+}}}
+这样下次调用ruijieclient就不需要再加sudo了。
+     * 生成配置文件模板(第一次使用时)
+{{{
+sudo ruijieclient -g
+}}}
+{{{
+或者直接
+sudo ruijieclient
+}}}
+     * 编辑配置
+{{{
+gedit /etc/ruijie.conf
+}}}
+      * 配置文件格式说明
+{{{
+<?xml version="1.0" ?>
+<ruijie.conf version="0.1.1"> #配置版本
+  <!--This is a sample configuration file of RuijieClient, change it appropriately according to your settings.-->
+  <account>
+    <Name>123012007078</Name>  #用户名
+    <Password>888888</Password>  #密码
+  </account>
+  <settings>
+    <!--0: Standard, 1: Private-->
+    <AuthenticationMode>1</AuthenticationMode> #认证模式
+    <NIC>eth0</NIC> #网络设备
+    <EchoInterval>4</EchoInterval> #保活延时
+    <!--IntelligentReconnect: 0: Disable IntelligentReconnect, 1: Enable IntelligentReconnect -->
+    <IntelligentReconnect>1</IntelligentReconnect> #智能重连
+    <!--AutoConnect: 0: Disable AutoConnect, 1: Enable AutoConnect (only available in gruijieclient) -->
+    <AutoConnect>0</AutoConnect> #自动连接
+    <!--Fake Version for cheating server-->
+    <FakeVersion>3.99</FakeVersion> #版本伪装
+    <!--Fake IP for cheating server-->
+    <FakeAddress></FakeAddress> #IP地址伪装
+    <!--DHCP mode 0: Disable, 1: Enable DHCP before authentication, 2: Enable DHCP after authentication -->
+    <DHCPmode>0</DHCPmode> #DHCP认证模式
+  </settings>
+</ruijie.conf>
+}}}
+
+  * 安装包安装(rpm, deb etc..)
+    * 直接编辑配置
+{{{
+gedit /etc/ruijie.conf
+}}}
+
+  * 启动程序
+    * su方式
+    打开终端，输入su，进入root状态后
+{{{
+ruijieclient
+}}}
+    * sudo方式 (前提是已经设置好sudoer，ubuntu已经默认设置好了)
+    打开终端，输入
+{{{
+sudo ruijieclient
+}}}
+	* 简化方式（如果已经完成了可选配置）
+    打开终端，直接输入
+{{{
+ruijieclient
+}}}
+
+*适用版本：0.1*
+
+  * 源码安装(tar.gz)
+  不推荐使用0.1版本
+
   * 安装包安装(rpm, deb etc..)
     * 直接编辑配置
 {{{

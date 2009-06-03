@@ -1,7 +1,16 @@
 #labels Featured,Phase-QA
 #FAQ
 
-*suitable version：0.1*
+*corresponding version：0.1.1*
+
+  * why the program suspended in stage of finding server？
+  Probably, network adapter has been slept by Windows (wake on after shutdown)。Numerous solutions are available on the Internet, so, check them out.
+  * why Gnome network manager can not save my configuration status?(e.g. IP)
+  Please add a new configuration in the manager and also set it as default choice.
+  * errors occur in './configure' 
+  Generally，compiling requires libnet-devel, openssl-devel(or libssl-dev), libpcap-devel and libxml2 , make sure you have installed them correctly. Furthermore, you should never try to compile it static, for it's harmful.
+  
+*corresponding version：0.1*
 
   * why the program suspended in stage of finding server？
   Probably, network adapter has been slept by Windows (wake on after shutdown)。Numerous solutions are available on the Internet, so, check them out.
@@ -9,3 +18,4 @@
   Please add a new configuration in the manager and also set it as default choice.
   * errors occur in './configure' 
   Generally，compiling requires libnet-devel, openssl-devel(or libssl-dev), libpcap-devel , make sure you have installed them correctly. Furthermore, you should never try to compile it static, for it's harmful.
+  
