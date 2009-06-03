@@ -11,15 +11,15 @@ make install
 }}}
 
   * 安装包安装(rpm, deb etc..)
-    直接使用包管理器安装。
+   直接使用包管理器安装。
 
   * 配置说明
-     * 简化启动（可选）
+    * 简化启动（可选）
+    这样下次调用ruijieclient就不需要再加sudo了。
 {{{
 sudo chmod 4755 /usr/local/bin/ruijieclient
 }}}
-这样下次调用ruijieclient就不需要再加sudo了。
-     * 生成配置文件模板(第一次使用时)
+    * 生成配置文件模板(第一次使用时)
 {{{
 sudo ruijieclient -g
 }}}
@@ -27,11 +27,11 @@ sudo ruijieclient -g
 或者直接
 sudo ruijieclient
 }}}
-     * 编辑配置
+    * 编辑配置
 {{{
 gedit /etc/ruijie.conf
 }}}
-      * 配置文件格式说明
+    * 配置文件格式说明
 {{{
 <?xml version="1.0" ?>
 <ruijie.conf version="0.1.1"> #配置版本

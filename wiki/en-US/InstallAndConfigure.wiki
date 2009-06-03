@@ -14,12 +14,12 @@ make install
     exert your package managing program to install it.
 
   * instructions about configuring
-     * simplify startup procedure (optional)
+    * simplify startup procedure (optional)
+   Thus, prefix 'sudo' is not necessary to executing ruijieclient next time.
 {{{
 sudo chmod 4755 /usr/local/bin/ruijieclient
 }}}
-Thus, prefix 'sudo' is not necessary to executing ruijieclient next time。
-     * generate configuration template (needed the first time you use it)
+    * generate configuration template (needed the first time you use it)
 {{{
 sudo ruijieclient -g
 }}}
@@ -28,11 +28,11 @@ or directly execute
 sudo ruijieclient
 }}}
 which produces the same result as the former one.
-     * edit configuration
+    * edit configuration
 {{{
 gedit /etc/ruijie.conf
 }}}
-      * configuration file format specification
+    * configuration file format specification
 {{{
 <?xml version="1.0" ?>
 <ruijie.conf version="0.1.1">
