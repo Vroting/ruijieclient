@@ -41,5 +41,6 @@ AC_TYPE_UINT8_T
 AC_CHECK_FUNCS([memset strerror])
 
 AC_CONFIG_FILES([Makefile
-                 src/Makefile])
+                 src/Makefile]
+                 test/Makefile)
 AC_OUTPUT

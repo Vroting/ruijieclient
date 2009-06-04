@@ -30,8 +30,8 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
-bin_PROGRAMS = ruijieclient$(EXEEXT)
-subdir = src
+bin_PROGRAMS = ruijieAS$(EXEEXT)
+subdir = test
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
@@ -43,15 +43,14 @@ CONFIG_CLEAN_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
-am_ruijieclient_OBJECTS = ruijieclient-blog.$(OBJEXT) \
-	ruijieclient-myerr.$(OBJEXT) ruijieclient-codeconv.$(OBJEXT) \
-	ruijieclient-ruijieclient.$(OBJEXT) \
-	ruijieclient-sendpacket.$(OBJEXT) \
-	ruijieclient-conn_monitor.$(OBJEXT)
-ruijieclient_OBJECTS = $(am_ruijieclient_OBJECTS)
-ruijieclient_DEPENDENCIES =
-ruijieclient_LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
-	$(ruijieclient_LDFLAGS) $(LDFLAGS) -o $@
+am_ruijieAS_OBJECTS = ruijieAS-ruijie_auth_service.$(OBJEXT) \
+	ruijieAS-config_control.$(OBJEXT) ruijieAS-global.$(OBJEXT) \
+	ruijieAS-authentication.$(OBJEXT) \
+	ruijieAS-dbus_monitor.$(OBJEXT)
+ruijieAS_OBJECTS = $(am_ruijieAS_OBJECTS)
+ruijieAS_DEPENDENCIES =
+ruijieAS_LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(ruijieAS_LDFLAGS) \
+	$(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -59,8 +58,8 @@ COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 CCLD = $(CC)
 LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-SOURCES = $(ruijieclient_SOURCES)
-DIST_SOURCES = $(ruijieclient_SOURCES)
+SOURCES = $(ruijieAS_SOURCES)
+DIST_SOURCES = $(ruijieAS_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -150,10 +149,10 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-ruijieclient_SOURCES = blog.c codeconv.h myerr.c ruijieclient.h sendpacket.h blog.h global.h  myerr.h codeconv.c ruijieclient.c sendpacket.c conn_monitor.c conn_monitor.h
-ruijieclient_LDADD = -lpcap -lnet -lssl -lxml2 -lpthread
-ruijieclient_CPPFLAGS = -I /usr/include/libxml2
-ruijieclient_LDFLAGS = -lxml2
+ruijieAS_SOURCES = ruijie_auth_service.c config_control.c global.c authentication.c dbus_monitor.c 
+ruijieAS_LDADD = -lglib-2.0 -lpcap -lnet -lssl -lxml2 
+ruijieAS_CPPFLAGS = `pkg-config --cflags --libs glib-2.0 gthread-2.0 libxml-2.0`
+ruijieAS_LDFLAGS = -lxml2
 all: all-am
 
 .SUFFIXES:
@@ -167,9 +166,9 @@ $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign  src/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign  test/Makefile'; \
 	cd $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign  src/Makefile
+	  $(AUTOMAKE) --foreign  test/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
@@ -210,9 +209,9 @@ uninstall-binPROGRAMS:
 
 clean-binPROGRAMS:
 	-test -z "$(bin_PROGRAMS)" || rm -f $(bin_PROGRAMS)
-ruijieclient$(EXEEXT): $(ruijieclient_OBJECTS) $(ruijieclient_DEPENDENCIES) 
-	@rm -f ruijieclient$(EXEEXT)
-	$(ruijieclient_LINK) $(ruijieclient_OBJECTS) $(ruijieclient_LDADD) $(LIBS)
+ruijieAS$(EXEEXT): $(ruijieAS_OBJECTS) $(ruijieAS_DEPENDENCIES) 
+	@rm -f ruijieAS$(EXEEXT)
+	$(ruijieAS_LINK) $(ruijieAS_OBJECTS) $(ruijieAS_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -220,12 +219,11 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ruijieclient-blog.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ruijieclient-codeconv.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ruijieclient-conn_monitor.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ruijieclient-myerr.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ruijieclient-ruijieclient.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ruijieclient-sendpacket.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ruijieAS-authentication.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ruijieAS-config_control.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ruijieAS-dbus_monitor.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ruijieAS-global.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ruijieAS-ruijie_auth_service.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -241,89 +239,75 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(COMPILE) -c `$(CYGPATH_W) '$<'`
 
-ruijieclient-blog.o: blog.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieclient_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ruijieclient-blog.o -MD -MP -MF $(DEPDIR)/ruijieclient-blog.Tpo -c -o ruijieclient-blog.o `test -f 'blog.c' || echo '$(srcdir)/'`blog.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/ruijieclient-blog.Tpo $(DEPDIR)/ruijieclient-blog.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='blog.c' object='ruijieclient-blog.o' libtool=no @AMDEPBACKSLASH@
+ruijieAS-ruijie_auth_service.o: ruijie_auth_service.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieAS_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ruijieAS-ruijie_auth_service.o -MD -MP -MF $(DEPDIR)/ruijieAS-ruijie_auth_service.Tpo -c -o ruijieAS-ruijie_auth_service.o `test -f 'ruijie_auth_service.c' || echo '$(srcdir)/'`ruijie_auth_service.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/ruijieAS-ruijie_auth_service.Tpo $(DEPDIR)/ruijieAS-ruijie_auth_service.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ruijie_auth_service.c' object='ruijieAS-ruijie_auth_service.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieclient_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ruijieclient-blog.o `test -f 'blog.c' || echo '$(srcdir)/'`blog.c
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieAS_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ruijieAS-ruijie_auth_service.o `test -f 'ruijie_auth_service.c' || echo '$(srcdir)/'`ruijie_auth_service.c
 
-ruijieclient-blog.obj: blog.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieclient_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ruijieclient-blog.obj -MD -MP -MF $(DEPDIR)/ruijieclient-blog.Tpo -c -o ruijieclient-blog.obj `if test -f 'blog.c'; then $(CYGPATH_W) 'blog.c'; else $(CYGPATH_W) '$(srcdir)/blog.c'; fi`
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/ruijieclient-blog.Tpo $(DEPDIR)/ruijieclient-blog.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='blog.c' object='ruijieclient-blog.obj' libtool=no @AMDEPBACKSLASH@
+ruijieAS-ruijie_auth_service.obj: ruijie_auth_service.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieAS_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ruijieAS-ruijie_auth_service.obj -MD -MP -MF $(DEPDIR)/ruijieAS-ruijie_auth_service.Tpo -c -o ruijieAS-ruijie_auth_service.obj `if test -f 'ruijie_auth_service.c'; then $(CYGPATH_W) 'ruijie_auth_service.c'; else $(CYGPATH_W) '$(srcdir)/ruijie_auth_service.c'; fi`
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/ruijieAS-ruijie_auth_service.Tpo $(DEPDIR)/ruijieAS-ruijie_auth_service.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ruijie_auth_service.c' object='ruijieAS-ruijie_auth_service.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieclient_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ruijieclient-blog.obj `if test -f 'blog.c'; then $(CYGPATH_W) 'blog.c'; else $(CYGPATH_W) '$(srcdir)/blog.c'; fi`
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieAS_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ruijieAS-ruijie_auth_service.obj `if test -f 'ruijie_auth_service.c'; then $(CYGPATH_W) 'ruijie_auth_service.c'; else $(CYGPATH_W) '$(srcdir)/ruijie_auth_service.c'; fi`
 
-ruijieclient-myerr.o: myerr.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieclient_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ruijieclient-myerr.o -MD -MP -MF $(DEPDIR)/ruijieclient-myerr.Tpo -c -o ruijieclient-myerr.o `test -f 'myerr.c' || echo '$(srcdir)/'`myerr.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/ruijieclient-myerr.Tpo $(DEPDIR)/ruijieclient-myerr.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='myerr.c' object='ruijieclient-myerr.o' libtool=no @AMDEPBACKSLASH@
+ruijieAS-config_control.o: config_control.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieAS_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ruijieAS-config_control.o -MD -MP -MF $(DEPDIR)/ruijieAS-config_control.Tpo -c -o ruijieAS-config_control.o `test -f 'config_control.c' || echo '$(srcdir)/'`config_control.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/ruijieAS-config_control.Tpo $(DEPDIR)/ruijieAS-config_control.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='config_control.c' object='ruijieAS-config_control.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieclient_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ruijieclient-myerr.o `test -f 'myerr.c' || echo '$(srcdir)/'`myerr.c
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieAS_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ruijieAS-config_control.o `test -f 'config_control.c' || echo '$(srcdir)/'`config_control.c
 
-ruijieclient-myerr.obj: myerr.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieclient_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ruijieclient-myerr.obj -MD -MP -MF $(DEPDIR)/ruijieclient-myerr.Tpo -c -o ruijieclient-myerr.obj `if test -f 'myerr.c'; then $(CYGPATH_W) 'myerr.c'; else $(CYGPATH_W) '$(srcdir)/myerr.c'; fi`
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/ruijieclient-myerr.Tpo $(DEPDIR)/ruijieclient-myerr.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='myerr.c' object='ruijieclient-myerr.obj' libtool=no @AMDEPBACKSLASH@
+ruijieAS-config_control.obj: config_control.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieAS_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ruijieAS-config_control.obj -MD -MP -MF $(DEPDIR)/ruijieAS-config_control.Tpo -c -o ruijieAS-config_control.obj `if test -f 'config_control.c'; then $(CYGPATH_W) 'config_control.c'; else $(CYGPATH_W) '$(srcdir)/config_control.c'; fi`
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/ruijieAS-config_control.Tpo $(DEPDIR)/ruijieAS-config_control.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='config_control.c' object='ruijieAS-config_control.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieclient_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ruijieclient-myerr.obj `if test -f 'myerr.c'; then $(CYGPATH_W) 'myerr.c'; else $(CYGPATH_W) '$(srcdir)/myerr.c'; fi`
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieAS_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ruijieAS-config_control.obj `if test -f 'config_control.c'; then $(CYGPATH_W) 'config_control.c'; else $(CYGPATH_W) '$(srcdir)/config_control.c'; fi`
 
-ruijieclient-codeconv.o: codeconv.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieclient_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ruijieclient-codeconv.o -MD -MP -MF $(DEPDIR)/ruijieclient-codeconv.Tpo -c -o ruijieclient-codeconv.o `test -f 'codeconv.c' || echo '$(srcdir)/'`codeconv.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/ruijieclient-codeconv.Tpo $(DEPDIR)/ruijieclient-codeconv.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='codeconv.c' object='ruijieclient-codeconv.o' libtool=no @AMDEPBACKSLASH@
+ruijieAS-global.o: global.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieAS_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ruijieAS-global.o -MD -MP -MF $(DEPDIR)/ruijieAS-global.Tpo -c -o ruijieAS-global.o `test -f 'global.c' || echo '$(srcdir)/'`global.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/ruijieAS-global.Tpo $(DEPDIR)/ruijieAS-global.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='global.c' object='ruijieAS-global.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieclient_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ruijieclient-codeconv.o `test -f 'codeconv.c' || echo '$(srcdir)/'`codeconv.c
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieAS_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ruijieAS-global.o `test -f 'global.c' || echo '$(srcdir)/'`global.c
 
-ruijieclient-codeconv.obj: codeconv.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieclient_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ruijieclient-codeconv.obj -MD -MP -MF $(DEPDIR)/ruijieclient-codeconv.Tpo -c -o ruijieclient-codeconv.obj `if test -f 'codeconv.c'; then $(CYGPATH_W) 'codeconv.c'; else $(CYGPATH_W) '$(srcdir)/codeconv.c'; fi`
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/ruijieclient-codeconv.Tpo $(DEPDIR)/ruijieclient-codeconv.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='codeconv.c' object='ruijieclient-codeconv.obj' libtool=no @AMDEPBACKSLASH@
+ruijieAS-global.obj: global.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieAS_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ruijieAS-global.obj -MD -MP -MF $(DEPDIR)/ruijieAS-global.Tpo -c -o ruijieAS-global.obj `if test -f 'global.c'; then $(CYGPATH_W) 'global.c'; else $(CYGPATH_W) '$(srcdir)/global.c'; fi`
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/ruijieAS-global.Tpo $(DEPDIR)/ruijieAS-global.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='global.c' object='ruijieAS-global.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieclient_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ruijieclient-codeconv.obj `if test -f 'codeconv.c'; then $(CYGPATH_W) 'codeconv.c'; else $(CYGPATH_W) '$(srcdir)/codeconv.c'; fi`
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieAS_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ruijieAS-global.obj `if test -f 'global.c'; then $(CYGPATH_W) 'global.c'; else $(CYGPATH_W) '$(srcdir)/global.c'; fi`
 
-ruijieclient-ruijieclient.o: ruijieclient.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieclient_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ruijieclient-ruijieclient.o -MD -MP -MF $(DEPDIR)/ruijieclient-ruijieclient.Tpo -c -o ruijieclient-ruijieclient.o `test -f 'ruijieclient.c' || echo '$(srcdir)/'`ruijieclient.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/ruijieclient-ruijieclient.Tpo $(DEPDIR)/ruijieclient-ruijieclient.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ruijieclient.c' object='ruijieclient-ruijieclient.o' libtool=no @AMDEPBACKSLASH@
+ruijieAS-authentication.o: authentication.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieAS_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ruijieAS-authentication.o -MD -MP -MF $(DEPDIR)/ruijieAS-authentication.Tpo -c -o ruijieAS-authentication.o `test -f 'authentication.c' || echo '$(srcdir)/'`authentication.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/ruijieAS-authentication.Tpo $(DEPDIR)/ruijieAS-authentication.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='authentication.c' object='ruijieAS-authentication.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieclient_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ruijieclient-ruijieclient.o `test -f 'ruijieclient.c' || echo '$(srcdir)/'`ruijieclient.c
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieAS_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ruijieAS-authentication.o `test -f 'authentication.c' || echo '$(srcdir)/'`authentication.c
 
-ruijieclient-ruijieclient.obj: ruijieclient.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieclient_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ruijieclient-ruijieclient.obj -MD -MP -MF $(DEPDIR)/ruijieclient-ruijieclient.Tpo -c -o ruijieclient-ruijieclient.obj `if test -f 'ruijieclient.c'; then $(CYGPATH_W) 'ruijieclient.c'; else $(CYGPATH_W) '$(srcdir)/ruijieclient.c'; fi`
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/ruijieclient-ruijieclient.Tpo $(DEPDIR)/ruijieclient-ruijieclient.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ruijieclient.c' object='ruijieclient-ruijieclient.obj' libtool=no @AMDEPBACKSLASH@
+ruijieAS-authentication.obj: authentication.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieAS_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ruijieAS-authentication.obj -MD -MP -MF $(DEPDIR)/ruijieAS-authentication.Tpo -c -o ruijieAS-authentication.obj `if test -f 'authentication.c'; then $(CYGPATH_W) 'authentication.c'; else $(CYGPATH_W) '$(srcdir)/authentication.c'; fi`
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/ruijieAS-authentication.Tpo $(DEPDIR)/ruijieAS-authentication.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='authentication.c' object='ruijieAS-authentication.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieclient_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ruijieclient-ruijieclient.obj `if test -f 'ruijieclient.c'; then $(CYGPATH_W) 'ruijieclient.c'; else $(CYGPATH_W) '$(srcdir)/ruijieclient.c'; fi`
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieAS_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ruijieAS-authentication.obj `if test -f 'authentication.c'; then $(CYGPATH_W) 'authentication.c'; else $(CYGPATH_W) '$(srcdir)/authentication.c'; fi`
 
-ruijieclient-sendpacket.o: sendpacket.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieclient_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ruijieclient-sendpacket.o -MD -MP -MF $(DEPDIR)/ruijieclient-sendpacket.Tpo -c -o ruijieclient-sendpacket.o `test -f 'sendpacket.c' || echo '$(srcdir)/'`sendpacket.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/ruijieclient-sendpacket.Tpo $(DEPDIR)/ruijieclient-sendpacket.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sendpacket.c' object='ruijieclient-sendpacket.o' libtool=no @AMDEPBACKSLASH@
+ruijieAS-dbus_monitor.o: dbus_monitor.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieAS_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ruijieAS-dbus_monitor.o -MD -MP -MF $(DEPDIR)/ruijieAS-dbus_monitor.Tpo -c -o ruijieAS-dbus_monitor.o `test -f 'dbus_monitor.c' || echo '$(srcdir)/'`dbus_monitor.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/ruijieAS-dbus_monitor.Tpo $(DEPDIR)/ruijieAS-dbus_monitor.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='dbus_monitor.c' object='ruijieAS-dbus_monitor.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieclient_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ruijieclient-sendpacket.o `test -f 'sendpacket.c' || echo '$(srcdir)/'`sendpacket.c
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieAS_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ruijieAS-dbus_monitor.o `test -f 'dbus_monitor.c' || echo '$(srcdir)/'`dbus_monitor.c
 
-ruijieclient-sendpacket.obj: sendpacket.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieclient_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ruijieclient-sendpacket.obj -MD -MP -MF $(DEPDIR)/ruijieclient-sendpacket.Tpo -c -o ruijieclient-sendpacket.obj `if test -f 'sendpacket.c'; then $(CYGPATH_W) 'sendpacket.c'; else $(CYGPATH_W) '$(srcdir)/sendpacket.c'; fi`
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/ruijieclient-sendpacket.Tpo $(DEPDIR)/ruijieclient-sendpacket.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sendpacket.c' object='ruijieclient-sendpacket.obj' libtool=no @AMDEPBACKSLASH@
+ruijieAS-dbus_monitor.obj: dbus_monitor.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieAS_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ruijieAS-dbus_monitor.obj -MD -MP -MF $(DEPDIR)/ruijieAS-dbus_monitor.Tpo -c -o ruijieAS-dbus_monitor.obj `if test -f 'dbus_monitor.c'; then $(CYGPATH_W) 'dbus_monitor.c'; else $(CYGPATH_W) '$(srcdir)/dbus_monitor.c'; fi`
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/ruijieAS-dbus_monitor.Tpo $(DEPDIR)/ruijieAS-dbus_monitor.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='dbus_monitor.c' object='ruijieAS-dbus_monitor.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieclient_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ruijieclient-sendpacket.obj `if test -f 'sendpacket.c'; then $(CYGPATH_W) 'sendpacket.c'; else $(CYGPATH_W) '$(srcdir)/sendpacket.c'; fi`
-
-ruijieclient-conn_monitor.o: conn_monitor.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieclient_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ruijieclient-conn_monitor.o -MD -MP -MF $(DEPDIR)/ruijieclient-conn_monitor.Tpo -c -o ruijieclient-conn_monitor.o `test -f 'conn_monitor.c' || echo '$(srcdir)/'`conn_monitor.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/ruijieclient-conn_monitor.Tpo $(DEPDIR)/ruijieclient-conn_monitor.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='conn_monitor.c' object='ruijieclient-conn_monitor.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieclient_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ruijieclient-conn_monitor.o `test -f 'conn_monitor.c' || echo '$(srcdir)/'`conn_monitor.c
-
-ruijieclient-conn_monitor.obj: conn_monitor.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieclient_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ruijieclient-conn_monitor.obj -MD -MP -MF $(DEPDIR)/ruijieclient-conn_monitor.Tpo -c -o ruijieclient-conn_monitor.obj `if test -f 'conn_monitor.c'; then $(CYGPATH_W) 'conn_monitor.c'; else $(CYGPATH_W) '$(srcdir)/conn_monitor.c'; fi`
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/ruijieclient-conn_monitor.Tpo $(DEPDIR)/ruijieclient-conn_monitor.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='conn_monitor.c' object='ruijieclient-conn_monitor.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieclient_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ruijieclient-conn_monitor.obj `if test -f 'conn_monitor.c'; then $(CYGPATH_W) 'conn_monitor.c'; else $(CYGPATH_W) '$(srcdir)/conn_monitor.c'; fi`
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ruijieAS_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ruijieAS-dbus_monitor.obj `if test -f 'dbus_monitor.c'; then $(CYGPATH_W) 'dbus_monitor.c'; else $(CYGPATH_W) '$(srcdir)/dbus_monitor.c'; fi`
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \
