@@ -166,6 +166,7 @@ main(int argc, char* argv[])
 
   // kill all other ruijieclients which are running
   kill_all("ruijieclient");
+  kill_all("xgrsu 2> /dev/null");
 
   // if '-g' is passed as argument then generate a sample configuration
   if (argc>1 && strcmp(argv[1], "g"))
@@ -183,7 +184,6 @@ main(int argc, char* argv[])
       EnableDHCP();
       // kill all other dhclients which are running
       kill_all("dhclient");
-      kill_all("xgrsu");
     }
 
   if ((l = libnet_init(LIBNET_LINK, m_nic, l_errbuf)) == NULL)
