@@ -453,21 +453,10 @@ beginAuthentication:
           // start ping monitoring
           if (m_intelligentReconnect == 1)
           {
-              ConnectionMonitor_init(m_intelligentHost);
-              SetInterval(6);
-              StartConnectionMonitor();
+
               while (SendEchoPacket(l, pkt_data) == 0)
               {
-            	  MySleep(m_echoInterval);
-            	  if (m_intelligentReconnect == 1)
-            	  {
-            		  if (IsStillConnected() == 0)
-            		  {
-            			  StopConnectionMonitor();
-            			  SendEndCertPacket(l);
-            			  goto beginAuthentication;
-            		  }// if IsStillConnected()
-            	  } // if m_intelligentReconnect
+            	  // TODO: put code here
             	  sleep(m_echoInterval);
               }
           }
