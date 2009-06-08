@@ -7,7 +7,7 @@
 /*
  * This program is modified from MyStar, the original author is netxray@byhh.
  *
- * Many thanks to netxray@byhh, 'a lonely Wild Goose under the afterglow'(夕霞孤雁)
+ * Many thanks to netxray@byhh
  *
  * AUTHORS:
  *   Gong Han  <gong AT fedoraproject.org> from CSE@FJNU CN
@@ -63,7 +63,7 @@ static char *m_fakeMAC = NULL;
 static char m_intelligentHost[16] = "4.2.2.2";
 
 // flag of afterward DHCP status
-int noip_afterauth=1;
+int noip_afterauth = 1;
 
 // user name
 static char name[32];
@@ -74,7 +74,6 @@ static char fakeAddress[32];
 static char fakeVersion[8];
 static char fakeMAC[32];
 
-
 /* These info should be worked out by initialisation portion. */
 
 /* Authenticate Status
@@ -82,7 +81,7 @@ static char fakeMAC[32];
  * 1: fail to pass Authentication of user name
  * 2: fail to pass Authentication of MD5 sum
  * 3: success
-*/
+ */
 
 /* cleanup on exit when detected Ctrl+C */
 static void
@@ -102,9 +101,9 @@ get_element(xmlNode * a_node);
 static void
 kill_all(char* process);
 
-////最最最重要的啊，消灭全局变量全靠这个家伙的啊
-//// This Is too Important That We Use It To eliminate global variables
-ruijie_packet sender={0};
+// this is a top crucial change that eliminated all global variables
+ruijie_packet sender =
+  { 0 };
 int
 main(int argc, char* argv[])
 {
@@ -126,7 +125,7 @@ main(int argc, char* argv[])
   char cmd[32] = "dhclient ";
 
   int isFirstPacketFromServer = 1;
-//  sigset_t sigset_full, sigset_zero;
+  //  sigset_t sigset_full, sigset_zero;
   struct timespec timeout;
   int packetCount_SentFindServer = 0;
   int packetCount_SentName = 0;
@@ -140,7 +139,7 @@ main(int argc, char* argv[])
   kill_all("xgrsu 2> /dev/null");
 
   // if '-g' is passed as argument then generate a sample configuration
-  if (argc>1 && strcmp(argv[1], "g"))
+  if (argc > 1 && strcmp(argv[1], "g"))
     {
       GenSetting();
       exit(EXIT_SUCCESS);
@@ -151,13 +150,12 @@ main(int argc, char* argv[])
   strcat(cmd, m_nic);
 
   if (sender.m_dhcpmode > 0)
-	{
-		// kill all other dhclients which are running
-		kill_all("dhclient");
-	}
+    {
+      // kill all other dhclients which are running
+      kill_all("dhclient");
+    }
 
-
-  if ((sender.m_pcap  = pcap_open_live(m_nic, 65536, 0, 500, p_errbuf)) == NULL)
+  if ((sender.m_pcap = pcap_open_live(m_nic, 65536, 0, 500, p_errbuf)) == NULL)
     {
       err_msg("pcap_open_live: %s\n", p_errbuf);
 
@@ -165,44 +163,48 @@ main(int argc, char* argv[])
     }
   sender.m_pcap_no = pcap_fileno(sender.m_pcap); // we can poll() it in the following code.
 
-  {
-		struct ifreq rif={{{0}}};
+    {
+      struct ifreq rif =
+        {
+          {
+            { 0 } } };
 
-		// 获得选定的网卡地址。
-		//Retrieve Net Adapter's MAC address
-		strcpy(rif.ifr_name,m_nic);
-		int tmp = socket(AF_INET, SOCK_DGRAM, 0);
+      // retrieve MAC address of corresponding net adapter's
+      strcpy(rif.ifr_name, m_nic);
+      int tmp = socket(AF_INET, SOCK_DGRAM, 0);
 
-		if (m_fakeAddress == NULL)
-		{
-			ioctl(tmp, SIOCGIFADDR, &rif);
-			memcpy(&(sender.m_ip), rif.ifr_addr.sa_data+2, 4);
-//			struct in_addr p;
-//			p.s_addr = sender.m_ip;
-//			printf("ip is %s",inet_ntoa(p));
-		}
-		// else m_ip has been initialized in checkandSetConfig()
+      if (m_fakeAddress == NULL)
+        {
+          ioctl(tmp, SIOCGIFADDR, &rif);
+          memcpy(&(sender.m_ip), rif.ifr_addr.sa_data + 2, 4);
+          //			struct in_addr p;
+          //			p.s_addr = sender.m_ip;
+          //			printf("ip is %s",inet_ntoa(p));
+        }
+      // else m_ip has been initialized in checkandSetConfig()
 
-		ioctl(tmp, SIOCGIFNETMASK, &rif);
+      ioctl(tmp, SIOCGIFNETMASK, &rif);
 
-		memcpy(&(sender.m_mask),rif.ifr_addr.sa_data +2 ,4);
-//		{
-//			struct in_addr p;
-//			p.s_addr = sender.m_mask;
-//			printf("mask is %s",inet_ntoa(p));
-//		}
+      memcpy(&(sender.m_mask), rif.ifr_addr.sa_data + 2, 4);
+      //		{
+      //			struct in_addr p;
+      //			p.s_addr = sender.m_mask;
+      //			printf("mask is %s",inet_ntoa(p));
+      //		}
 
-		ioctl(tmp, SIOCGIFHWADDR, &rif);
-		memcpy(sender.m_ETHHDR+ETHER_ADDR_LEN,rif.ifr_hwaddr.sa_data,ETHER_ADDR_LEN);
-		close(tmp);
-  }
+      ioctl(tmp, SIOCGIFHWADDR, &rif);
+      memcpy(sender.m_ETHHDR + ETHER_ADDR_LEN, rif.ifr_hwaddr.sa_data,
+          ETHER_ADDR_LEN);
+      close(tmp);
+    }
 
   // set the filter. Here I'm sure filter_buf is big enough.
-  snprintf(filter_buf, sizeof(filter_buf), FILTER_STR,
-      sender.m_ETHHDR[6], sender.m_ETHHDR[7], sender.m_ETHHDR[8],
-      sender.m_ETHHDR[9], sender.m_ETHHDR[10], sender.m_ETHHDR[11]);
+  snprintf(filter_buf, sizeof(filter_buf), FILTER_STR, sender.m_ETHHDR[6],
+      sender.m_ETHHDR[7], sender.m_ETHHDR[8], sender.m_ETHHDR[9],
+      sender.m_ETHHDR[10], sender.m_ETHHDR[11]);
 
-  if (pcap_compile(sender.m_pcap, &filter_code, filter_buf, 0, sender.m_mask) == -1)
+  if (pcap_compile(sender.m_pcap, &filter_code, filter_buf, 0, sender.m_mask)
+      == -1)
     {
       err_msg("pcap_compile(): %s", pcap_geterr(sender.m_pcap));
       pcap_close(sender.m_pcap);
@@ -225,103 +227,113 @@ main(int argc, char* argv[])
   signal(SIGTSTP, logoff);
 
   // search for the server
-beginAuthentication:
+  beginAuthentication:
 
   FillVersion(m_fakeVersion); // fill 2 bytes with fake version
 
   /* comment out for futher usage
-  if (m_fakeMAC != NULL)
-    {
-      //fill m_localMAC with a fake MAC address
-      FillFakeMAC(m_localMAC, m_fakeMAC);
-    }
+   if (m_fakeMAC != NULL)
+   {
+   //fill m_localMAC with a fake MAC address
+   FillFakeMAC(m_localMAC, m_fakeMAC);
+   }
    */
 
   while (1)
     {
-	  sender.m_state = 0;
+      sender.m_state = 0;
 LABLE_FINDSERVER:
-	  if (SendFindServerPacket(&sender))
-		{
-			continue;
-		}
+      if (SendFindServerPacket(&sender))
+        {
+          continue;
+        }
+      else
+        {
+          fputs("@@ Server found, requesting user name...\n", stdout);
+        }
 LABLE_SENDNAME:
-		if (SendNamePacket(&sender))
-		{
-			continue;
-		}
+      if (SendNamePacket(&sender))
+        {
+          continue;
+        }
+      else
+        {
+          fputs("@@ User name valid, requesting password...\n", stdout);
+        }
 LABLE_SENDPASSWD:
-		switch(SendPasswordPacket(&sender))
-		{
-		case -1:
-			continue;
-		case 1: //失败
-	          /* authenticate fail
-			 * possible reasons:
-			 * 1. user name and password mismatch
-			 * 2. not in the right time-period of net accessing
-			 * 3. account has been logged at other computers
-			 */
-	        GetServerMsg(&sender, u_msgBuf, MAX_U_MSG_LEN);
-			fprintf(stdout, "@@ Authentication failed: %s\n", u_msgBuf);
-			SendEndCertPacket(&sender);
-			continue;
-		case 0:// Authenticate successfully
-			sender.m_state = 1;
-			break;
-		}
+      switch (SendPasswordPacket(&sender))
+        {
+      case -1:
+        continue;
+      case 1:
+        /* authenticate fail
+         * possible reasons:
+         * 1. user name and password mismatch
+         * 2. not in the right time-period of net accessing
+         * 3. account has been logged at other computers
+         */
+        GetServerMsg(&sender, u_msgBuf, MAX_U_MSG_LEN);
+        fprintf(stdout, "@@ Authentication failed: %s\n", u_msgBuf);
+        SendEndCertPacket(&sender);
+        continue;
+      case 0:// Authenticate successfully
+        sender.m_state = 1;
+        break;
+        }
 
-        if (sender.m_dhcpmode == 2 && noip_afterauth)
-		{
-			if (system(cmd) == -1)
-			{
-				err_quit("Fail in retrieving network configuration from DHCP server");
-			}
-			noip_afterauth = 0;
-		}
-		GetServerMsg(&sender, u_msgBuf, MAX_U_MSG_LEN);
-		fprintf(stdout, "@@ Password valid, SUCCESS:\n## Server Message: %s\n",	u_msgBuf);
+      if (sender.m_dhcpmode == 2 && noip_afterauth)
+        {
+          if (system(cmd) == -1)
+            {
+              err_quit(
+                  "Fail in retrieving network configuration from DHCP server");
+            }
+          noip_afterauth = 0;
+        }
+      GetServerMsg(&sender, u_msgBuf, MAX_U_MSG_LEN);
+      fprintf(stdout, "@@ Password valid, SUCCESS:\n## Server Message: %s\n",
+          u_msgBuf);
 
-        if (m_echoInterval <= 0)
-		{
-			pcap_close(sender.m_pcap);
-			return 0; //user has echo disabled
-		}
-        // continue echoing
-        fputs("Keeping sending echo...\nPress Ctrl+C to logoff \n", stdout);
-        // start ping monitoring
-        if (m_intelligentReconnect == 1)
-		{
-			while (SendEchoPacket(&sender) == 0)
-			{
-//				printf("heart beat\n");
-				if(IfOnline(&sender))
-					break;
-				sleep(m_echoInterval);
-			}
-			//haha, go on this big loop when offline
-			continue; // 断网就继续循环下去，哈哈
+      if (m_echoInterval <= 0)
+        {
+          pcap_close(sender.m_pcap);
+          return 0; //user has echo disabled
+        }
+      // continue echoing
+      fputs("Keeping sending echo...\nPress Ctrl+C to logoff \n", stdout);
+      // start ping monitoring
+      if (m_intelligentReconnect == 1)
+        {
+          while (SendEchoPacket(&sender) == 0)
+            {
+              //				printf("heart beat\n");
+              if (IfOnline(&sender))
+                break;
+              sleep(m_echoInterval);
+            }
+          // continue this big loop when offline
+          continue;
 
-		}
-		if (m_intelligentReconnect > 10)
-		{
-			time_t time_recon = time(NULL);
-			while (1)
-			{
-				long time_count = time(NULL) - time_recon;
-				if (time_count >= m_intelligentReconnect)
-				{
-					fputs("Time to reconect!\n", stdout);
-					goto beginAuthentication;
-				}
-				sleep(m_echoInterval);
-			}
-		}
-		pcap_close(sender.m_pcap);
-		return 1; // this should never happen.
+        }
+      if (m_intelligentReconnect > 10)
+        {
+          time_t time_recon = time(NULL);
+          while (1)
+            {
+              long time_count = time(NULL) - time_recon;
+              if (time_count >= m_intelligentReconnect)
+                {
+                  fputs("Time to reconect!\n", stdout);
+                  goto beginAuthentication;
+                }
+              sleep(m_echoInterval);
+            }
+        }
+      pcap_close(sender.m_pcap);
+      return 1; // this should never happen.
 
-		break;
-	}// end while
+      break;
+    }// end while
 }
 
 #ifdef LIBXML_TREE_ENABLED
@@ -331,7 +343,7 @@ get_element(xmlNode * a_node)
   {
     xmlNode *cur_node = NULL;
     char *node_content, *node_name;
-    int i ;
+    int i;
 
     for (cur_node = a_node; cur_node != NULL; cur_node = cur_node->next)
       {
@@ -340,7 +352,7 @@ get_element(xmlNode * a_node)
         if (cur_node->type == XML_ELEMENT_NODE &&
             strcmp(node_content, "") &&
             node_name != NULL
-            )
+        )
           {
             if (strcmp(node_name, "Name") == 0)
               {
@@ -361,7 +373,7 @@ get_element(xmlNode * a_node)
             else if (strcmp(node_name, "NIC") == 0)
               {
                 for (i = 0; i < strlen(node_content); i++)
-                  node_content[i] = tolower(node_content[i]);
+                node_content[i] = tolower(node_content[i]);
                 strncpy(nic, node_content, sizeof(nic) - 1);
                 nic[sizeof(nic) - 1] = 0;
                 m_nic = nic;
@@ -384,14 +396,14 @@ get_element(xmlNode * a_node)
               {
                 sender.m_dhcpmode = atoi(node_content);
               }
-             /* comment out for further useage
-            else if (strcmp(node_name, "FakeMAC") == 0)
-              {
-                strncpy(fakeMAC, node_content, sizeof(fakeMAC) - 1);
-                fakeMAC[sizeof(fakeMAC) - 1] = 0;
-                m_fakeMAC = fakeMAC;
-              }
-              */
+            /* comment out for further useage
+             else if (strcmp(node_name, "FakeMAC") == 0)
+             {
+             strncpy(fakeMAC, node_content, sizeof(fakeMAC) - 1);
+             fakeMAC[sizeof(fakeMAC) - 1] = 0;
+             m_fakeMAC = fakeMAC;
+             }
+             */
             else if (strcmp(node_name, "FakeAddress") == 0)
               {
                 strncpy(fakeAddress, node_content, sizeof(fakeAddress) - 1);
@@ -519,25 +531,25 @@ GenSetting(void)
     xmlNewChild(setting_node, NULL, BAD_CAST "NIC", BAD_CAST "eth0");
     xmlNewChild(setting_node, NULL, BAD_CAST "EchoInterval", BAD_CAST "25");
     xmlAddChild(setting_node, xmlNewComment((xmlChar *) "IntelligentReconnect: "
-        "0: Disable IntelligentReconnect, 1: Enable IntelligentReconnect "));
+            "0: Disable IntelligentReconnect, 1: Enable IntelligentReconnect "));
     xmlNewChild(setting_node, NULL, BAD_CAST "IntelligentReconnect", BAD_CAST "1");
     xmlAddChild(setting_node, xmlNewComment((xmlChar *) "AutoConnect: "
-        "0: Disable AutoConnect, 1: Enable AutoConnect (only available in"
-        " gruijieclient) "));
+            "0: Disable AutoConnect, 1: Enable AutoConnect (only available in"
+            " gruijieclient) "));
     xmlNewChild(setting_node, NULL, BAD_CAST "AutoConnect", BAD_CAST "0");
     xmlAddChild(setting_node, xmlNewComment((xmlChar *) "Fake Version for cheating server"));
     xmlNewChild(setting_node, NULL, BAD_CAST "FakeVersion", BAD_CAST "3.99");
     xmlAddChild(setting_node, xmlNewComment((xmlChar *) "Fake IP for cheating server"));
     xmlNewChild(setting_node, NULL, BAD_CAST "FakeAddress", BAD_CAST "");
     xmlAddChild(setting_node, xmlNewComment((xmlChar *) "DHCP mode 0: Disable, "
-        "1: Enable DHCP before authentication, 2: Enable DHCP after authentication "));
+            "1: Enable DHCP before authentication, 2: Enable DHCP after authentication "));
     xmlNewChild(setting_node, NULL, BAD_CAST "DHCPmode", BAD_CAST "0");
 
     //Dumping document to stdio or file
     rc = xmlSaveFormatFileEnc(CONF_PATH, doc, "UTF-8", 1);
 
     if (rc == -1)
-      return -1;
+    return -1;
     /*free the document */
 
     xmlFreeDoc(doc);
@@ -563,12 +575,13 @@ logoff(int signo)
 static void
 kill_all(char * process)
 {
-	  char cmd[256] = "";
-	  int cmd_return = 0 ;
+  char cmd[256] = "";
+  int cmd_return = 0;
 
-	  sprintf(cmd, "killall --signal 2 %s", process);
-	  cmd_return = system(cmd);
-	  if ( cmd_return < 0) {
-		  err_sys("Killall Failure !") ;
-	  }
+  sprintf(cmd, "killall --signal 2 %s", process);
+  cmd_return = system(cmd);
+  if (cmd_return < 0)
+    {
+      err_sys("Killall Failure !");
+    }
 }
