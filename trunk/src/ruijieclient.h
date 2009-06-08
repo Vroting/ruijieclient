@@ -46,10 +46,12 @@
 #include <time.h>
 #include <sys/select.h>
 #include <sys/socket.h>
+#include <net/ethernet.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <sys/poll.h>
+#include <sys/epoll.h>
 #include <pcap.h>
-#include <libnet.h>
 #include <libxml2/libxml/parser.h>
 #include <libxml2/libxml/tree.h>
 #include "global.h"

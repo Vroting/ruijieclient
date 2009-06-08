@@ -29,14 +29,11 @@
  * Boston, MA 02111-1307, USA.
  */
 
+#include <arpa/inet.h>
+#include <netinet/in.h>
 #include "blog.h"
 
 static int blogIsInitialized = 0;
-static unsigned char m_IP[4];
-static unsigned char m_NetMask[4];
-static unsigned char m_NetGate[4];
-static unsigned char m_DNS1[4];
-static unsigned char circleCheck[2]; //那两个鬼值
 
 static unsigned char Table[]={
   0x00,0x00,0x21,0x10,0x42,0x20,0x63,0x30,0x84,0x40,0xA5,0x50,0xC6,0x60,0xE7,0x70,
@@ -72,59 +69,94 @@ static unsigned char Table[]={
   0x1F,0xEF,0x3E,0xFF,0x5D,0xCF,0x7C,0xDF,0x9B,0xAF,0xBA,0xBF,0xD9,0x8F,0xF8,0x9F,
   0x17,0x6E,0x36,0x7E,0x55,0x4E,0x74,0x5E,0x93,0x2E,0xB2,0x3E,0xD1,0x0E,0xF0,0x1E};
 
-static unsigned char sCircleBase[0x15]=
-{
-  0x00,0x00,0x13,0x11,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
-  0x00,0x00,0x00,0x00,0x00
-};
-
-static void
-Blog(void);
 
 //configure the 4 parameters Blog() and FillNetParameter() need.
+
 void
-InitializeBlog(const unsigned char *m_ip, const unsigned char *m_netmask,
-    const unsigned char *m_netgate, const unsigned char *m_dns1, const int m_dhcpmode)
+InitializeBlog(ruijie_packet * l)
 {
-  memcpy(m_IP, m_ip, 4);
-  memcpy(m_NetMask, m_netmask, 4);
-  memcpy(m_NetGate, m_netgate, 4);
-  memcpy(m_DNS1, m_dns1, 4);
 
-  if (m_dhcpmode > 0)//Dhcp Enabled
-    sCircleBase[0x04] = 0x01;
 
-  Blog();
+	int iCircle = 0x15;
+	int i, ax = 0, bx = 0, dx = 0;
 
-  blogIsInitialized = 1;
+	//那帮家伙们，单靠这个算法就想区别实达客户端和非实达客户端 -_- !!
+	//The only use of function Blog() is to work out circleCheck[2],
+	//with and only with the help of 4 parameters----m_IP, m_NetMask, m_NetGate, m_DNS1
+	u_char sCircleBase[0x15] =
+	{ 0x00, 0x00, 0x13, 0x11, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+
+	if (l->m_dhcpmode > 0)//Dhcp Enabled
+	{
+		sCircleBase[0x04] = 0x01;
+		l->m_ruijieExtra[0x04] = 0x7f;
+	}
+
+	memcpy(sCircleBase + 5, &(l->m_ip), 4);
+	memcpy(sCircleBase + 9, &(l->m_mask), 4);
+	memcpy(sCircleBase + 13, &(l->m_gate), 4);
+	memcpy(sCircleBase + 17, &(l->m_dns), 4);
+	struct in_addr p;
+	p.s_addr = l->m_ip;
+	printf("mask is %s",inet_ntoa(p));
+
+	for (i = 0; i < iCircle; i++)
+	{
+		dx = ax;
+		bx = 0;
+		bx = (bx & 0xff00) | sCircleBase[i]; // add "( )" by cdx
+		dx &= 0xffff;
+		dx >>= 8;
+		dx ^= bx;
+		bx = 0;
+		bx &= 0x00ff;
+		bx |= (ax & 0xff) << 8;
+
+		ax = Table[dx * 2] | Table[dx * 2 + 1] << 8;
+		ax ^= bx;
+	}
+	l->circleCheck[0] = (unsigned char) ((ax & 0xff00) >> 8);
+	l->circleCheck[1] = (unsigned char) (ax & 0x00ff);
+
+	blogIsInitialized = 1;
 }
 
 //Fill in some additional information  Ruijie Corp. required.
 //You should call InitializeBlog() before calling this function.
 void
-FillNetParamater(unsigned char ForFill[])
+FillNetParamater(ruijie_packet*l)
 {
   if (blogIsInitialized == 0)
     err_quit("Blog algorithm has not been initialised yet \n");
+  u_char * ForFill = l->m_ruijieExtra + 0x05;
+  memcpy(ForFill,&(l->m_ip),4);
+  memcpy(ForFill+4,&(l->m_mask),4);
+  memcpy( ForFill +8 , &(l->m_gate),4);
+   memcpy(ForFill + 12, &(l->m_dns),4);
 
-  ForFill[0] = Alog(m_IP[0]);
-  ForFill[1] = Alog(m_IP[1]);
-  ForFill[2] = Alog(m_IP[2]);
-  ForFill[3] = Alog(m_IP[3]);
-  ForFill[4] = Alog(m_NetMask[0]);
-  ForFill[5] = Alog(m_NetMask[1]);
-  ForFill[6] = Alog(m_NetMask[2]);
-  ForFill[7] = Alog(m_NetMask[3]);
-  ForFill[8] = Alog(m_NetGate[0]);
-  ForFill[9] = Alog(m_NetGate[1]);
-  ForFill[10] = Alog(m_NetGate[2]);
-  ForFill[11] = Alog(m_NetGate[3]);
-  ForFill[12] = Alog(m_DNS1[0]);
-  ForFill[13] = Alog(m_DNS1[1]);
-  ForFill[14] = Alog(m_DNS1[2]);
-  ForFill[15] = Alog(m_DNS1[3]);
-  ForFill[16] = Alog(circleCheck[0]);
-  ForFill[17] = Alog(circleCheck[1]);
+  ForFill[0] = Alog(ForFill[0]);
+  ForFill[1] = Alog(ForFill[1]);
+  ForFill[2] = Alog(ForFill[2]);
+  ForFill[3] = Alog(ForFill[3]);
+
+  ForFill[4] = Alog(ForFill[4]);
+  ForFill[5] = Alog(ForFill[5]);
+  ForFill[6] = Alog(ForFill[6]);
+  ForFill[7] = Alog(ForFill[7]);
+
+  ForFill[8] = Alog(ForFill[8]);
+  ForFill[9] = Alog(ForFill[9]);
+  ForFill[10] = Alog(ForFill[10]);
+  ForFill[11] = Alog(ForFill[11]);
+
+  ForFill[12] = Alog(ForFill[12]);
+  ForFill[13] = Alog(ForFill[13]);
+  ForFill[14] = Alog(ForFill[14]);
+  ForFill[15] = Alog(ForFill[15]);
+
+  ForFill[16] = Alog(l->circleCheck[0]);
+  ForFill[17] = Alog(l->circleCheck[1]);
 }
 
 //A transformation of one-byte-for-one-byte
@@ -166,49 +198,4 @@ Alog(unsigned char BForAlog)
   c |= d;
   iRt = (~c) & 0xff;
   return iRt;
-}
-
-//那帮家伙们，单靠这个算法就想区别实达客户端和非实达客户端 -_- !!
-//The only use of function Blog() is to work out circleCheck[2],
-//with and only with the help of 4 parameters----m_IP, m_NetMask, m_NetGate, m_DNS1
-static void
-Blog(void)
-{
-  int iCircle = 0x15;
-  int i, ax = 0, bx = 0, dx = 0;
-
-  sCircleBase[0x05] = m_IP[0];
-  sCircleBase[0x06] = m_IP[1];
-  sCircleBase[0x07] = m_IP[2];
-  sCircleBase[0x08] = m_IP[3];
-  sCircleBase[0x09] = m_NetMask[0];
-  sCircleBase[0x0a] = m_NetMask[1];
-  sCircleBase[0x0b] = m_NetMask[2];
-  sCircleBase[0x0c] = m_NetMask[3];
-  sCircleBase[0x0d] = m_NetGate[0];
-  sCircleBase[0x0e] = m_NetGate[1];
-  sCircleBase[0x0f] = m_NetGate[2];
-  sCircleBase[0x10] = m_NetGate[3];
-  sCircleBase[0x11] = m_DNS1[0];
-  sCircleBase[0x12] = m_DNS1[1];
-  sCircleBase[0x13] = m_DNS1[2];
-  sCircleBase[0x14] = m_DNS1[3];
-
-  for (i = 0; i < iCircle; i++)
-    {
-      dx = ax;
-      bx = 0;
-      bx = (bx & 0xff00) | sCircleBase[i]; // add "( )" by cdx
-      dx &= 0xffff;
-      dx >>= 8;
-      dx ^= bx;
-      bx = 0;
-      bx &= 0x00ff;
-      bx |= (ax & 0xff) << 8;
-
-      ax = Table[dx * 2] | Table[dx * 2 + 1] << 8;
-      ax ^= bx;
-    }
-  circleCheck[0] = (unsigned char) ((ax & 0xff00) >> 8);
-  circleCheck[1] = (unsigned char) (ax & 0x00ff);
 }

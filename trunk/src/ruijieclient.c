@@ -28,7 +28,10 @@
  * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
  * Boston, MA 02111-1307, USA.
  */
-
+#include <ctype.h>
+#include <sys/ioctl.h>
+#include <net/if.h>
+#include <netinet/in.h>
 #include "ruijieclient.h"
 #include "global.h"
 #include "sendpacket.h"
@@ -43,10 +46,6 @@
 
 /* These info should be retrieved from ruijie.conf */
 
-// user name
-char *m_name = NULL;
-// password
-char *m_password = NULL;
 // auth mode: 0:standard 1:Star private
 int m_authenticationMode = -1;
 // indicator of adapter
@@ -63,12 +62,13 @@ static char *m_fakeVersion = NULL;
 static char *m_fakeMAC = NULL;
 // detective gateway address
 static char m_intelligentHost[16] = "4.2.2.2";
-// DHCP mode: 0: Off, 1:On, DHCP before authentication, 2: On, DHCP after authentication
-static int m_dhcpmode = 0;
+
 // flag of afterward DHCP status
 int noip_afterauth=1;
 
+// user name
 static char name[32];
+// password
 static char password[32];
 static char nic[32];
 static char fakeAddress[32];
@@ -78,19 +78,6 @@ static char fakeMAC[32];
 
 /* These info should be worked out by initialisation portion. */
 
-// local MAC
-unsigned char m_localMAC[6];
-// server MAC
-unsigned char m_destMAC[6];
-// IP of selected adapter
-static unsigned char m_ip[4];
-// sub mask of selected adapter
-static unsigned char m_netmask[4];
-// default route of selected adapter
-static unsigned char m_netgate[4];
-// DNS of selected adapter
-static unsigned char m_dns1[4];
-
 /* Authenticate Status
  * 0: fail to find server
  * 1: fail to pass Authentication of user name
@@ -98,11 +85,6 @@ static unsigned char m_dns1[4];
  * 3: success
 */
 static volatile sig_atomic_t m_state = 0;
-
-// serial number, initialised when received the first valid Authentication-Success-packet
-ULONG_BYTEARRAY m_serialNo;
-// password private key, initialised at the beginning of function main()
-ULONG_BYTEARRAY m_key;
 
 /* cleanup on exit when detected Ctrl+C */
 static void
@@ -124,20 +106,15 @@ getServMsg(char* msgBuf, size_t msgBufLe, const unsigned char* pkt_data);
 static void
 kill_all(char* process);
 
+////最最最重要的啊，消灭全局变量全靠这个家伙的啊
+ruijie_packet sender={0};
 int
 main(int argc, char* argv[])
 {
-  libnet_t * l = NULL;
-  u_int32_t l_ip;
-  char l_errbuf[LIBNET_ERRBUF_SIZE];
-  struct libnet_ether_addr *l_ether_addr;
 
-  pcap_t *p = NULL;
-  int p_fd;
   fd_set read_set;
   char filter_buf[256];
   struct bpf_program filter_code;
-  u_int32_t p_netaddr, p_netmask;
   struct pcap_pkthdr *pkt_hdr;
   const unsigned char *pkt_data;
   char p_errbuf[PCAP_ERRBUF_SIZE];
@@ -162,7 +139,7 @@ main(int argc, char* argv[])
   int packetCount_SentPassword = 0;
 
   // the initial serial number, a magic number!
-  m_serialNo.ulValue = 0x1000002a;
+  sender.m_serialNo.ulValue = 0x1000002a;
 
   // kill all other ruijieclients which are running
   kill_all("ruijieclient");
@@ -179,75 +156,70 @@ main(int argc, char* argv[])
 
   strcat(cmd, m_nic);
 
-  if (m_dhcpmode > 0)
-    {
-      EnableDHCP();
-      // kill all other dhclients which are running
-      kill_all("dhclient");
-    }
+  if (sender.m_dhcpmode > 0)
+	{
+		// kill all other dhclients which are running
+		kill_all("dhclient");
+	}
 
-  if ((l = libnet_init(LIBNET_LINK, m_nic, l_errbuf)) == NULL)
-    err_quit("libnet_init: %s\n", l_errbuf);
 
-  if ((p = pcap_open_live(m_nic, 65536, 0, 500, p_errbuf)) == NULL)
+  if ((sender.m_pcap  = pcap_open_live(m_nic, 65536, 0, 500, p_errbuf)) == NULL)
     {
       err_msg("pcap_open_live: %s\n", p_errbuf);
-      libnet_destroy(l);
+
       return 1;
     }
-  p_fd = pcap_fileno(p); // we can pselect() it in the following code.
+  sender.m_pcap_no = pcap_fileno(sender.m_pcap); // we can poll() it in the following code.
 
+  {
+		struct ifreq rif={{{0}}};
 
-  if ((l_ether_addr = libnet_get_hwaddr(l)) == NULL)
-    {
-      err_msg("unable to get local mac address :%s\n", libnet_geterror(l));
-      pcap_close(p);
-      libnet_destroy(l);
-      return 1;
-    };
+		// 获得选定的网卡地址。
+		strcpy(rif.ifr_name,m_nic);
+		int tmp = socket(AF_INET, SOCK_DGRAM, 0);
 
-  memcpy(m_localMAC, l_ether_addr, sizeof(m_localMAC));
-  // copy the real MAC address to m_localMAC
+		if (m_fakeAddress == NULL)
+		{
+			ioctl(tmp, SIOCGIFADDR, &rif);
+			memcpy(&(sender.m_ip), rif.ifr_addr.sa_data+2, 4);
+//			struct in_addr p;
+//			p.s_addr = sender.m_ip;
+//			printf("ip is %s",inet_ntoa(p));
+		}
+		// else m_ip has been initialized in checkandSetConfig()
 
-  if (m_fakeAddress == NULL)
-    {
-      if ((l_ip = libnet_get_ipaddr4(l)) == -1)
-        {
-          err_msg("unable to get ip address--ingored... :%s\n",
-              libnet_geterror(l));
-          l_ip = 0;
-        }
-      memcpy(m_ip, &l_ip, sizeof(m_ip));
-    }
-// else m_ip has been initialized in checkandSetConfig()
+		ioctl(tmp, SIOCGIFNETMASK, &rif);
 
-  if (pcap_lookupnet(m_nic, &p_netaddr, &p_netmask, p_errbuf) == -1)
-    {
-      err_msg("unable to get netmask--igored... %s\n", p_errbuf);
-      p_netmask = 0;
-    }
-  memcpy(m_netmask, &p_netmask, sizeof(m_netmask));
+		memcpy(&(sender.m_mask),rif.ifr_addr.sa_data +2 ,4);
+//		{
+//			struct in_addr p;
+//			p.s_addr = sender.m_mask;
+//			printf("mask is %s",inet_ntoa(p));
+//		}
+
+		ioctl(tmp, SIOCGIFHWADDR, &rif);
+		memcpy(sender.m_ETHHDR+ETHER_ADDR_LEN,rif.ifr_hwaddr.sa_data,ETHER_ADDR_LEN);
+		close(tmp);
+  }
 
   // check blog.c and bloc.h for details
-  InitializeBlog(m_ip, m_netmask, m_netgate, m_dns1, m_dhcpmode);
+  InitializeBlog(&sender);
 
   // set the filter. Here I'm sure filter_buf is big enough.
   snprintf(filter_buf, sizeof(filter_buf), FILTER_STR,
-      m_localMAC[0], m_localMAC[1], m_localMAC[2],
-      m_localMAC[3], m_localMAC[4], m_localMAC[5]);
+      sender.m_ETHHDR[6], sender.m_ETHHDR[7], sender.m_ETHHDR[8],
+      sender.m_ETHHDR[9], sender.m_ETHHDR[10], sender.m_ETHHDR[11]);
 
-  if (pcap_compile(p, &filter_code, filter_buf, 0, p_netmask) == -1)
+  if (pcap_compile(sender.m_pcap, &filter_code, filter_buf, 0, sender.m_mask) == -1)
     {
-      err_msg("pcap_compile(): %s", pcap_geterr(p));
-      pcap_close(p);
-      libnet_destroy(l);
+      err_msg("pcap_compile(): %s", pcap_geterr(sender.m_pcap));
+      pcap_close(sender.m_pcap);
       return 1;
     }
-  if (pcap_setfilter(p, &filter_code) == -1)
+  if (pcap_setfilter(sender.m_pcap, &filter_code) == -1)
     {
-      err_msg("pcap_setfilter(): %s", pcap_geterr(p));
-      pcap_close(p);
-      libnet_destroy(l);
+      err_msg("pcap_setfilter(): %s", pcap_geterr(sender.m_pcap));
+      pcap_close(sender.m_pcap);
       return 1;
     }
   pcap_freecode(&filter_code); // avoid  memory-leak
@@ -276,7 +248,7 @@ beginAuthentication:
       FillFakeMAC(m_localMAC, m_fakeMAC);
     }
    */
-  SendFindServerPacket(l); // the first time to search for server
+  SendFindServerPacket(&sender); // the first time to search for server
   packetCount_SentFindServer = 1;
   packetCount_SentName = 0;
   packetCount_SentPassword = 0;
@@ -294,17 +266,17 @@ beginAuthentication:
       sigdelset(&sigset_full, SIGTSTP);
 
       FD_ZERO(&read_set);
-      FD_SET(p_fd, &read_set);
+      FD_SET(sender.m_pcap_no, &read_set);
       timeout.tv_sec = 1;
       timeout.tv_nsec = 0; // 1 second
 
       // wait with all signals(except SIGINT SIGQUIT SIGSTOP) blocked.
-      switch (pselect(p_fd + 1, &read_set, NULL,
+      switch (pselect( sender.m_pcap_no +1, &read_set, NULL,
           NULL, &timeout, &sigset_full) )
         {
         case -1: // Normally, this case should not happen since sig_intr() never returns!
-          pcap_close(p);
-          libnet_destroy(l);
+          pcap_close(sender.m_pcap);
+
           return 1;
         case 0: // timed out
           switch(m_state)
@@ -315,7 +287,7 @@ beginAuthentication:
                 puts("Restarting authentication!");
                 goto beginAuthentication;
               }
-              SendFindServerPacket(l);
+              SendFindServerPacket(&sender);
               continue; // jump to next loop of while(1) to receive next packet
             case 1:
               if(++packetCount_SentName > 3)
@@ -323,7 +295,7 @@ beginAuthentication:
                 puts("Restarting authentication!");
                 goto beginAuthentication;
               }
-              SendNamePacket(l, pkt_data);
+              SendNamePacket(&sender, pkt_data);
               continue;
             case 2:
               if(++packetCount_SentPassword > 3)
@@ -331,24 +303,23 @@ beginAuthentication:
                 puts("Restarting authentication!");
                 goto beginAuthentication;
               }
-              SendPasswordPacket(l, pkt_data);
+              SendPasswordPacket(&sender, pkt_data);
               continue;
             default:
-              pcap_close(p);
-              libnet_destroy(l);
+              pcap_close(sender.m_pcap);
               return 1;
             }
         }
 
       // Here return value of pselect() must be 1
 
-      if((pcap_next_ex(p,&pkt_hdr, &pkt_data)) != 1)
+      if((pcap_next_ex(sender.m_pcap,&pkt_hdr, &pkt_data)) != 1)
         continue;
 
       /* source MAC of the second and the following valid packets should be identical
        * to the source MAC of first valid server finding packet
        */
-      if ((!isFirstPacketFromServer) && (memcmp(m_destMAC,pkt_data+6, 6) != 0))
+      if ((!isFirstPacketFromServer) && (memcmp(sender.m_ETHHDR,pkt_data+6, 6) != 0))
         continue;
 
       /* received a packet successfully. for convenience, SUPPOSE it's the RIGHT packet!!
@@ -370,7 +341,7 @@ beginAuthentication:
               if (isFirstPacketFromServer)
               {
                 // get server's MAC address.
-                memcpy( m_destMAC, pkt_data+6, 6);
+                memcpy( sender.m_ETHHDR, pkt_data+6, 6);
                 isFirstPacketFromServer = 0;
               }
               ++packetCount_SentName;
@@ -382,7 +353,7 @@ beginAuthentication:
                   FillFakeMAC(m_localMAC, m_fakeMAC);
                 }
                 */
-              SendNamePacket(l, pkt_data);
+              SendNamePacket(&sender, pkt_data);
               break;
             case 0x04:
               // type 4, Challenge，response with the returned by MD5 algorithm
@@ -391,7 +362,7 @@ beginAuthentication:
               m_state = 2;
               fputs("@@ User name valid, requesting password...\n", stdout);
               ++packetCount_SentPassword;
-              SendPasswordPacket(l, pkt_data);
+              SendPasswordPacket(&sender, pkt_data);
               break;
             }
           break;
@@ -400,7 +371,7 @@ beginAuthentication:
           if(m_state != 2)
             continue;
 
-          if(m_dhcpmode == 2 && noip_afterauth){
+          if(sender.m_dhcpmode == 2 && noip_afterauth){
               if (system(cmd) == -1)
                 {
                   err_quit("Fail in retrieving network configuration from DHCP server");
@@ -423,18 +394,17 @@ beginAuthentication:
               u_msgBuf);
 
           if (m_echoInterval <= 0) {
-            pcap_close(p);
-            libnet_destroy(l);
+            pcap_close(sender.m_pcap);
             return 0; //user has echo disabled
           }
 
           //uTemp.ulValue = *(((u_long *)(pkt_data+0x9d)));
           offset = ntohs( *((u_int16_t*)(pkt_data+0x10)) );
           uTemp.ulValue = *((u_int32_t *)(pkt_data+(0x11+offset)-0x08));
-          m_key.btValue[0] = Alog(uTemp.btValue[3]);
-          m_key.btValue[1] = Alog(uTemp.btValue[2]);
-          m_key.btValue[2] = Alog(uTemp.btValue[1]);
-          m_key.btValue[3] = Alog(uTemp.btValue[0]);
+          sender.m_key.btValue[0] = Alog(uTemp.btValue[3]);
+          sender.m_key.btValue[1] = Alog(uTemp.btValue[2]);
+          sender.m_key.btValue[2] = Alog(uTemp.btValue[1]);
+          sender.m_key.btValue[3] = Alog(uTemp.btValue[0]);
 
           // unblock SIGINT SIGSTOP SIGQUIT, so we can exit with Ctrl+C
           sigemptyset(&sigset_zero);
@@ -454,7 +424,7 @@ beginAuthentication:
           if (m_intelligentReconnect == 1)
           {
 
-              while (SendEchoPacket(l, pkt_data) == 0)
+              while (SendEchoPacket(&sender, pkt_data) == 0)
               {
             	  // TODO: put code here
             	  sleep(m_echoInterval);
@@ -472,8 +442,7 @@ beginAuthentication:
               sleep(m_echoInterval);
           }
           }
-          pcap_close(p);
-          libnet_destroy(l);
+          pcap_close(sender.m_pcap);
           return 1; // this should never happen.
 
           break;
@@ -496,7 +465,7 @@ beginAuthentication:
           // convert to utf8
           code_convert(u_msgBuf, MAX_U_MSG_LEN, pmsgBuf, strlen(pmsgBuf));
           fprintf(stdout,"@@ Authentication failed: %s\n",u_msgBuf);
-          SendEndCertPacket(l);
+          SendEndCertPacket(&sender);
           goto beginAuthentication;
           break; // should never come here
         }// end switch
@@ -552,7 +521,7 @@ get_element(xmlNode * a_node)
   {
     xmlNode *cur_node = NULL;
     char *node_content, *node_name;
-    int i, len;
+    int i ;
 
     for (cur_node = a_node; cur_node != NULL; cur_node = cur_node->next)
       {
@@ -567,13 +536,13 @@ get_element(xmlNode * a_node)
               {
                 strncpy(name, node_content, sizeof(name) - 1);
                 name[sizeof(name) - 1] = 0;
-                m_name = name;
+                sender.m_name = name;
               }
             else if (strcmp(node_name, "Password") == 0)
               {
                 strncpy(password, node_content, sizeof(password) - 1);
                 password[sizeof(password) - 1] = 0;
-                m_password = password;
+                sender.m_password = password;
               }
             else if (strcmp(node_name, "AuthenticationMode") == 0)
               {
@@ -603,7 +572,7 @@ get_element(xmlNode * a_node)
               }
             else if (strcmp(node_name, "DHCPmode") == 0)
               {
-                m_dhcpmode = atoi(node_content);
+                sender.m_dhcpmode = atoi(node_content);
               }
              /* comment out for further useage
             else if (strcmp(node_name, "FakeMAC") == 0)
@@ -617,7 +586,7 @@ get_element(xmlNode * a_node)
               {
                 strncpy(fakeAddress, node_content, sizeof(fakeAddress) - 1);
                 fakeAddress[sizeof(fakeAddress) - 1] = 0;
-                if (inet_pton(AF_INET, fakeAddress, m_ip) <= 0)
+                if (inet_pton(AF_INET, fakeAddress, & sender.m_ip) <= 0)
                 err_msg("invalid fakeAddress found in ruijie.conf, ignored...\n");
                 else
                 m_fakeAddress = fakeAddress;
@@ -675,9 +644,9 @@ checkAndSetConfig(void)
      */
     xmlCleanupParser();
 
-    if ((m_name == NULL) || (m_name[0] == 0))
+    if ((sender.m_name == NULL) || (sender.m_name[0] == 0))
     err_quit("invalid name found in ruijie.conf!\n");
-    if ((m_password == NULL) || (m_password[0] == 0))
+    if ((sender.m_password == NULL) || (sender.m_password[0] == 0))
     err_quit("invalid password found in ruijie.conf!\n");
     if ((m_authenticationMode < 0) || (m_authenticationMode> 1))
     err_quit("invalid authenticationMode found in ruijie.conf!\n");
@@ -704,9 +673,6 @@ checkAndSetConfig(void)
     puts("-- END");
 #endif
 
-    //just set them to zero since they don't seem to be important.
-    memset(m_netgate, 0, sizeof(m_netgate));
-    memset(m_dns1, 0, sizeof(m_dns1));
   }
 
 static int
@@ -716,7 +682,7 @@ GenSetting(void)
     xmlDocPtr doc = NULL; /* document pointer */
 
     xmlNodePtr root_node = NULL, account_node = NULL,
-    setting_node = NULL, msg_node = NULL;/* node pointers */
+    setting_node = NULL;//, msg_node = NULL;/* node pointers */
 
     int rc;
 
@@ -777,15 +743,9 @@ GenSetting(void)
 static void
 logoff(int signo)
 {
-  libnet_t *l = NULL;
-  char l_errbuf[LIBNET_ERRBUF_SIZE];
-
   if (m_state == 3)
     {
-      if ((l = libnet_init(LIBNET_LINK, m_nic, l_errbuf)) == NULL)
-        _exit(0);
-      SendEndCertPacket(l);
-      libnet_destroy(l);
+      SendEndCertPacket(&sender);
     }
   _exit(0);
 }
