@@ -1,7 +1,7 @@
 /*******************************************************************************\
  * RuijieClient -- a CLI based Ruijie Client authentication modified from mystar *
  *                                                                               *
- * Copyright (C) Gong Han, Chen Tingjun  microcai(microcai@sina.com)             *
+ * Copyright (C) Gong Han, Chen Tingjun  microcai                                *
  \*******************************************************************************/
 
 /*
@@ -12,6 +12,7 @@
  * AUTHORS:
  *   Gong Han  <gong AT fedoraproject.org> from CSE@FJNU CN
  *   Chen Tingjun <chentingjun AT gmail.com> from POET@FJNU CN
+ *   microcai <microcai AT sina.com > from ZSTU
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -408,7 +409,13 @@ int SendPasswordPacket(ruijie_packet *this)
 	}
 	return -1;
 }
+// 这个，通过使用 IMAP 来发现是否断网。就是 ping 啦
+int IfOnline(ruijie_packet*this)
+{
+	// TODO: put code here
 
+	return 0;
+}
 int SendEchoPacket(ruijie_packet *this)
 {
 

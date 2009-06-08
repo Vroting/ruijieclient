@@ -1,7 +1,7 @@
 /*******************************************************************************\
  * RuijieClient -- a CLI based Ruijie Client authentication modified from mystar *
  *                                                                               *
- * Copyright (C) Gong Han, Chen Tingjun                                          *
+ * Copyright (C) Gong Han, Chen Tingjun  microcai                                        *
  \*******************************************************************************/
 
 /*
@@ -12,6 +12,7 @@
  * AUTHORS:
  *   Gong Han  <gong AT fedoraproject.org> from CSE@FJNU CN
  *   Chen Tingjun <chentingjun AT gmail.com> from POET@FJNU CN
+ *   microcai <microcai AT sina.com> from ZSTU
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public

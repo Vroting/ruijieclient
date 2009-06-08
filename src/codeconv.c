@@ -37,6 +37,10 @@ code_convert(char *outbuf, size_t outlen, char *inbuf, size_t inlen)
   char **pout = &outbuf;
 
   // initial iconv
+  /*
+   * TODO:We should judge the incoming text's encoding
+   * and select the most suitable encoding.
+   */
   cd = iconv_open("UTF-8", "GBK");
   if (cd == 0)
     return -1;
