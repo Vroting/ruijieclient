@@ -28,9 +28,7 @@
  * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
  * Boston, MA 02111-1307, USA.
  */
-
 #include "sendpacket.h"
-#include "global.h"
 #include "blog.h"
 
 // broadcast packet for finding server
@@ -129,12 +127,6 @@ static uint8_t RuijieExtra[144] = {
 };
 
 int
-EnableDHCP()
-{
-    RuijieExtra[0x04] = 0x7f;
-}
-
-int
 FillVersion(char * m_fakeVersion)
 {
   unsigned int c_ver1, c_ver2;
@@ -194,7 +186,7 @@ ComputeHash(unsigned char * src, int i)
 }
 
 int
-SendFindServerPacket(libnet_t *l)
+SendFindServerPacket(ruijie_packet *l)
 {
 
   uint8_t StandardAddr[] =
@@ -202,7 +194,6 @@ SendFindServerPacket(libnet_t *l)
   uint8_t StarAddr[] =
     { 0x01, 0xD0, 0xF8, 0x00, 0x00, 0x03 };
 
-  extern uint8_t m_localMAC[6];
   extern int m_authenticationMode;
 
   if (m_authenticationMode == 1)
@@ -210,63 +201,57 @@ SendFindServerPacket(libnet_t *l)
   else
     memcpy(broadPackage, StandardAddr, 6);
 
-  memcpy(broadPackage + 6, m_localMAC, 6); // fill local MAC
+  memcpy(broadPackage + ETH_ALEN, l->m_ETHHDR + ETH_ALEN ,ETH_ALEN); // fill local MAC
 
-  FillNetParamater(&RuijieExtra[0x05]);
+  l->m_ruijieExtra = RuijieExtra;
 
-  memcpy(broadPackage+18, RuijieExtra, sizeof(RuijieExtra));
+  FillNetParamater(l);
+
+  memcpy(broadPackage+18, l->m_ruijieExtra, sizeof(RuijieExtra));
 
   fputs(">> Searching for server...\n", stdout);
-
-  return (libnet_write_link(l, broadPackage, 0x3E8) == 0x3E8) ? 0 : -1;
+  return pcap_sendpacket(l->m_pcap,broadPackage,0x3E8) ? 0 : -1;
 }
 
 int
-SendNamePacket(libnet_t *l, const u_char *pkt_data)
+SendNamePacket(ruijie_packet *l, const u_char *pkt_data)
 {
 
-  extern char *m_name;
-  extern uint8_t m_destMAC[6];
-  extern uint8_t m_localMAC[6];
+//  extern char *m_name;
   int nameLen;
 
-  nameLen = strlen(m_name);
-  memcpy(ackPackage, m_destMAC, 6); // fill destined MAC
-  memcpy(ackPackage + 6, m_localMAC, 6); // fill local MAC
+  nameLen = strlen(l->m_name);
+  memcpy(ackPackage, l->m_ETHHDR, 12); // fill destined MAC and local MAC
+
   ackPackage[0x13] = pkt_data[0x13]; //id, HERE as if it's alway 1 from ShiDa ??
   *(short *) (ackPackage + 0x10) = htons((short) (5 + nameLen));// length
   *(short *) (ackPackage + 0x14) = *(short *) (ackPackage + 0x10);// length
   ackPackage[0x16] = 0x01; //Type: Identify
-  memcpy(ackPackage + 0x17, m_name, nameLen); // fill name
+  memcpy(ackPackage + 0x17, l->m_name, nameLen); // fill name
 
 
-  memcpy(ackPackage+0x17+nameLen, RuijieExtra, sizeof(RuijieExtra));
+  memcpy(ackPackage+0x17+nameLen, l->m_ruijieExtra, sizeof(RuijieExtra));
 
 
   fputs(">> Sending user name...\n", stdout);
 
-  return (libnet_write_link(l, ackPackage, 0x3E8) == 0x3E8) ? 0 : -1;
+  return (pcap_sendpacket(l->m_pcap, ackPackage, 0x3E8) == 0x3E8) ? 0 : -1;
 }
 
 int
-SendPasswordPacket(libnet_t *l, const u_char *pkt_data)
+SendPasswordPacket(ruijie_packet *l, const u_char *pkt_data)
 {
 
   unsigned char md5Data[256]; // password,md5 buffer
   unsigned char *md5Dig; // result of md5 sum
   int md5Len = 0;
 
-  extern char *m_name;
-  extern char *m_password;
-  extern uint8_t m_destMAC[6];
-  extern uint8_t m_localMAC[6];
   int nameLen, passwordLen;
 
-  nameLen = strlen(m_name);
-  passwordLen = strlen(m_password);
+  nameLen = strlen(l->m_name);
+  passwordLen = strlen(l->m_password);
 
-  memcpy(ackPackage, m_destMAC, 6);
-  memcpy(ackPackage + 6, m_localMAC, 6); // fill local MAC
+  memcpy(ackPackage, l->m_ETHHDR, 12);// fill destined MAC and local MAC
 
   ackPackage[0x13] = pkt_data[0x13]; //id
 
@@ -276,7 +261,7 @@ SendPasswordPacket(libnet_t *l, const u_char *pkt_data)
   *(short *) (ackPackage + 0x14) = *(short *) (ackPackage + 0x10);
 
   md5Data[md5Len++] = ackPackage[0x13];//ID
-  memcpy(md5Data + md5Len, m_password, passwordLen);
+  memcpy(md5Data + md5Len, l->m_password, passwordLen);
   md5Len += passwordLen; // password
   memcpy(md5Data + md5Len, pkt_data + 0x18, pkt_data[0x17]);
   md5Len += pkt_data[0x17]; // private key
@@ -285,35 +270,32 @@ SendPasswordPacket(libnet_t *l, const u_char *pkt_data)
   ackPackage[0x17] = 16; // length of md5 sum is always 16.
   memcpy(ackPackage + 0x18, md5Dig, 16);
 
-  memcpy(ackPackage + 0x28, m_name, nameLen);
+  memcpy(ackPackage + 0x28,l->m_name, nameLen);
 
-  memcpy(ackPackage + 0x28 + nameLen, RuijieExtra, sizeof(RuijieExtra));
+  memcpy(ackPackage + 0x28 + nameLen, l->m_ruijieExtra, sizeof(RuijieExtra));
 
   fputs(">> Sending password... \n", stdout);
-  return (libnet_write_link(l, ackPackage, 0x3E8) == 0x3E8) ? 0 : -1;
+  return (pcap_sendpacket( l->m_pcap, ackPackage, 0x3E8) == 0x3E8) ? 0 : -1;
 }
 
 int
-SendEchoPacket(libnet_t *l, const u_char *pkt_data)
+SendEchoPacket(ruijie_packet *l, const u_char *pkt_data)
 {
 
   ULONG_BYTEARRAY uCrypt1, uCrypt2, uCrypt1_After, uCrypt2_After;
-  extern ULONG_BYTEARRAY m_serialNo;
-  extern ULONG_BYTEARRAY m_key;
-  extern uint8_t m_destMAC[6];
-  extern uint8_t m_localMAC[6];
+//  extern ULONG_BYTEARRAY m_serialNo;
+//  extern ULONG_BYTEARRAY m_key;
 
-  m_serialNo.ulValue++;
+  l->m_serialNo.ulValue++;
 /* m_serialNo is initialized at the beginning of main() of ruijieclient.c, and
  * m_key is initialized in ruijieclient.c when the 1st Authentication-Success
  * packet is received.
  * */
 
-  uCrypt1.ulValue = m_key.ulValue + m_serialNo.ulValue;
-  uCrypt2.ulValue = m_serialNo.ulValue;
+  uCrypt1.ulValue = l->m_key.ulValue + l->m_serialNo.ulValue;
+  uCrypt2.ulValue = l->m_serialNo.ulValue;
 
-  memcpy(echoPackage, m_destMAC, 6);
-  memcpy(echoPackage + 6, m_localMAC, 6);
+  memcpy(echoPackage, l->m_ETHHDR , 12);
 
   uCrypt1_After.ulValue = htonl(uCrypt1.ulValue);
   uCrypt2_After.ulValue = htonl(uCrypt2.ulValue);
@@ -327,20 +309,16 @@ SendEchoPacket(libnet_t *l, const u_char *pkt_data)
   echoPackage[0x24] = Alog(uCrypt2_After.btValue[2]);
   echoPackage[0x25] = Alog(uCrypt2_After.btValue[3]);
 
-  return (libnet_write_link(l, echoPackage, 0x2d) == 0x2d) ? 0 : -1;
+  return pcap_sendpacket(l->m_pcap, echoPackage, 0x2d);
 }
 
 int
-SendEndCertPacket(libnet_t *l)
+SendEndCertPacket(ruijie_packet *l)
 {
-  extern uint8_t m_destMAC[6];
-  extern uint8_t m_localMAC[6];
+  memcpy(ExitPacket, l->m_ETHHDR, 12);// fill destined MAC and local MAC
 
-  memcpy(ExitPacket, m_destMAC, 6);
-  memcpy(ExitPacket + 6, m_localMAC, 6);
-
-  memcpy(ExitPacket+18, RuijieExtra, sizeof(RuijieExtra));
+  memcpy(ExitPacket+18, l->m_ruijieExtra, sizeof(RuijieExtra));
 
   fputs(">> Logouting... \n", stdout);
-  return (libnet_write_link(l, ExitPacket, 0x80) == 0x80) ? 0 : -1;
+  return (pcap_sendpacket(l->m_pcap,ExitPacket, 0x80) == 0x80) ? 0 : -1;
 }

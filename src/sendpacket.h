@@ -32,10 +32,37 @@
 #ifndef SENDPACKET_H
 #define SENDPACKET_H
 
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <net/ethernet.h>
+#include <pcap.h>
 #include <openssl/md5.h>
 #include <string.h>
-#include <sys/types.h>
-#include <libnet.h>
+
+#include "global.h"
+
+typedef struct __ruijie_packet{
+	pcap_t *m_pcap;
+	int 	m_pcap_no;
+	// DHCP mode: 0: Off, 1:On, DHCP before authentication, 2: On, DHCP after authentication
+	int 	m_dhcpmode;
+	u_char	m_ETHHDR[ETH_HLEN]; // MAC 帧头
+	u_char	circleCheck[2]; //那两个鬼值
+	char*	m_name; // 用户名
+	char*	m_password; // 密码
+
+	u_char*	m_ruijieExtra;
+	in_addr_t m_ip;
+	in_addr_t m_mask;
+	in_addr_t m_gate;
+	in_addr_t m_dns;
+
+	// serial number, initialised when received the first valid Authentication-Success-packet
+	ULONG_BYTEARRAY m_serialNo;
+	// password private key, initialised at the beginning of function main()
+	ULONG_BYTEARRAY m_key;
+
+}ruijie_packet;
 
 /*
  * The functions below return 0 for success while -1 for failure. However, they should never
@@ -59,27 +86,28 @@ FillFakeMAC(unsigned char * des_MAC, char * m_fakeMAC);
 
 /* send server finding packet */
 int
-SendFindServerPacket(libnet_t *l);
+SendFindServerPacket(ruijie_packet *l);
 
 /* send authenticate name packet */
 int
-SendNamePacket(libnet_t *l, const u_char *pkt_data);
+SendNamePacket(ruijie_packet *, const u_char *pkt_data);
 
 /* send authenticate password packet */
 int
-SendPasswordPacket(libnet_t *l, const u_char *pkt_data);
+SendPasswordPacket(ruijie_packet  *, const u_char *pkt_data);
 
 /* send periodical keep-alive echo packet */
 int
-SendEchoPacket(libnet_t *l, const u_char *pkt_data);
+SendEchoPacket(ruijie_packet  *, const u_char *pkt_data);
 
 /* send end certification packet */
 int
-SendEndCertPacket(libnet_t *l);
+SendEndCertPacket(ruijie_packet  *);
 
 /* default version bytes macro */
 //#define VER1 0x0F
 //#define VER2 0xFF
 //#define DHCP_FLAG 0xFF
+
 
 #endif

@@ -36,16 +36,13 @@
 /* We should thank him very much, because the algorithm is crucial.  */
 
 #include <sys/types.h>
-#include <string.h>
 #include "myerr.h"
+#include "sendpacket.h"
+void
+InitializeBlog(ruijie_packet *);
 
 void
-InitializeBlog(const unsigned char *m_ip, const unsigned char *m_netmask,
-    const unsigned char *m_netgate, const unsigned char *m_dns1,
-    const int m_dhcpmode);
-
-void
-FillNetParamater(unsigned char ForFill[]);
+FillNetParamater(ruijie_packet*);
 
 unsigned char
 Alog(unsigned char BForAlog);
