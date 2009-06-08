@@ -1,7 +1,7 @@
 /*******************************************************************************\
  * RuijieClient -- a CLI based Ruijie Client authentication modified from mystar *
  *                                                                               *
- * Copyright (C) Gong Han, Chen Tingjun                                          *
+ * Copyright (C) Gong Han, Chen Tingjun  microcai(microcai@sina.com)             *
  \*******************************************************************************/
 
 /*
@@ -28,6 +28,7 @@
  * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
  * Boston, MA 02111-1307, USA.
  */
+
 #include "sendpacket.h"
 #include "blog.h"
 
@@ -185,117 +186,244 @@ ComputeHash(unsigned char * src, int i)
   return digest;
 }
 
-int
-SendFindServerPacket(ruijie_packet *l)
+int GetServerMsg(ruijie_packet*this,char*outbuf,size_t buflen)
 {
+	memset(outbuf, 0, buflen);
+	size_t  len = ntohs(*((u_int16_t*)(this->pkt_data + 0x10))) - 10;
+	if(buflen < len)
+		return -1; //没有足够的空间
+	if(len < 0 )
+		return 0; //服务器没有发送东西
+	char *msgBuf = (typeof(msgBuf))(this->pkt_data + 0x1c);
 
-  uint8_t StandardAddr[] =
-    { 0x01, 0x80, 0xC2, 0x00, 0x00, 0x03 };
-  uint8_t StarAddr[] =
-    { 0x01, 0xD0, 0xF8, 0x00, 0x00, 0x03 };
-
-  extern int m_authenticationMode;
-
-  if (m_authenticationMode == 1)
-    memcpy(broadPackage, StarAddr, 6);
-  else
-    memcpy(broadPackage, StandardAddr, 6);
-
-  memcpy(broadPackage + ETH_ALEN, l->m_ETHHDR + ETH_ALEN ,ETH_ALEN); // fill local MAC
-
-  l->m_ruijieExtra = RuijieExtra;
-
-  FillNetParamater(l);
-
-  memcpy(broadPackage+18, l->m_ruijieExtra, sizeof(RuijieExtra));
-
-  fputs(">> Searching for server...\n", stdout);
-  return pcap_sendpacket(l->m_pcap,broadPackage,0x3E8) ? 0 : -1;
+    //remove the leading "\r\n" which seems always exist!
+#ifdef DEBUG
+    puts("-- MSG INFO");
+    printf("## msgBuf(GB) %s\n", msgBuf);
+#endif
+	if (len > 3 && (msgBuf[0] == 0xd) && (msgBuf[1] == 0xa))
+	{
+#ifdef DEBUG
+		puts("@@ /r/n found");
+		puts("-- END");
+#endif
+		msgBuf += 2;
+	}
+#ifdef DEBUG
+	else
+	{
+		puts("@@ /r/n not found");
+		puts("-- END");
+	}
+#endif
+	code_convert(outbuf, buflen, msgBuf, strlen(msgBuf));
 }
 
-int
-SendNamePacket(ruijie_packet *l, const u_char *pkt_data)
+int WaitPacket(ruijie_packet *this, int timeout)
 {
+	struct pollfd pfd;
+	pfd.fd = this->m_pcap_no;
+	pfd.events = POLLIN;
 
-//  extern char *m_name;
-  int nameLen;
-
-  nameLen = strlen(l->m_name);
-  memcpy(ackPackage, l->m_ETHHDR, 12); // fill destined MAC and local MAC
-
-  ackPackage[0x13] = pkt_data[0x13]; //id, HERE as if it's alway 1 from ShiDa ??
-  *(short *) (ackPackage + 0x10) = htons((short) (5 + nameLen));// length
-  *(short *) (ackPackage + 0x14) = *(short *) (ackPackage + 0x10);// length
-  ackPackage[0x16] = 0x01; //Type: Identify
-  memcpy(ackPackage + 0x17, l->m_name, nameLen); // fill name
-
-
-  memcpy(ackPackage+0x17+nameLen, l->m_ruijieExtra, sizeof(RuijieExtra));
-
-
-  fputs(">> Sending user name...\n", stdout);
-
-  return (pcap_sendpacket(l->m_pcap, ackPackage, 0x3E8) == 0x3E8) ? 0 : -1;
+	return poll(&pfd,1,timeout);
 }
 
-int
-SendPasswordPacket(ruijie_packet *l, const u_char *pkt_data)
+int SendFindServerPacket(ruijie_packet *this)
 {
+	uint8_t StandardAddr[] =
+	{ 0x01, 0x80, 0xC2, 0x00, 0x00, 0x03 };
+	uint8_t StarAddr[] =
+	{ 0x01, 0xD0, 0xF8, 0x00, 0x00, 0x03 };
 
-  unsigned char md5Data[256]; // password,md5 buffer
-  unsigned char *md5Dig; // result of md5 sum
-  int md5Len = 0;
+	if (this->m_authenticationMode )
+		memcpy(broadPackage, StarAddr, 6);
+	else
+		memcpy(broadPackage, StandardAddr, 6);
 
-  int nameLen, passwordLen;
+	memcpy(broadPackage + ETH_ALEN, this->m_ETHHDR + ETH_ALEN, ETH_ALEN); // fill local MAC
 
-  nameLen = strlen(l->m_name);
-  passwordLen = strlen(l->m_password);
+	this->m_ruijieExtra = RuijieExtra;
 
-  memcpy(ackPackage, l->m_ETHHDR, 12);// fill destined MAC and local MAC
+	// check blog.c and bloc.h for details
+	InitializeBlog(this);
+	FillNetParamater(this);
 
-  ackPackage[0x13] = pkt_data[0x13]; //id
+	memcpy(broadPackage + 18, this->m_ruijieExtra, sizeof(RuijieExtra));
 
-  ackPackage[0x16] = 0x04; // Type: MD5-Challenge
+	fputs(">> Searching for server...\n", stdout);
+	int i;
+	for (i = 0; i < 3; i++)
+	{
+		if (pcap_sendpacket(this->m_pcap, broadPackage, 0x3E8))
+			return -1;
+		switch (WaitPacket(this, 1500))
+		{
+		case 0: // timeout
+			continue; // 只好重试
+		case -1:
+			break;
+		default: //希望是 1
+			if (pcap_next_ex(this->m_pcap, &this->pkt_hdr, &this->pkt_data) <= 0)
+				continue;
+			if (this->pkt_data[0x12] == 0x01 && this->pkt_data[0x16] == 0x01)
+			{
+				// get server's MAC address.
+				memcpy(this->m_ETHHDR, this->pkt_data + ETH_ALEN, ETH_ALEN);
+				//gets last ID
+				this->m_lastID = this->pkt_data[0x13];
 
-  *(short *) (ackPackage + 0x10) = htons((short) (22 + nameLen)); // length
-  *(short *) (ackPackage + 0x14) = *(short *) (ackPackage + 0x10);
-
-  md5Data[md5Len++] = ackPackage[0x13];//ID
-  memcpy(md5Data + md5Len, l->m_password, passwordLen);
-  md5Len += passwordLen; // password
-  memcpy(md5Data + md5Len, pkt_data + 0x18, pkt_data[0x17]);
-  md5Len += pkt_data[0x17]; // private key
-  md5Dig = (unsigned char *) ComputeHash(md5Data, md5Len);
-
-  ackPackage[0x17] = 16; // length of md5 sum is always 16.
-  memcpy(ackPackage + 0x18, md5Dig, 16);
-
-  memcpy(ackPackage + 0x28,l->m_name, nameLen);
-
-  memcpy(ackPackage + 0x28 + nameLen, l->m_ruijieExtra, sizeof(RuijieExtra));
-
-  fputs(">> Sending password... \n", stdout);
-  return (pcap_sendpacket( l->m_pcap, ackPackage, 0x3E8) == 0x3E8) ? 0 : -1;
+				return 0;
+			}
+			continue;
+		}
+	}
+	return -1;
 }
 
-int
-SendEchoPacket(ruijie_packet *l, const u_char *pkt_data)
+int SendNamePacket(ruijie_packet *this)
+{
+	//  extern char *m_name;
+	int nameLen;
+
+	nameLen = strlen(this->m_name);
+	memcpy(ackPackage, this->m_ETHHDR, 12); // fill destined MAC and local MAC
+
+	ackPackage[0x13] = this->m_lastID; //id, HERE as if it's alway 1 from ShiDa ??
+	*(short *) (ackPackage + 0x10) = htons((short) (5 + nameLen));// length
+	*(short *) (ackPackage + 0x14) = *(short *) (ackPackage + 0x10);// length
+	ackPackage[0x16] = 0x01; //Type: Identify
+	memcpy(ackPackage + 0x17, this->m_name, nameLen); // fill name
+
+	memcpy(ackPackage + 0x17 + nameLen, this->m_ruijieExtra,
+			sizeof(RuijieExtra));
+
+	fputs(">> Sending user name...\n", stdout);
+	int i;
+	for (i = 0; i < 3; i++)
+	{
+		if (pcap_sendpacket(this->m_pcap, ackPackage, 0x3E8))
+			return -1;
+		switch (WaitPacket(this, 1500))
+		{
+		case 0: // timeout
+			continue; // 只好重试
+		case -1:
+			break;
+		default: //希望是 1
+
+			if (pcap_next_ex(this->m_pcap, &this->pkt_hdr, &this->pkt_data)<=0)
+				continue;
+			if (this->pkt_data[0x12] == 0x01 && this->pkt_data[0x16] == 0x04)
+			{
+				//gets last ID
+				this->m_lastID = this->pkt_data[0x13];
+				this->m_MD5value_len = this->pkt_data[0x17];
+				memcpy(this->m_MD5value,this->pkt_data+0x18,this->m_MD5value_len);
+				return 0;
+			}
+			continue;
+		}
+	}
+	return -1;
+}
+
+int SendPasswordPacket(ruijie_packet *this)
+{
+
+    // msg offset
+	u_int16_t offset;
+	ULONG_BYTEARRAY uTemp;
+
+	unsigned char md5Data[256]; // password,md5 buffer
+	unsigned char *md5Dig; // result of md5 sum
+	int md5Len = 0;
+
+	int nameLen, passwordLen;
+
+	nameLen = strlen(this->m_name);
+	passwordLen = strlen(this->m_password);
+
+	memcpy(ackPackage, this->m_ETHHDR, 12);// fill destined MAC and local MAC
+
+	ackPackage[0x13] = this->m_lastID; //id
+
+	ackPackage[0x16] = 0x04; // Type: MD5-Challenge
+
+	*(short *) (ackPackage + 0x10) = htons((short) (22 + nameLen)); // length
+	*(short *) (ackPackage + 0x14) = *(short *) (ackPackage + 0x10);
+
+	md5Data[md5Len++] = this->m_lastID;//ID
+	memcpy(md5Data + md5Len, this->m_password, passwordLen);
+	md5Len += passwordLen; // password
+
+	memcpy(md5Data + md5Len, this->m_MD5value, this->m_MD5value_len);
+	md5Len += this->m_MD5value_len; // private key
+
+	md5Dig = (unsigned char *) ComputeHash(md5Data, md5Len);
+
+	ackPackage[0x17] = 16; // length of md5 sum is always 16.
+	memcpy(ackPackage + 0x18, md5Dig, 16);
+
+	memcpy(ackPackage + 0x28, this->m_name, nameLen);
+
+	memcpy(ackPackage + 0x28 + nameLen, this->m_ruijieExtra,
+			sizeof(RuijieExtra));
+
+	fputs(">> Sending password... \n", stdout);
+	int i;
+	for (i = 0; i < 3; i++)
+	{
+		if (pcap_sendpacket(this->m_pcap, ackPackage, 0x3E8))
+			return -1;
+		switch (WaitPacket(this, 1500))
+		{
+		case 0: // timeout
+			continue; // 只好重试
+		case -1:
+			break;
+		default: //希望是 1
+			if (pcap_next_ex(this->m_pcap, &this->pkt_hdr, &this->pkt_data)<=0)
+				continue;
+			if (this->pkt_data[0x12] ==3 ) //成功
+			{
+				//gets last ID
+				this->m_lastID = this->pkt_data[0x13];
+
+				//get 心跳信息初始码
+				//uTemp.ulValue = *(((u_long *)(pkt_data+0x9d)));
+				offset = ntohs(*((u_int16_t*) (this->pkt_data + 0x10)));
+				uTemp.ulValue = *((u_int32_t *) (this->pkt_data + (0x11 + offset) - 0x08));
+				this->m_key.btValue[0] = Alog(uTemp.btValue[3]);
+				this->m_key.btValue[1] = Alog(uTemp.btValue[2]);
+				this->m_key.btValue[2] = Alog(uTemp.btValue[1]);
+				this->m_key.btValue[3] = Alog(uTemp.btValue[0]);
+
+				return 0;
+			}else if(this->pkt_data[0x12] ==4)
+			{
+				return 1; //失败
+			}
+			continue;
+		}
+	}
+	return -1;
+}
+
+int SendEchoPacket(ruijie_packet *this)
 {
 
   ULONG_BYTEARRAY uCrypt1, uCrypt2, uCrypt1_After, uCrypt2_After;
-//  extern ULONG_BYTEARRAY m_serialNo;
-//  extern ULONG_BYTEARRAY m_key;
 
-  l->m_serialNo.ulValue++;
+  this->m_serialNo.ulValue++;
 /* m_serialNo is initialized at the beginning of main() of ruijieclient.c, and
  * m_key is initialized in ruijieclient.c when the 1st Authentication-Success
  * packet is received.
  * */
 
-  uCrypt1.ulValue = l->m_key.ulValue + l->m_serialNo.ulValue;
-  uCrypt2.ulValue = l->m_serialNo.ulValue;
+  uCrypt1.ulValue = this->m_key.ulValue + this->m_serialNo.ulValue;
+  uCrypt2.ulValue = this->m_serialNo.ulValue;
 
-  memcpy(echoPackage, l->m_ETHHDR , 12);
+  memcpy(echoPackage, this->m_ETHHDR , 12);
 
   uCrypt1_After.ulValue = htonl(uCrypt1.ulValue);
   uCrypt2_After.ulValue = htonl(uCrypt2.ulValue);
@@ -309,7 +437,12 @@ SendEchoPacket(ruijie_packet *l, const u_char *pkt_data)
   echoPackage[0x24] = Alog(uCrypt2_After.btValue[2]);
   echoPackage[0x25] = Alog(uCrypt2_After.btValue[3]);
 
-  return pcap_sendpacket(l->m_pcap, echoPackage, 0x2d);
+  if (WaitPacket(this, 1000) != 0)
+  {
+	  //看好哦，这个是检测是否断网的关键哦
+	  return -1; //接受到断网的通知哈哈
+  }
+  return pcap_sendpacket(this->m_pcap, echoPackage, 0x2d);
 }
 
 int

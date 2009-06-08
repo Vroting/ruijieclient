@@ -1,7 +1,7 @@
 /*******************************************************************************\
  * RuijieClient -- a CLI based Ruijie Client authentication modified from mystar *
  *                                                                               *
- * Copyright (C) Gong Han, Chen Tingjun                                          *
+ * Copyright (C) Gong Han, Chen Tingjun microcai (microcai@sina.com)             *
  \*******************************************************************************/
 
 /*
@@ -33,6 +33,7 @@
 #define SENDPACKET_H
 
 #include <sys/types.h>
+#include <poll.h>
 #include <netinet/in.h>
 #include <net/ethernet.h>
 #include <pcap.h>
@@ -44,8 +45,16 @@
 typedef struct __ruijie_packet{
 	pcap_t *m_pcap;
 	int 	m_pcap_no;
+
+	int		m_lastID; // last ID send form server.
+	int		m_MD5value_len; // MD5 key
 	// DHCP mode: 0: Off, 1:On, DHCP before authentication, 2: On, DHCP after authentication
 	int 	m_dhcpmode;
+	// auth mode: 0:standard 1:Star private
+	int		m_authenticationMode ;
+	int		m_state; //1 if online
+
+	u_char	m_MD5value[64]; //private key
 	u_char	m_ETHHDR[ETH_HLEN]; // MAC 帧头
 	u_char	circleCheck[2]; //那两个鬼值
 	char*	m_name; // 用户名
@@ -56,11 +65,14 @@ typedef struct __ruijie_packet{
 	in_addr_t m_mask;
 	in_addr_t m_gate;
 	in_addr_t m_dns;
-
 	// serial number, initialised when received the first valid Authentication-Success-packet
 	ULONG_BYTEARRAY m_serialNo;
 	// password private key, initialised at the beginning of function main()
 	ULONG_BYTEARRAY m_key;
+
+    struct pcap_pkthdr *pkt_hdr;
+	const u_char *pkt_data;
+
 
 }ruijie_packet;
 
@@ -90,15 +102,15 @@ SendFindServerPacket(ruijie_packet *l);
 
 /* send authenticate name packet */
 int
-SendNamePacket(ruijie_packet *, const u_char *pkt_data);
+SendNamePacket(ruijie_packet *);
 
 /* send authenticate password packet */
 int
-SendPasswordPacket(ruijie_packet  *, const u_char *pkt_data);
+SendPasswordPacket(ruijie_packet  *);
 
 /* send periodical keep-alive echo packet */
 int
-SendEchoPacket(ruijie_packet  *, const u_char *pkt_data);
+SendEchoPacket(ruijie_packet  *);
 
 /* send end certification packet */
 int

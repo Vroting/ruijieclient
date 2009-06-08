@@ -33,7 +33,7 @@
 #include <netinet/in.h>
 #include "blog.h"
 
-static int blogIsInitialized = 0;
+//static int blogIsInitialized = 0;
 
 static unsigned char Table[]={
   0x00,0x00,0x21,0x10,0x42,0x20,0x63,0x30,0x84,0x40,0xA5,0x50,0xC6,0x60,0xE7,0x70,
@@ -75,8 +75,6 @@ static unsigned char Table[]={
 void
 InitializeBlog(ruijie_packet * l)
 {
-
-
 	int iCircle = 0x15;
 	int i, ax = 0, bx = 0, dx = 0;
 
@@ -97,9 +95,6 @@ InitializeBlog(ruijie_packet * l)
 	memcpy(sCircleBase + 9, &(l->m_mask), 4);
 	memcpy(sCircleBase + 13, &(l->m_gate), 4);
 	memcpy(sCircleBase + 17, &(l->m_dns), 4);
-	struct in_addr p;
-	p.s_addr = l->m_ip;
-	printf("mask is %s",inet_ntoa(p));
 
 	for (i = 0; i < iCircle; i++)
 	{
@@ -118,8 +113,6 @@ InitializeBlog(ruijie_packet * l)
 	}
 	l->circleCheck[0] = (unsigned char) ((ax & 0xff00) >> 8);
 	l->circleCheck[1] = (unsigned char) (ax & 0x00ff);
-
-	blogIsInitialized = 1;
 }
 
 //Fill in some additional information  Ruijie Corp. required.
@@ -127,13 +120,11 @@ InitializeBlog(ruijie_packet * l)
 void
 FillNetParamater(ruijie_packet*l)
 {
-  if (blogIsInitialized == 0)
-    err_quit("Blog algorithm has not been initialised yet \n");
   u_char * ForFill = l->m_ruijieExtra + 0x05;
   memcpy(ForFill,&(l->m_ip),4);
   memcpy(ForFill+4,&(l->m_mask),4);
   memcpy( ForFill +8 , &(l->m_gate),4);
-   memcpy(ForFill + 12, &(l->m_dns),4);
+  memcpy(ForFill + 12, &(l->m_dns),4);
 
   ForFill[0] = Alog(ForFill[0]);
   ForFill[1] = Alog(ForFill[1]);
