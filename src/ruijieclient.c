@@ -38,9 +38,8 @@
 #include "sendpacket.h"
 #include "myerr.h"
 #include "blog.h"
-#include "codeconv.h"
 #include "conn_monitor.h"
-
+#include "prase.h"
 /*   Note that: in this file, the global variables (defined without a leading "static")
  from here to the beginning of the definition of main() are referenced by sendpacket.c ( we
  reference them in the form of "extern ..." in sendpacket.c) */
@@ -89,7 +88,7 @@ logoff(int signo);
 #if defined(LIBXML_TREE_ENABLED) && defined(LIBXML_OUTPUT_ENABLED)
 /* configure related parameters */
 static void
-checkAndSetConfig(void);
+checkAndSetConfig();
 /* generate default setting file */
 static int
 GenSetting(void);
@@ -114,22 +113,26 @@ main(int argc, char* argv[])
 
   char p_errbuf[PCAP_ERRBUF_SIZE];
 
+  int daemon;
+  int genfile;
+
+
+  struct parameter_tags param[] =
+  {
+		{"-D", (char*)&daemon,0,sizeof(daemon),2, BOOL_both},
+		{"--daemon", (char*)&daemon,"-D,--daemon\trun as a daemon",sizeof(daemon),8, BOOL_both},
+		{"-n", nic ,0,sizeof(nic),2, STRING},
+		{"--nic", nic ,"-n,--nic\tnet card",sizeof(nic),5, STRING},
+		{"-g", (char*)&genfile ,0,sizeof(genfile),2, STRING},
+		{0}
+  };
+
   /* message buffer define*/
-  char *pmsgBuf;
-  // original msg buf
-  char msgBuf[MAX_MSG_LEN];
   // utf-8 msg buf. note that each utf-8 character takes 4 bytes
   char u_msgBuf[MAX_U_MSG_LEN];
 
   // system command
   char cmd[32] = "dhclient ";
-
-  int isFirstPacketFromServer = 1;
-  //  sigset_t sigset_full, sigset_zero;
-  struct timespec timeout;
-  int packetCount_SentFindServer = 0;
-  int packetCount_SentName = 0;
-  int packetCount_SentPassword = 0;
 
   // the initial serial number, a magic number!
   sender.m_serialNo.ulValue = 0x1000002a;
@@ -138,14 +141,16 @@ main(int argc, char* argv[])
   kill_all("ruijieclient");
   kill_all("xgrsu 2> /dev/null");
 
+  checkAndSetConfig();
+
   // if '-g' is passed as argument then generate a sample configuration
-  if (argc > 1 && strcmp(argv[1], "g"))
-    {
+  if(genfile)
+  {
       GenSetting();
       exit(EXIT_SUCCESS);
-    }
-
-  checkAndSetConfig();
+  }
+  // Parse command line parameters
+  ParseParameters(&argc,&argv,param);
 
   strcat(cmd, m_nic);
 
@@ -164,10 +169,7 @@ main(int argc, char* argv[])
   sender.m_pcap_no = pcap_fileno(sender.m_pcap); // we can poll() it in the following code.
 
     {
-      struct ifreq rif =
-        {
-          {
-            { 0 } } };
+      struct ifreq rif = { { { 0 } } };
 
       // retrieve MAC address of corresponding net adapter's
       strcpy(rif.ifr_name, m_nic);
@@ -420,7 +422,7 @@ get_element(xmlNode * a_node)
   }
 
 static void
-checkAndSetConfig(void)
+checkAndSetConfig()
   {
 
     xmlDoc *doc = NULL;
