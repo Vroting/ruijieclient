@@ -79,9 +79,9 @@ InitializeBlog(ruijie_packet * l)
 	int iCircle = 0x15;
 	int i, ax = 0, bx = 0, dx = 0;
 
-	//那帮家伙们，单靠这个算法就想区别实达客户端和非实达客户端 -_- !!
-	//The only use of function Blog() is to work out circleCheck[2],
-	//with and only with the help of 4 parameters----m_IP, m_NetMask, m_NetGate, m_DNS1
+	// They use it to distinguish star client and non-star client
+	// The only use of function Blog() is to work out circleCheck[2],
+	// with and only with the help of 4 parameters----m_IP, m_NetMask, m_NetGate, m_DNS1
 	u_char sCircleBase[0x15] =
 	{ 0x00, 0x00, 0x13, 0x11, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };

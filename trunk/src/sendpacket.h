@@ -42,44 +42,44 @@
 
 #include "global.h"
 
-typedef struct __ruijie_packet{
-	pcap_t *m_pcap;
-	int 	m_pcap_no;
+typedef struct __ruijie_packet
+{
+  pcap_t *m_pcap;
+  int m_pcap_no;
 
-	int		m_lastID; // last ID send form server.
-	int		m_MD5value_len; // MD5 key
-	// DHCP mode: 0: Off, 1:On, DHCP before authentication, 2: On, DHCP after authentication
-	int 	m_dhcpmode;
-	// auth mode: 0:standard 1:Star private
-	int		m_authenticationMode ;
-	int		m_state; //1 if online
+  int m_lastID; // last ID send form server.
+  int m_MD5value_len; // MD5 key
+  // DHCP mode: 0: Off, 1:On, DHCP before authentication, 2: On, DHCP after authentication
+  int m_dhcpmode;
+  // auth mode: 0:standard 1:Star private
+  int m_authenticationMode;
+  int m_state; //1 if online
 
-	u_char	m_MD5value[64]; //private key
-	/*
-	 * MAC 帧头 . This is a header that contains both local MAC address
-	 * and SERVER MAC address
-	 */
-	u_char	m_ETHHDR[ETH_HLEN];
+  u_char m_MD5value[64]; //private key
+  /*
+   * MAC 帧头 . This is a header that contains both local MAC address
+   * and SERVER MAC address
+   */
+  u_char m_ETHHDR[ETH_HLEN];
 
-	u_char	circleCheck[2]; //那两个鬼值
-	char*	m_name; // 用户名
-	char*	m_password; // 密码
+  u_char circleCheck[2]; // two magic vaules!
+  char* m_name; // user name
+  char* m_password; // password
 
-	u_char*	m_ruijieExtra;
-	in_addr_t m_ip;
-	in_addr_t m_mask;
-	in_addr_t m_gate;
-	in_addr_t m_dns;
-	// serial number, initialised when received the first valid Authentication-Success-packet
-	ULONG_BYTEARRAY m_serialNo;
-	// password private key, initialised at the beginning of function main()
-	ULONG_BYTEARRAY m_key;
+  u_char* m_ruijieExtra;
+  in_addr_t m_ip;
+  in_addr_t m_mask;
+  in_addr_t m_gate;
+  in_addr_t m_dns;
+  // serial number, initialised when received the first valid Authentication-Success-packet
+  ULONG_BYTEARRAY m_serialNo;
+  // password private key, initialised at the beginning of function main()
+  ULONG_BYTEARRAY m_key;
 
-    struct pcap_pkthdr *pkt_hdr;
-	const u_char *pkt_data;
+  struct pcap_pkthdr *pkt_hdr;
+  const u_char *pkt_data;
 
-
-}ruijie_packet;
+} ruijie_packet;
 
 /*
  * The functions below return 0 for success while -1 for failure. However, they should never
@@ -93,9 +93,9 @@ FillVersion(char * m_fakeVersion);
 
 /* comment out for further usage
  * Fill MAC bytes in packets with a fake one
-int
-FillFakeMAC(unsigned char * des_MAC, char * m_fakeMAC);
-*/
+ int
+ FillFakeMAC(unsigned char * des_MAC, char * m_fakeMAC);
+ */
 
 /* send server finding packet */
 int
@@ -107,22 +107,22 @@ SendNamePacket(ruijie_packet *);
 
 /* send authenticate password packet */
 int
-SendPasswordPacket(ruijie_packet  *);
+SendPasswordPacket(ruijie_packet *);
 
 /* send periodical keep-alive echo packet */
 int
-SendEchoPacket(ruijie_packet  *);
+SendEchoPacket(ruijie_packet *);
 
 /* send end certification packet */
 int
-SendEndCertPacket(ruijie_packet  *);
+SendEndCertPacket(ruijie_packet *);
 /* To found out if it's still online */
 int
 IfOnline(ruijie_packet*this);
 
 /*Get Server message in UTF-8 encode*/
 int
-GetServerMsg(ruijie_packet*this,char*outbuf,size_t buflen);
+GetServerMsg(ruijie_packet*this, char*outbuf, size_t buflen);
 /* default version bytes macro */
 //#define VER1 0x0F
 //#define VER2 0xFF
