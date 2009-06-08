@@ -1,7 +1,7 @@
 /*******************************************************************************\
  * RuijieClient -- a CLI based Ruijie Client authentication modified from mystar *
  *                                                                               *
- * Copyright (C) Gong Han, Chen Tingjun microcai (microcai@sina.com)             *
+ * Copyright (C) Gong Han, Chen Tingjun  Microcai                                *
  \*******************************************************************************/
 
 /*
@@ -12,6 +12,7 @@
  * AUTHORS:
  *   Gong Han  <gong AT fedoraproject.org> from CSE@FJNU CN
  *   Chen Tingjun <chentingjun AT gmail.com> from POET@FJNU CN
+ *   microcai <microcai AT sina.com > from ZSTU
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -96,14 +97,13 @@ GenSetting(void);
 static void
 get_element(xmlNode * a_node);
 #endif
-/* get server msg */
-static char *
-getServMsg(char* msgBuf, size_t msgBufLe, const unsigned char* pkt_data);
+
 /* kill other processes */
 static void
 kill_all(char* process);
 
 ////最最最重要的啊，消灭全局变量全靠这个家伙的啊
+//// This Is too Important That We Use It To eliminate global variables
 ruijie_packet sender={0};
 int
 main(int argc, char* argv[])
@@ -169,6 +169,7 @@ main(int argc, char* argv[])
 		struct ifreq rif={{{0}}};
 
 		// 获得选定的网卡地址。
+		//Retrieve Net Adapter's MAC address
 		strcpy(rif.ifr_name,m_nic);
 		int tmp = socket(AF_INET, SOCK_DGRAM, 0);
 
@@ -219,7 +220,6 @@ main(int argc, char* argv[])
   signal(SIGINT, logoff);
   signal(SIGQUIT, logoff);
   signal(SIGABRT, logoff);
-//  signal(SIGKILL, logoff); 这个信号是不可以捕获的
   signal(SIGTERM, logoff);
   signal(SIGSTOP, logoff);
   signal(SIGTSTP, logoff);
@@ -294,11 +294,14 @@ LABLE_SENDPASSWD:
 		{
 			while (SendEchoPacket(&sender) == 0)
 			{
-				// TODO: put code here
 //				printf("heart beat\n");
+				if(IfOnline(&sender))
+					break;
 				sleep(m_echoInterval);
 			}
+			//haha, go on this big loop when offline
 			continue; // 断网就继续循环下去，哈哈
+
 		}
 		if (m_intelligentReconnect > 10)
 		{

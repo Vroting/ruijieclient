@@ -55,7 +55,12 @@ typedef struct __ruijie_packet{
 	int		m_state; //1 if online
 
 	u_char	m_MD5value[64]; //private key
-	u_char	m_ETHHDR[ETH_HLEN]; // MAC 帧头
+	/*
+	 * MAC 帧头 . This is a header that contains both local MAC address
+	 * and SERVER MAC address
+	 */
+	u_char	m_ETHHDR[ETH_HLEN];
+
 	u_char	circleCheck[2]; //那两个鬼值
 	char*	m_name; // 用户名
 	char*	m_password; // 密码
@@ -81,10 +86,6 @@ typedef struct __ruijie_packet{
  * return -1 normally, hence, we usually ignore return values FOR CONVENIENCE. They might be
  * helpful for debug.
  */
-
-/* compute hash code from src */
-unsigned char *
-ComputeHash(unsigned char * src, int i);
 
 /* fill packets with 2 bytes indicates fake version */
 int
@@ -115,7 +116,13 @@ SendEchoPacket(ruijie_packet  *);
 /* send end certification packet */
 int
 SendEndCertPacket(ruijie_packet  *);
+/* To found out if it's still online */
+int
+IfOnline(ruijie_packet*this);
 
+/*Get Server message in UTF-8 encode*/
+int
+GetServerMsg(ruijie_packet*this,char*outbuf,size_t buflen);
 /* default version bytes macro */
 //#define VER1 0x0F
 //#define VER2 0xFF
