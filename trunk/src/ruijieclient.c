@@ -1,7 +1,7 @@
 /*******************************************************************************\
  * RuijieClient -- a CLI based Ruijie Client authentication modified from mystar *
  *                                                                               *
- * Copyright (C) Gong Han, Chen Tingjun                                          *
+ * Copyright (C) Gong Han, Chen Tingjun microcai (microcai@sina.com)             *
  \*******************************************************************************/
 
 /*
@@ -46,8 +46,6 @@
 
 /* These info should be retrieved from ruijie.conf */
 
-// auth mode: 0:standard 1:Star private
-int m_authenticationMode = -1;
 // indicator of adapter
 static char *m_nic = NULL;
 // echo interval, 0 means disable echo
@@ -84,7 +82,6 @@ static char fakeMAC[32];
  * 2: fail to pass Authentication of MD5 sum
  * 3: success
 */
-static volatile sig_atomic_t m_state = 0;
 
 /* cleanup on exit when detected Ctrl+C */
 static void
@@ -115,8 +112,7 @@ main(int argc, char* argv[])
   fd_set read_set;
   char filter_buf[256];
   struct bpf_program filter_code;
-  struct pcap_pkthdr *pkt_hdr;
-  const unsigned char *pkt_data;
+
   char p_errbuf[PCAP_ERRBUF_SIZE];
 
   /* message buffer define*/
@@ -125,14 +121,12 @@ main(int argc, char* argv[])
   char msgBuf[MAX_MSG_LEN];
   // utf-8 msg buf. note that each utf-8 character takes 4 bytes
   char u_msgBuf[MAX_U_MSG_LEN];
-  // msg offset
-  u_int16_t offset;
+
   // system command
   char cmd[32] = "dhclient ";
 
-  ULONG_BYTEARRAY uTemp;
   int isFirstPacketFromServer = 1;
-  sigset_t sigset_full, sigset_zero;
+//  sigset_t sigset_full, sigset_zero;
   struct timespec timeout;
   int packetCount_SentFindServer = 0;
   int packetCount_SentName = 0;
@@ -202,9 +196,6 @@ main(int argc, char* argv[])
 		close(tmp);
   }
 
-  // check blog.c and bloc.h for details
-  InitializeBlog(&sender);
-
   // set the filter. Here I'm sure filter_buf is big enough.
   snprintf(filter_buf, sizeof(filter_buf), FILTER_STR,
       sender.m_ETHHDR[6], sender.m_ETHHDR[7], sender.m_ETHHDR[8],
@@ -228,17 +219,14 @@ main(int argc, char* argv[])
   signal(SIGINT, logoff);
   signal(SIGQUIT, logoff);
   signal(SIGABRT, logoff);
-  signal(SIGKILL, logoff);
+//  signal(SIGKILL, logoff); 这个信号是不可以捕获的
   signal(SIGTERM, logoff);
   signal(SIGSTOP, logoff);
   signal(SIGTSTP, logoff);
 
-  sigfillset(&sigset_full);
-  sigprocmask(SIG_BLOCK, &sigset_full, NULL); // block all signals.
-
   // search for the server
 beginAuthentication:
-  m_state = 0;
+
   FillVersion(m_fakeVersion); // fill 2 bytes with fake version
 
   /* comment out for futher usage
@@ -248,270 +236,89 @@ beginAuthentication:
       FillFakeMAC(m_localMAC, m_fakeMAC);
     }
    */
-  SendFindServerPacket(&sender); // the first time to search for server
-  packetCount_SentFindServer = 1;
-  packetCount_SentName = 0;
-  packetCount_SentPassword = 0;
 
   while (1)
     {
-      sigfillset(&sigset_full);
-      sigdelset(&sigset_full, SIGHUP);
-      sigdelset(&sigset_full, SIGINT);
-      sigdelset(&sigset_full, SIGQUIT);
-      sigdelset(&sigset_full, SIGABRT);
-      sigdelset(&sigset_full, SIGKILL);
-      sigdelset(&sigset_full, SIGTERM);
-      sigdelset(&sigset_full, SIGSTOP);
-      sigdelset(&sigset_full, SIGTSTP);
+	  sender.m_state = 0;
+LABLE_FINDSERVER:
+	  if (SendFindServerPacket(&sender))
+		{
+			continue;
+		}
+LABLE_SENDNAME:
+		if (SendNamePacket(&sender))
+		{
+			continue;
+		}
+LABLE_SENDPASSWD:
+		switch(SendPasswordPacket(&sender))
+		{
+		case -1:
+			continue;
+		case 1: //失败
+	          /* authenticate fail
+			 * possible reasons:
+			 * 1. user name and password mismatch
+			 * 2. not in the right time-period of net accessing
+			 * 3. account has been logged at other computers
+			 */
+	        GetServerMsg(&sender, u_msgBuf, MAX_U_MSG_LEN);
+			fprintf(stdout, "@@ Authentication failed: %s\n", u_msgBuf);
+			SendEndCertPacket(&sender);
+			continue;
+		case 0:// Authenticate successfully
+			sender.m_state = 1;
+			break;
+		}
 
-      FD_ZERO(&read_set);
-      FD_SET(sender.m_pcap_no, &read_set);
-      timeout.tv_sec = 1;
-      timeout.tv_nsec = 0; // 1 second
+        if (sender.m_dhcpmode == 2 && noip_afterauth)
+		{
+			if (system(cmd) == -1)
+			{
+				err_quit("Fail in retrieving network configuration from DHCP server");
+			}
+			noip_afterauth = 0;
+		}
+		GetServerMsg(&sender, u_msgBuf, MAX_U_MSG_LEN);
+		fprintf(stdout, "@@ Password valid, SUCCESS:\n## Server Message: %s\n",	u_msgBuf);
 
-      // wait with all signals(except SIGINT SIGQUIT SIGSTOP) blocked.
-      switch (pselect( sender.m_pcap_no +1, &read_set, NULL,
-          NULL, &timeout, &sigset_full) )
-        {
-        case -1: // Normally, this case should not happen since sig_intr() never returns!
-          pcap_close(sender.m_pcap);
+        if (m_echoInterval <= 0)
+		{
+			pcap_close(sender.m_pcap);
+			return 0; //user has echo disabled
+		}
+        // continue echoing
+        fputs("Keeping sending echo...\nPress Ctrl+C to logoff \n", stdout);
+        // start ping monitoring
+        if (m_intelligentReconnect == 1)
+		{
+			while (SendEchoPacket(&sender) == 0)
+			{
+				// TODO: put code here
+//				printf("heart beat\n");
+				sleep(m_echoInterval);
+			}
+			continue; // 断网就继续循环下去，哈哈
+		}
+		if (m_intelligentReconnect > 10)
+		{
+			time_t time_recon = time(NULL);
+			while (1)
+			{
+				long time_count = time(NULL) - time_recon;
+				if (time_count >= m_intelligentReconnect)
+				{
+					fputs("Time to reconect!\n", stdout);
+					goto beginAuthentication;
+				}
+				sleep(m_echoInterval);
+			}
+		}
+		pcap_close(sender.m_pcap);
+		return 1; // this should never happen.
 
-          return 1;
-        case 0: // timed out
-          switch(m_state)
-            {
-            case 0:
-              if(++packetCount_SentFindServer > 3)
-              {
-                puts("Restarting authentication!");
-                goto beginAuthentication;
-              }
-              SendFindServerPacket(&sender);
-              continue; // jump to next loop of while(1) to receive next packet
-            case 1:
-              if(++packetCount_SentName > 3)
-              {
-                puts("Restarting authentication!");
-                goto beginAuthentication;
-              }
-              SendNamePacket(&sender, pkt_data);
-              continue;
-            case 2:
-              if(++packetCount_SentPassword > 3)
-              {
-                puts("Restarting authentication!");
-                goto beginAuthentication;
-              }
-              SendPasswordPacket(&sender, pkt_data);
-              continue;
-            default:
-              pcap_close(sender.m_pcap);
-              return 1;
-            }
-        }
-
-      // Here return value of pselect() must be 1
-
-      if((pcap_next_ex(sender.m_pcap,&pkt_hdr, &pkt_data)) != 1)
-        continue;
-
-      /* source MAC of the second and the following valid packets should be identical
-       * to the source MAC of first valid server finding packet
-       */
-      if ((!isFirstPacketFromServer) && (memcmp(sender.m_ETHHDR,pkt_data+6, 6) != 0))
-        continue;
-
-      /* received a packet successfully. for convenience, SUPPOSE it's the RIGHT packet!!
-       * but maybe WRONG!! for example, we have NEVER verified the length of packet,
-       * fancying the packet's length is 0x11 ?!
-       */
-
-      switch( pkt_data[0x12] ) // analysis EAP packet type
-        {
-        case 0x01: // means request
-          switch(pkt_data[0x16])
-            {
-            case 0x01:
-            // type 1, response with username
-              if (m_state != 0)
-                continue;
-              m_state = 1;
-              fputs("@@ Server found, requesting user name...\n", stdout);
-              if (isFirstPacketFromServer)
-              {
-                // get server's MAC address.
-                memcpy( sender.m_ETHHDR, pkt_data+6, 6);
-                isFirstPacketFromServer = 0;
-              }
-              ++packetCount_SentName;
-
-              /* comment out for further usage
-              if (m_fakeMAC != NULL)
-                {
-                  //fill m_localMAC with a fake MAC address
-                  FillFakeMAC(m_localMAC, m_fakeMAC);
-                }
-                */
-              SendNamePacket(&sender, pkt_data);
-              break;
-            case 0x04:
-              // type 4, Challenge，response with the returned by MD5 algorithm
-              if(m_state != 1)
-                continue;
-              m_state = 2;
-              fputs("@@ User name valid, requesting password...\n", stdout);
-              ++packetCount_SentPassword;
-              SendPasswordPacket(&sender, pkt_data);
-              break;
-            }
-          break;
-        case 0x03:
-          // Authenticate successfully
-          if(m_state != 2)
-            continue;
-
-          if(sender.m_dhcpmode == 2 && noip_afterauth){
-              if (system(cmd) == -1)
-                {
-                  err_quit("Fail in retrieving network configuration from DHCP server");
-                }
-              noip_afterauth = 0;
-          }
-
-          m_state=3;
-
-          pmsgBuf = getServMsg(msgBuf, sizeof(msgBuf), pkt_data);
-          if (pmsgBuf == NULL)
-            {
-              // if pmsgBuf doesn't exist.
-              pmsgBuf = "";
-            }
-          // convert to utf8
-          code_convert(u_msgBuf, MAX_U_MSG_LEN, pmsgBuf, strlen(pmsgBuf));
-          fprintf(stdout,
-              "@@ Password valid, SUCCESS:\n## Server Message: %s\n",
-              u_msgBuf);
-
-          if (m_echoInterval <= 0) {
-            pcap_close(sender.m_pcap);
-            return 0; //user has echo disabled
-          }
-
-          //uTemp.ulValue = *(((u_long *)(pkt_data+0x9d)));
-          offset = ntohs( *((u_int16_t*)(pkt_data+0x10)) );
-          uTemp.ulValue = *((u_int32_t *)(pkt_data+(0x11+offset)-0x08));
-          sender.m_key.btValue[0] = Alog(uTemp.btValue[3]);
-          sender.m_key.btValue[1] = Alog(uTemp.btValue[2]);
-          sender.m_key.btValue[2] = Alog(uTemp.btValue[1]);
-          sender.m_key.btValue[3] = Alog(uTemp.btValue[0]);
-
-          // unblock SIGINT SIGSTOP SIGQUIT, so we can exit with Ctrl+C
-          sigemptyset(&sigset_zero);
-          sigaddset(&sigset_zero, SIGHUP);
-          sigaddset(&sigset_zero, SIGINT);
-          sigaddset(&sigset_zero, SIGQUIT);
-          sigaddset(&sigset_zero, SIGABRT);
-          sigaddset(&sigset_zero, SIGABRT);
-          sigaddset(&sigset_zero, SIGKILL);
-          sigaddset(&sigset_zero, SIGTERM);
-          sigaddset(&sigset_zero, SIGSTOP);
-          sigaddset(&sigset_zero, SIGTSTP);
-          sigprocmask(SIG_UNBLOCK, &sigset_zero, NULL);
-          // continue echoing
-          fputs("Keeping sending echo...\nPress Ctrl+C to logoff \n", stdout);
-          // start ping monitoring
-          if (m_intelligentReconnect == 1)
-          {
-
-              while (SendEchoPacket(&sender, pkt_data) == 0)
-              {
-            	  // TODO: put code here
-            	  sleep(m_echoInterval);
-              }
-          }
-          if (m_intelligentReconnect > 10)
-          {
-        	  time_t time_recon = time(NULL);
-        	  while (1){
-        		  long time_count = time(NULL)-time_recon ;
-        		  if (time_count >=  m_intelligentReconnect){
-            	  fputs("Time to reconect!\n",stdout);
-            	  goto beginAuthentication;
-              }
-              sleep(m_echoInterval);
-          }
-          }
-          pcap_close(sender.m_pcap);
-          return 1; // this should never happen.
-
-          break;
-        case 0x04:
-          /* authenticate fail
-           * possible reasons:
-           * 1. user name and password mismatch
-           * 2. not in the right time-period of net accessing
-           * 3. account has been logged at other computers
-           */
-          if((m_state == 0) || (m_state == 3))
-            continue;
-          m_state=0;
-          pmsgBuf = getServMsg(msgBuf, sizeof(msgBuf), pkt_data);
-          if (pmsgBuf == NULL)
-            {
-              // if pmsgBuf doesn't exist.
-              pmsgBuf = "";
-            }
-          // convert to utf8
-          code_convert(u_msgBuf, MAX_U_MSG_LEN, pmsgBuf, strlen(pmsgBuf));
-          fprintf(stdout,"@@ Authentication failed: %s\n",u_msgBuf);
-          SendEndCertPacket(&sender);
-          goto beginAuthentication;
-          break; // should never come here
-        }// end switch
-    }// end while
-}
-
-static char *
-getServMsg(char* msgBuf, size_t msgBufLen, const unsigned char* pkt_data)
-{
-
-  /* message buffer define*/
-  int msgLen; // original msg length
-
-  msgLen = ntohs(*((u_int16_t*) (pkt_data + 0x10))) - 10;
-  if (msgLen > 0)
-    {
-      if (msgLen >= (msgBufLen - 1))
-        msgLen = msgBufLen - 1;
-      memset(msgBuf, '\0', msgBufLen);
-      memcpy(msgBuf, pkt_data + 0x1c, msgLen);
-      //remove the leading "\r\n" which seems always exist!
-#ifdef DEBUG
-      puts("-- MSG INFO");
-      printf("## msgBuf(GB) %s\n", msgBuf);
-#endif
-      if ((msgLen > 2) && (msgBuf[0] == 0xd) && (msgBuf[1] == 0xa))
-        {
-#ifdef DEBUG
-          puts("@@ /r/n found");
-          puts("-- END");
-#endif
-          return msgBuf + 0x02;
-        }
-      else
-        {
-#ifdef DEBUG
-          puts("@@ /r/n not found");
-          puts("-- END");
-#endif
-          return msgBuf;
-        }
-    }
-  else
-    {
-      return NULL;
-    } // this presumably is packet indicates silent or interrupt network
+		break;
+	}// end while
 }
 
 #ifdef LIBXML_TREE_ENABLED
@@ -546,7 +353,7 @@ get_element(xmlNode * a_node)
               }
             else if (strcmp(node_name, "AuthenticationMode") == 0)
               {
-                m_authenticationMode = atoi(node_content);
+                sender.m_authenticationMode = atoi(node_content);
               }
             else if (strcmp(node_name, "NIC") == 0)
               {
@@ -648,7 +455,7 @@ checkAndSetConfig(void)
     err_quit("invalid name found in ruijie.conf!\n");
     if ((sender.m_password == NULL) || (sender.m_password[0] == 0))
     err_quit("invalid password found in ruijie.conf!\n");
-    if ((m_authenticationMode < 0) || (m_authenticationMode> 1))
+    if ((sender.m_authenticationMode < 0) || (sender.m_authenticationMode> 1))
     err_quit("invalid authenticationMode found in ruijie.conf!\n");
     if ((m_nic == NULL) || (strcmp(m_nic, "") == 0)
         || (strcmp(m_nic, "any") == 0))
@@ -743,7 +550,7 @@ GenSetting(void)
 static void
 logoff(int signo)
 {
-  if (m_state == 3)
+  if (sender.m_state)
     {
       SendEndCertPacket(&sender);
     }
