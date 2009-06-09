@@ -11,8 +11,6 @@ AC_CONFIG_HEADERS([config.h])
 AC_PROG_CC
 
 # Checks for libraries.
-# FIXME: Replace `main' with a function in `-lnet':
-AC_CHECK_LIB([net], [main], [], [exit])
 # FIXME: Replace `main' with a function in `-lpcap':
 AC_CHECK_LIB([pcap], [main], [],[exit])
 # FIXME: Replace `main' with a function in `-lssl':
