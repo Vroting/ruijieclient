@@ -26,6 +26,18 @@
  * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
  * Boston, MA 02111-1307, USA.
  */
-
+#include <ctype.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
 #include "conn_monitor.h"
+
+
+/*Ping the address inet to see if the network works!*/
+int Ping(in_addr_t inet)
+{
+
+
+	/*here we will use*/
+	return -1;
+}
 
