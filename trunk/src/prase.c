@@ -15,8 +15,10 @@
  */
 
 /*****************************************************/
-
+#include <stdlib.h>
+#include <stdio.h>
 #include "prase.h"
+
 
 static inline int stob( char*s )
 {
@@ -52,7 +54,7 @@ void ParseParameters(int * argc, char ** argv[], struct parameter_tags p_[])
 					}
 					else if ((*argv)[i][p->prefix_len] == 0)
 					{
-						if ((*argv)[i + 1][0] != '-')
+						if ( (i +1 < *argc)&&  (*argv)[i + 1][0] != '-')
 						{
 							(*argv)[i] = 0;
 							*(int*) p->parameter = stob((*argv)[++i]);
