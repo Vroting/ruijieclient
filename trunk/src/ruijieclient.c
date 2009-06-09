@@ -31,8 +31,8 @@
  */
 #include <ctype.h>
 #include <sys/ioctl.h>
+#include <unistd.h>
 #include <net/if.h>
-#include <netinet/in.h>
 #include "ruijieclient.h"
 #include "global.h"
 #include "sendpacket.h"
@@ -49,9 +49,9 @@
 // indicator of adapter
 static char *m_nic = NULL;
 // echo interval, 0 means disable echo
-static int m_echoInterval = -1;
+static int m_echoInterval = 0;
 // Intelligent Reconnect 0:disable, 1: enable.
-static int m_intelligentReconnect = -1;
+static int m_intelligentReconnect = 0;
 // fake ip, e.g. "123.45.67.89"
 static char *m_fakeAddress = NULL;
 // fake version, e.g. "3.22"
@@ -65,9 +65,9 @@ static char m_intelligentHost[16] = "4.2.2.2";
 int noip_afterauth = 1;
 
 // user name
-static char name[32];
+static char name[32]={0};
 // password
-static char password[32];
+static char password[32]={0};
 static char nic[32];
 static char fakeAddress[32];
 static char fakeVersion[8];
@@ -102,7 +102,7 @@ get_element(xmlNode * a_node);
 #endif
 
 /* kill other processes */
-static void
+static int
 kill_all(char* process);
 
 // this is a top crucial change that eliminated all global variables
@@ -110,7 +110,6 @@ ruijie_packet sender =   { 0 };
 int
 main(int argc, char* argv[])
 {
-
   fd_set read_set;
   char filter_buf[256];
   struct bpf_program filter_code;
@@ -122,11 +121,12 @@ main(int argc, char* argv[])
   char u_msgBuf[MAX_U_MSG_LEN];
 
   // system command
-  char cmd[32] = "dhclient ";
+  char cmd[32] = "dhclient -4"; //ipv4 only
 
   long setdaemon=0;
   long genfile=0;
   long nocfg=0;
+  long kill_ruijieclient=0;
   struct parameter_tags param[] =
   {
   		{"-D", (char*)&setdaemon,0,sizeof(setdaemon),2, BOOL_both},
@@ -141,24 +141,31 @@ main(int argc, char* argv[])
   		{"--user",name,"-u,--user\tsupply username",sizeof(name),6,STRING},
   		{"-p",password ,0,sizeof(password),2,STRING},
   		{"--passwd",password,"-p,--passwd\tsupply password",sizeof(password),6,STRING},
+  		{"-K", (char*)&kill_ruijieclient ,"-k,-K\t\tKill all ruijieclient daemon",sizeof(kill_ruijieclient),2, BOOL_both},
+  		{"-k", (char*)&kill_ruijieclient ,0,sizeof(kill_ruijieclient),2, BOOL_both},
   		{0}
   };
 
   // the initial serial number, a magic number!
   sender.m_serialNo.ulValue = 0x1000002a;
 
+
   // Parse command line parameters
   ParseParameters(&argc,&argv,param);
+
   // if '-g' is passed as argument then generate a sample configuration
   if(genfile)
   {
       GenSetting();
       exit(EXIT_SUCCESS);
   }
-
-  // kill all other ruijieclients which are running
-  kill_all("ruijieclient");
-  kill_all("xgrsu 2> /dev/null");
+ //if '-g' is passed as argument then kill all other ruijieclients which are running
+  if (kill_ruijieclient)
+  {
+	 if(kill_all("ruijieclient"))
+		 err_quit("Can not kill ruijieclient, permission denied or no such process");
+	 exit(EXIT_SUCCESS);
+  }
 
   if(!nocfg)
   {
@@ -173,6 +180,10 @@ main(int argc, char* argv[])
   }
   //NOTE:check if we had get all the config
   CheckConfig();
+
+  // kill all other ruijieclients which are running
+  kill_all("ruijieclient");
+  kill_all("xgrsu 2> /dev/null");
 
   strcat(cmd, m_nic);
 
@@ -316,7 +327,13 @@ LABLE_SENDPASSWD:
           return 0; //user has echo disabled
         }
       // continue echoing
-      fputs("Keeping sending echo...\nPress Ctrl+C to logoff \n", stdout);
+      if(!setdaemon)
+    	  fputs("Keeping sending echo...\nPress Ctrl+C to logoff \n", stdout);
+      else
+    	  {
+			  fputs("Daemonize and Keeping sending echo...\n", stdout);
+			  daemon(0,0);
+    	  }
       // start ping monitoring
       if (m_intelligentReconnect == 1)
         {
@@ -407,16 +424,20 @@ get_element(xmlNode * a_node)
             if (strcmp(node_name, "Name") == 0)
               {
             	if(name[0]==0) // not got from cmd line
-            		strncpy(name, node_content, sizeof(name) - 1);
-                name[sizeof(name) - 1] = 0;
-                sender.m_name = name;
+            	{
+					strncpy(name, node_content, sizeof(name) - 1);
+					name[sizeof(name) - 1] = 0;
+				}
+				sender.m_name = name;
               }
             else if (strcmp(node_name, "Password") == 0)
               {
-            	if (password[0])// not got from cmd line
-                strncpy(password, node_content, sizeof(password) - 1);
-                password[sizeof(password) - 1] = 0;
-                sender.m_password = password;
+				if (password[0]==0)// not got from cmd line
+				{
+					strncpy(password, node_content, sizeof(password) - 1);
+					password[sizeof(password) - 1] = 0;
+				}
+				sender.m_password = password;
               }
             else if (strcmp(node_name, "AuthenticationMode") == 0)
               {
@@ -619,7 +640,7 @@ logoff(int signo)
   _exit(0);
 }
 
-static void
+static int
 kill_all(char * process)
 {
   char cmd[256] = "";
@@ -631,4 +652,5 @@ kill_all(char * process)
     {
       err_sys("Killall Failure !");
     }
+  return cmd_return;
 }
