@@ -130,7 +130,9 @@ void ParseParameters(int * argc, char ** argv[], struct parameter_tags p_[])
 			if (strncmp((*argv)[i], __HELP__, sizeof(__HELP__))==0)
 			{
 				p = p_;
-				printf("8888888888888888888888888888888888\n");
+				//It looks better now
+				printf("ruijieclient, a mystar based Ruijie Network authentication client\n");
+				printf("Usage: ruijieclient [OPTION]... \n\n");
 				while (p->parameter)
 				{
 					if (p->discribe)
@@ -139,7 +141,7 @@ void ParseParameters(int * argc, char ** argv[], struct parameter_tags p_[])
 					}
 					p++;
 				}
-				printf("8888888888888888888888888888888888\n");
+				printf("\nReport bugs to http://ruijieclient.googlecode.com.\n");
 				exit(0);
 				return;
 			}
