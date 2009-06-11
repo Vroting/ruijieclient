@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.63])
-AC_INIT([ruijieclient], [0.1.1], [gong@fedoraproject.org])
+AC_INIT([ruijieclient], [0.1.3], [gong@fedoraproject.org])
 AM_INIT_AUTOMAKE([-Wall -Werror])
 AC_CONFIG_SRCDIR([config.h.in])
 AC_CONFIG_HEADERS([config.h])
@@ -17,10 +17,13 @@ AC_CHECK_LIB([pcap], [main], [],[exit])
 AC_CHECK_LIB([xml2], [main], [], [exit])
 
 # Checks for header files.
-AC_CHECK_HEADERS([arpa/inet.h netinet/in.h stdlib.h string.h sys/socket.h sys/time.h unistd.h])
+AC_CHECK_HEADERS([arpa/inet.h netinet/in.h sys/socket.h unistd.h])
 
 # Checks for header files.
-AC_CHECK_HEADERS([sys/ioctl.h net/ethernet.h net/if.h ])
+AC_CHECK_HEADERS([sys/ioctl.h net/ethernet.h net/if.h])
+
+# Checks for header files.
+AC_CHECK_HEADERS([libxml2/libxml/parser.h libxml2/libxml/tree.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_PID_T

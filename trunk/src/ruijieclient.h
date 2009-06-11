@@ -42,8 +42,7 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <time.h>
-#include <libxml2/libxml/parser.h>
-#include <libxml2/libxml/tree.h>
+
 #include "global.h"
 
 #define MAX_MSG_LEN 1024
@@ -51,7 +50,9 @@
 
 #define C_VERSION "0.1.1"
 #define CONF_NAME "ruijie.conf"
-#define CONF_PATH "/etc/ruijie.conf"
+
 #define TMP_FILE "/tmp/ruijieclient_tmp"
+
+extern char config_file[256];
 
 #endif /* RUIJIECLIENT_H */

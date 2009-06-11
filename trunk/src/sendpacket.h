@@ -71,17 +71,17 @@ typedef struct __ruijie_packet
   int m_dhcpmode;
   // auth mode: 0:standard 1:Star private
   int m_authenticationMode;
+
+  // echo interval, 0 means disable echo
+  int m_echoInterval;
+  // Intelligent Reconnect 0:disable, 1: enable.
+  int m_intelligentReconnect;
+
   int m_state; //1 if online
 
-  u_char m_MD5value[64]; //private key
-  /*
-   * MAC 帧头 . This is a header that contains both local MAC address
-   * and SERVER MAC address
-   */
-  u_char m_ETHHDR[ETH_HLEN];
+  // fake version, e.g. "3.22"
+  char *m_fakeVersion;
 
-  u_char circleCheck[2]; // two magic vaules!
-  u_char* m_ruijieExtra;
 
   char  m_name[32]; // user name
   char  m_password[32]; // password
@@ -96,6 +96,17 @@ typedef struct __ruijie_packet
   // password private key, initialised at the beginning of function main()
   ULONG_BYTEARRAY m_key;
 
+  u_char m_MD5value[64]; //private key
+  /*
+   * MAC 帧头 . This is a header that contains both local MAC address
+   * and SERVER MAC address
+   */
+  u_char m_ETHHDR[ETH_HLEN];
+
+  u_char circleCheck[2]; // two magic vaules!
+  u_char* m_ruijieExtra;
+
+
   struct pcap_pkthdr *pkt_hdr;
   const u_char *pkt_data;
 
@@ -109,7 +120,7 @@ typedef struct __ruijie_packet
 
 /* fill packets with 2 bytes indicates fake version */
 int
-FillVersion(char * m_fakeVersion);
+FillVersion(ruijie_packet*);
 
 /*get nic param*/
 int
