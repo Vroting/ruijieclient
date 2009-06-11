@@ -1,10 +1,9 @@
-/*******************************************************************************\
+/*********************************************************************************
  * RuijieClient -- a CLI based Ruijie Client authentication modified from mystar *
  *                                                                               *
  * Copyright (C) Gong Han, Chen Tingjun  Microcai                                *
- \*******************************************************************************/
-
-/*
+ *********************************************************************************
+ *
  * This program is modified from MyStar, the original author is netxray@byhh.
  *
  * Many thanks to netxray@byhh
@@ -32,7 +31,6 @@
 #include <ctype.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
-#include <net/if.h>
 #include "ruijieclient.h"
 #include "global.h"
 #include "sendpacket.h"
@@ -40,20 +38,12 @@
 #include "blog.h"
 #include "conn_monitor.h"
 #include "prase.h"
-/*   Note that: in this file, the global variables (defined without a leading "static")
- from here to the beginning of the definition of main() are referenced by sendpacket.c ( we
- reference them in the form of "extern ..." in sendpacket.c) */
 
-/* These info should be retrieved from ruijie.conf */
-
-// indicator of adapter
-static char *m_nic = NULL;
 // echo interval, 0 means disable echo
 static int m_echoInterval = 0;
 // Intelligent Reconnect 0:disable, 1: enable.
 static int m_intelligentReconnect = 0;
-// fake ip, e.g. "123.45.67.89"
-static char *m_fakeAddress = NULL;
+
 // fake version, e.g. "3.22"
 static char *m_fakeVersion = NULL;
 // fake MAC, e.g. "00:11:D8:44:D5:0D"
@@ -69,10 +59,10 @@ static char name[32]={0};
 // password
 static char password[32]={0};
 static char nic[32];
-static char fakeAddress[32];
 static char fakeVersion[8];
 static char fakeMAC[32];
 static char config_file[256]=CONF_PATH;
+
 /* These info should be worked out by initialisation portion. */
 
 /* Authenticate Status
@@ -81,14 +71,6 @@ static char config_file[256]=CONF_PATH;
  * 2: fail to pass Authentication of MD5 sum
  * 3: success
  */
-
-/* cleanup on exit when detected Ctrl+C */
-static void
-logoff(int signo);
-
-/*Check whether we have got enough configuration info*/
-static void
-CheckConfig();
 
 #if defined(LIBXML_TREE_ENABLED) && defined(LIBXML_OUTPUT_ENABLED)
 /* configure related parameters */
@@ -101,21 +83,62 @@ static void
 get_element(xmlNode * a_node);
 #endif
 
+
+/*Check whether we have got enough configuration info*/
+static void
+CheckConfig(ruijie_packet* l)
+{
+    if ((l->m_name == NULL) || (l->m_name[0] == 0))
+    err_quit("invalid name found in ruijie.conf!\n");
+    if ((l->m_password == NULL) || (l->m_password[0] == 0))
+    err_quit("invalid password found in ruijie.conf!\n");
+    if ((l->m_authenticationMode < 0) || (l->m_authenticationMode> 1))
+    err_quit("invalid authenticationMode found in ruijie.conf!\n");
+    if ((l->m_nic == NULL) || (strcmp(l->m_nic, "") == 0)
+        || (strcmp(l->m_nic, "any") == 0))
+    err_quit("invalid nic found in ruijie.conf!\n");
+    if ((m_echoInterval < 0) || (m_echoInterval> 100))
+    err_quit("invalid echo interval found in ruijie.conf!\n");
+    //if ((m_intelligentReconnect < 0) || (m_intelligentReconnect> 1))
+    if ((m_intelligentReconnect < 0))
+    err_quit("invalid intelligentReconnect found in ruijie.conf!\n");
+
+#ifdef DEBUG
+    puts("-- CONF INFO");
+    printf("## m_name=%s\n", l->m_name);
+    printf("## m_password=%s\n", l->m_password);
+    printf("## m_nic=%s\n", l->m_nic);
+    printf("## m_authenticationMode=%d\n", l->m_authenticationMode);
+    printf("## m_echoInterval=%d\n", m_echoInterval);
+    printf("## m_intelligentReconnect=%d\n", m_intelligentReconnect);// NOT supported now!!
+    printf("## m_fakeVersion=%s\n", m_fakeVersion);
+    printf("## m_fakeAddress=%s\n", inet_ntoa(l->m_ip));
+    printf("## m_fakeMAC=%s\n", m_fakeMAC);
+    puts("-- END");
+#endif
+}
+
 /* kill other processes */
 static int
 kill_all(char* process);
 
 // this is a top crucial change that eliminated all global variables
-ruijie_packet sender =   { 0 };
+static ruijie_packet sender =   { 0 };
+
+/* cleanup on exit when detected Ctrl+C */
+static void
+logoff(int signo)
+{
+  if (sender.m_state)
+    {
+      SendEndCertPacket(&sender);
+    }
+  _exit(0);
+}
+
 int
 main(int argc, char* argv[])
 {
-  fd_set read_set;
-  char filter_buf[256];
-  struct bpf_program filter_code;
-
-  char p_errbuf[PCAP_ERRBUF_SIZE];
-
   /* message buffer define*/
   // utf-8 msg buf. note that each utf-8 character takes 4 bytes
   char u_msgBuf[MAX_U_MSG_LEN];
@@ -149,7 +172,6 @@ main(int argc, char* argv[])
   // the initial serial number, a magic number!
   sender.m_serialNo.ulValue = 0x1000002a;
 
-
   // Parse command line parameters
   ParseParameters(&argc,&argv,param);
 
@@ -174,18 +196,18 @@ main(int argc, char* argv[])
   else
   {
 	  // get form cmd line, hehe
-	  m_nic = nic;
+	  sender.m_nic = nic;
 	  sender.m_name = name;
 	  sender.m_password = password;
   }
   //NOTE:check if we had get all the config
-  CheckConfig();
+  CheckConfig(&sender);
 
   // kill all other ruijieclients which are running
   kill_all("ruijieclient");
   kill_all("xgrsu 2> /dev/null");
 
-  strcat(cmd, m_nic);
+  strcat(cmd, sender.m_nic);
 
   if (sender.m_dhcpmode > 0)
     {
@@ -193,57 +215,6 @@ main(int argc, char* argv[])
       kill_all("dhclient");
     }
 
-  if ((sender.m_pcap = pcap_open_live(m_nic, 65536, 0, 500, p_errbuf)) == NULL)
-    {
-      err_msg("pcap_open_live: %s\n", p_errbuf);
-
-      return 1;
-    }
-  sender.m_pcap_no = pcap_fileno(sender.m_pcap); // we can poll() it in the following code.
-
-    {
-      struct ifreq rif = { { { 0 } } };
-
-      // retrieve MAC address of corresponding net adapter's
-      strcpy(rif.ifr_name, m_nic);
-      int tmp = socket(AF_INET, SOCK_DGRAM, 0);
-
-      if (m_fakeAddress == NULL)
-        {
-          ioctl(tmp, SIOCGIFADDR, &rif);
-          memcpy(&(sender.m_ip), rif.ifr_addr.sa_data + 2, 4);
-        }
-      // else m_ip has been initialized in checkandSetConfig()
-
-      ioctl(tmp, SIOCGIFNETMASK, &rif);
-
-      memcpy(&(sender.m_mask), rif.ifr_addr.sa_data + 2, 4);
-
-      ioctl(tmp, SIOCGIFHWADDR, &rif);
-      memcpy(sender.m_ETHHDR + ETHER_ADDR_LEN, rif.ifr_hwaddr.sa_data,
-          ETHER_ADDR_LEN);
-      close(tmp);
-    }
-
-  // set the filter. Here I'm sure filter_buf is big enough.
-  snprintf(filter_buf, sizeof(filter_buf), FILTER_STR, sender.m_ETHHDR[6],
-      sender.m_ETHHDR[7], sender.m_ETHHDR[8], sender.m_ETHHDR[9],
-      sender.m_ETHHDR[10], sender.m_ETHHDR[11]);
-
-  if (pcap_compile(sender.m_pcap, &filter_code, filter_buf, 0, sender.m_mask)
-      == -1)
-    {
-      err_msg("pcap_compile(): %s", pcap_geterr(sender.m_pcap));
-      pcap_close(sender.m_pcap);
-      return 1;
-    }
-  if (pcap_setfilter(sender.m_pcap, &filter_code) == -1)
-    {
-      err_msg("pcap_setfilter(): %s", pcap_geterr(sender.m_pcap));
-      pcap_close(sender.m_pcap);
-      return 1;
-    }
-  pcap_freecode(&filter_code); // avoid  memory-leak
 
   signal(SIGHUP, logoff);
   signal(SIGINT, logoff);
@@ -253,23 +224,17 @@ main(int argc, char* argv[])
   signal(SIGSTOP, logoff);
   signal(SIGTSTP, logoff);
 
-  // search for the server
-  beginAuthentication:
-
-  FillVersion(m_fakeVersion); // fill 2 bytes with fake version
-
-  /* comment out for futher usage
-   if (m_fakeMAC != NULL)
-   {
-   //fill m_localMAC with a fake MAC address
-   FillFakeMAC(m_localMAC, m_fakeMAC);
-   }
-   */
-
   while (1)
     {
       sender.m_state = 0;
-LABLE_FINDSERVER:
+
+      GetNicParam(&sender);
+
+      FillVersion(m_fakeVersion); // fill 2 bytes with fake version
+
+      FlushRecvBuf(&sender);
+
+      // search for the server
       if (SendFindServerPacket(&sender))
         {
           continue;
@@ -278,7 +243,7 @@ LABLE_FINDSERVER:
         {
           fputs("@@ Server found, requesting user name...\n", stdout);
         }
-LABLE_SENDNAME:
+//LABLE_SENDNAME:
       if (SendNamePacket(&sender))
         {
           continue;
@@ -287,7 +252,7 @@ LABLE_SENDNAME:
         {
           fputs("@@ User name valid, requesting password...\n", stdout);
         }
-LABLE_SENDPASSWD:
+//LABLE_SENDPASSWD:
       switch (SendPasswordPacket(&sender))
         {
       case -1:
@@ -321,6 +286,23 @@ LABLE_SENDPASSWD:
       fprintf(stdout, "@@ Password valid, SUCCESS:\n## Server Message: %s\n",
           u_msgBuf);
 
+      /*
+       * DHCP mode:
+       * 0: Off
+       * 1: On, DHCP before authentication
+       * 2: On, DHCP after authentication
+       * 3: On, DHCP after DHCP authentication and re-authentication       *
+       */
+      if( sender.m_dhcpmode == 3)
+      {
+    	  char cmd[50];
+    	  sprintf(cmd,"dhclient -4 %s",nic);
+    	  system(cmd);
+    	  sender.m_dhcpmode = 0;
+    	  sender.m_ip = 0;
+    	  continue; // re-authentication
+      }
+
       if (m_echoInterval <= 0)
         {
           pcap_close(sender.m_pcap);
@@ -335,6 +317,7 @@ LABLE_SENDPASSWD:
 			  daemon(0,0);
     	  }
       // start ping monitoring
+      FlushRecvBuf(&sender);
       if (m_intelligentReconnect == 1)
         {
           while (SendEchoPacket(&sender) == 0)
@@ -357,7 +340,7 @@ LABLE_SENDPASSWD:
               if (time_count >= m_intelligentReconnect)
                 {
                   fputs("Time to reconect!\n", stdout);
-                  goto beginAuthentication;
+                  continue;
                 }
               sleep(m_echoInterval);
             }
@@ -368,40 +351,6 @@ LABLE_SENDPASSWD:
       break;
     }// end while
 }
-static void
-CheckConfig()
-{
-    if ((sender.m_name == NULL) || (sender.m_name[0] == 0))
-    err_quit("invalid name found in ruijie.conf!\n");
-    if ((sender.m_password == NULL) || (sender.m_password[0] == 0))
-    err_quit("invalid password found in ruijie.conf!\n");
-    if ((sender.m_authenticationMode < 0) || (sender.m_authenticationMode> 1))
-    err_quit("invalid authenticationMode found in ruijie.conf!\n");
-    if ((m_nic == NULL) || (strcmp(m_nic, "") == 0)
-        || (strcmp(m_nic, "any") == 0))
-    err_quit("invalid nic found in ruijie.conf!\n");
-    if ((m_echoInterval < 0) || (m_echoInterval> 100))
-    err_quit("invalid echo interval found in ruijie.conf!\n");
-    //if ((m_intelligentReconnect < 0) || (m_intelligentReconnect> 1))
-    if ((m_intelligentReconnect < 0))
-    err_quit("invalid intelligentReconnect found in ruijie.conf!\n");
-
-#ifdef DEBUG
-    puts("-- CONF INFO");
-    printf("## m_name=%s\n", m_name);
-    printf("## m_password=%s\n", m_password);
-    printf("## m_nic=%s\n", m_nic);
-    printf("## m_authenticationMode=%d\n", m_authenticationMode);
-    printf("## m_echoInterval=%d\n", m_echoInterval);
-    printf("## m_intelligentReconnect=%d\n", m_intelligentReconnect);// NOT supported now!!
-    printf("## m_fakeVersion=%s\n", m_fakeVersion);
-    printf("## m_fakeAddress=%s\n", m_fakeAddress);
-    printf("## m_fakeMAC=%s\n", m_fakeMAC);
-    puts("-- END");
-#endif
-
-}
-
 
 #ifdef LIBXML_TREE_ENABLED
 
@@ -447,7 +396,7 @@ get_element(xmlNode * a_node)
               {
                 if(nic[0]==0)
                 {
-					m_nic = nic;
+                	sender.m_nic = nic;
 					for (i = 0; i < strlen(node_content); i++)
 					node_content[i] = tolower(node_content[i]);
 					strncpy(nic, node_content, sizeof(nic) - 1);
@@ -482,12 +431,16 @@ get_element(xmlNode * a_node)
              */
             else if (strcmp(node_name, "FakeAddress") == 0)
               {
-                strncpy(fakeAddress, node_content, sizeof(fakeAddress) - 1);
-                fakeAddress[sizeof(fakeAddress) - 1] = 0;
-                if (inet_pton(AF_INET, fakeAddress, & sender.m_ip) <= 0)
-                err_msg("invalid fakeAddress found in ruijie.conf, ignored...\n");
+                if (strlen(node_content) == 0)
+                {
+ 					sender.m_ip = 0;
+				}
                 else
-                m_fakeAddress = fakeAddress;
+                {
+					sender.m_ip = inet_addr(node_content);
+					if (sender.m_ip == 0)
+						err_msg("invalid fakeAddress found in ruijie.conf, ignored...\n");
+                }
               }
           }
 
@@ -629,16 +582,6 @@ GenSetting(void)
     return 0;
   }
 #endif
-
-static void
-logoff(int signo)
-{
-  if (sender.m_state)
-    {
-      SendEndCertPacket(&sender);
-    }
-  _exit(0);
-}
 
 static int
 kill_all(char * process)

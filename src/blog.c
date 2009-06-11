@@ -74,7 +74,7 @@ static unsigned char Table[]={
 //configure the 4 parameters Blog() and FillNetParameter() need.
 
 void
-InitializeBlog(ruijie_packet * l)
+InitializeBlog(ruijie_packet * this)
 {
 	int iCircle = 0x15;
 	int i, ax = 0, bx = 0, dx = 0;
@@ -86,16 +86,21 @@ InitializeBlog(ruijie_packet * l)
 	{ 0x00, 0x00, 0x13, 0x11, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 
-	if (l->m_dhcpmode > 0)//Dhcp Enabled
+	if (this->m_dhcpmode > 0)//Dhcp Enabled
 	{
 		sCircleBase[0x04] = 0x01;
-		l->m_ruijieExtra[0x04] = 0x7f;
+		this->m_ruijieExtra[0x04] = 0x7f;
+	}
+	else
+	{
+		sCircleBase[0x04] = 0x00;
+		this->m_ruijieExtra[0x04] = 0xff;
 	}
 
-	memcpy(sCircleBase + 5, &(l->m_ip), 4);
-	memcpy(sCircleBase + 9, &(l->m_mask), 4);
-	memcpy(sCircleBase + 13, &(l->m_gate), 4);
-	memcpy(sCircleBase + 17, &(l->m_dns), 4);
+	memcpy(sCircleBase + 5, &(this->m_ip), 4);
+	memcpy(sCircleBase + 9, &(this->m_mask), 4);
+	memcpy(sCircleBase + 13, &(this->m_gate), 4);
+	memcpy(sCircleBase + 17, &(this->m_dns), 4);
 
 	for (i = 0; i < iCircle; i++)
 	{
@@ -112,8 +117,8 @@ InitializeBlog(ruijie_packet * l)
 		ax = Table[dx * 2] | Table[dx * 2 + 1] << 8;
 		ax ^= bx;
 	}
-	l->circleCheck[0] = (unsigned char) ((ax & 0xff00) >> 8);
-	l->circleCheck[1] = (unsigned char) (ax & 0x00ff);
+	this->circleCheck[0] = (unsigned char) ((ax & 0xff00) >> 8);
+	this->circleCheck[1] = (unsigned char) (ax & 0x00ff);
 }
 
 //Fill in some additional information  Ruijie Corp. required.

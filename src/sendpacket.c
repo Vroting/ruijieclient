@@ -30,6 +30,10 @@
  * Boston, MA 02111-1307, USA.
  */
 
+#include <sys/ioctl.h>
+#include <net/if.h>
+#include <poll.h>
+#include <openssl/md5.h>
 #include "sendpacket.h"
 #include "blog.h"
 
@@ -259,6 +263,74 @@ WaitPacket(ruijie_packet *this, int timeout)
   return poll(&pfd, 1, timeout);
 }
 
+#define FILTER_STR "ether[12:2]=0x888e and ether dst %02x:%02x:%02x:%02x:%02x:%02x"
+
+int
+GetNicParam(ruijie_packet *this)
+{
+	char filter_buf[256];
+	char p_errbuf[PCAP_ERRBUF_SIZE];
+
+	struct bpf_program filter_code;
+	struct ifreq rif;
+
+	memset(&rif, 0, sizeof(rif));
+
+	// retrieve MAC address of corresponding net adapter's
+	strcpy(rif.ifr_name, this->m_nic);
+	int tmp = socket(AF_INET, SOCK_DGRAM, 0);
+
+	if (this->m_ip == 0)
+	{
+		ioctl(tmp, SIOCGIFADDR, &rif);
+		memcpy(&(this->m_ip), rif.ifr_addr.sa_data + 2, 4);
+		//	printf("ipddddddddddddd is %d\n",0);
+		//	exit(0);
+	}
+	// else m_ip has been initialized in checkandSetConfig()
+
+	ioctl(tmp, SIOCGIFNETMASK, &rif);
+
+	memcpy(&(this->m_mask), rif.ifr_addr.sa_data + 2, 4);
+
+	ioctl(tmp, SIOCGIFHWADDR, &rif);
+	memcpy(this->m_ETHHDR + ETHER_ADDR_LEN, rif.ifr_hwaddr.sa_data,
+			ETHER_ADDR_LEN);
+	close(tmp);
+
+	if (this->m_pcap)
+		pcap_close(this->m_pcap);
+	if ((this->m_pcap = pcap_open_live(this->m_nic, 65536, 0, 500, p_errbuf))
+			== NULL)
+	{
+		err_msg("pcap_open_live: %s\n", p_errbuf);
+
+		return 1;
+	}
+	this->m_pcap_no = pcap_fileno(this->m_pcap); // we can poll() it in the following code.
+
+	// set the filter. Here I'm sure filter_buf is big enough.
+	snprintf(filter_buf, sizeof(filter_buf), FILTER_STR, this->m_ETHHDR[6],
+			this->m_ETHHDR[7], this->m_ETHHDR[8], this->m_ETHHDR[9],
+			this->m_ETHHDR[10], this->m_ETHHDR[11]);
+
+	if (pcap_compile(this->m_pcap, &filter_code, filter_buf, 0, this->m_mask)
+			== -1)
+	{
+		err_msg("pcap_compile(): %s", pcap_geterr(this->m_pcap));
+		pcap_close(this->m_pcap);
+		return 1;
+	}
+	if (pcap_setfilter(this->m_pcap, &filter_code) == -1)
+	{
+		err_msg("pcap_setfilter(): %s", pcap_geterr(this->m_pcap));
+		pcap_close(this->m_pcap);
+		return 1;
+	}
+	pcap_freecode(&filter_code); // avoid  memory-leak
+	return 0;
+}
+
 int
 SendFindServerPacket(ruijie_packet *this)
 {
@@ -312,6 +384,13 @@ SendFindServerPacket(ruijie_packet *this)
         }
     }
   return -1;
+}
+
+int
+FlushRecvBuf(ruijie_packet*this)
+{
+	char buf[1500];
+	while(recvfrom(this->m_pcap_no,buf,1500,MSG_DONTWAIT,0,0)>0);
 }
 
 int
@@ -454,6 +533,7 @@ int
 IfOnline(ruijie_packet *this)
 {
   // TODO: put code here
+//  WaitPacket()
 
   return 0;
 }
@@ -490,7 +570,9 @@ SendEchoPacket(ruijie_packet *this)
     {
       // watch out! Here is the crucial part of determining interruption
       // of network connection
-      return -1; // if the connection has been interrupted.
+	  pcap_next_ex(this->m_pcap, &this->pkt_hdr, &this->pkt_data);
+	  if (this->pkt_data[0x12] == 0x04) // if server send us Failure message
+		  return -1; // if the connection has been interrupted.
     }
   return pcap_sendpacket(this->m_pcap, echoPackage, 0x2d);
 }
