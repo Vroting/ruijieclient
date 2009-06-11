@@ -9,9 +9,6 @@
 /* Define to 1 if you have the `pcap' library (-lpcap). */
 #undef HAVE_LIBPCAP
 
-/* Define to 1 if you have the `ssl' library (-lssl). */
-#undef HAVE_LIBSSL
-
 /* Define to 1 if you have the `xml2' library (-lxml2). */
 #undef HAVE_LIBXML2
 

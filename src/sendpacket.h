@@ -36,6 +36,9 @@
 #include <net/ethernet.h>
 #include <pcap.h>
 #include <string.h>
+#include <sys/ioctl.h>
+#include <net/if.h>
+#include <poll.h>
 
 #include "global.h"
 

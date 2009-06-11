@@ -34,11 +34,11 @@
 #ifndef MYERR_H
 #define MYERR_H
 
-#include	<stdio.h>
-#include	<stdlib.h>
-#include 	<string.h>
-#include	<errno.h> 	/* for definition of errno */
-#include	<stdarg.h>		/* ANSI C header file */
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h> 	/* for definition of errno */
+#include <stdarg.h>		/* ANSI C header file */
 
 void
 err_dump(const char *, ...);
