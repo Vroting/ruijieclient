@@ -30,6 +30,11 @@
  * Boston, MA 02111-1307, USA.
  */
 
+#include <sys/ioctl.h>
+#include <net/if.h>
+#include <net/route.h>
+#include <poll.h>
+#include <errno.h>
 #include "md5.h"
 #include "sendpacket.h"
 #include "blog.h"
@@ -212,7 +217,13 @@ GetServerMsg(ruijie_packet*this, char*outbuf, size_t buflen)
 #endif
   code_convert(outbuf, buflen, msgBuf, strlen(msgBuf));
 }
+#ifndef _WIN32
+static in_addr_t GetDefaultGateway()
+{
 
+
+}
+#endif
 int
 WaitPacket(ruijie_packet *this, int timeout)
 {
@@ -222,6 +233,7 @@ WaitPacket(ruijie_packet *this, int timeout)
 
   return poll(&pfd, 1, timeout);
 }
+
 
 #define FILTER_STR "ether[12:2]=0x888e and ether dst %02x:%02x:%02x:%02x:%02x:%02x"
 
@@ -244,10 +256,13 @@ GetNicParam(ruijie_packet *this)
 	{
 		ioctl(tmp, SIOCGIFADDR, &rif);
 		memcpy(&(this->m_ip), rif.ifr_addr.sa_data + 2, 4);
-		//	printf("ipddddddddddddd is %d\n",0);
-		//	exit(0);
 	}
-	// else m_ip has been initialized in checkandSetConfig()
+//	else
+//	{
+//		printf("%d\n",this->m_ip);
+//
+//	}
+	// else m_ip has been initialized in SetConfig()
 
 	ioctl(tmp, SIOCGIFNETMASK, &rif);
 
@@ -256,6 +271,9 @@ GetNicParam(ruijie_packet *this)
 	ioctl(tmp, SIOCGIFHWADDR, &rif);
 	memcpy(this->m_ETHHDR + ETHER_ADDR_LEN, rif.ifr_hwaddr.sa_data,
 			ETHER_ADDR_LEN);
+
+	// here we will get default gateway, this may not work
+
 	close(tmp);
 
 	if (this->m_pcap)

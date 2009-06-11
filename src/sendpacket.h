@@ -32,13 +32,23 @@
 #ifndef SENDPACKET_H
 #define SENDPACKET_H
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <netinet/in.h>
+#ifdef HAVE_NET_ETHERNET_H
 #include <net/ethernet.h>
+#else
+#define ETHER_ADDR_LEN  ETH_HLEN
+
+#endif
 #include <pcap.h>
 #include <string.h>
 #include <sys/ioctl.h>
 #include <net/if.h>
 #include <poll.h>
+
 
 #include "global.h"
 
@@ -73,13 +83,13 @@ typedef struct __ruijie_packet
   u_char circleCheck[2]; // two magic vaules!
   u_char* m_ruijieExtra;
 
-  char* m_name; // user name
-  char* m_password; // password
-  char*	m_nic; // net adapter name
+  char  m_name[32]; // user name
+  char  m_password[32]; // password
+  char 	m_nic[32]; // net adapter name
 
   in_addr_t m_ip;
   in_addr_t m_mask;
-  in_addr_t m_gate;
+  in_addr_t m_gate; //Default gateway
   in_addr_t m_dns;
   // serial number, initialised when received the first valid Authentication-Success-packet
   ULONG_BYTEARRAY m_serialNo;

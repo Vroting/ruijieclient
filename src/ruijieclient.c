@@ -54,13 +54,8 @@ static char m_intelligentHost[16] = "4.2.2.2";
 // flag of afterward DHCP status
 int noip_afterauth = 1;
 
-// user name
-static char name[32]={0};
-// password
-static char password[32]={0};
-static char nic[32];
 static char fakeVersion[8];
-static char fakeMAC[32];
+//static char fakeMAC[32];
 static char config_file[256]=CONF_PATH;
 
 /* These info should be worked out by initialisation portion. */
@@ -80,7 +75,7 @@ GetConfig();
 static int
 GenSetting(void);
 static void
-get_element(xmlNode * a_node);
+get_element(xmlNode * a_node,ruijie_packet*);
 #endif
 
 
@@ -104,7 +99,10 @@ CheckConfig(ruijie_packet* l)
     err_quit("invalid intelligentReconnect found in ruijie.conf!\n");
 
 #ifdef DEBUG
-    puts("-- CONF INFO");
+    char buf[80];
+    inet_ntop(AF_INET,&l->m_ip,buf,80);
+
+	puts("-- CONF INFO");
     printf("## m_name=%s\n", l->m_name);
     printf("## m_password=%s\n", l->m_password);
     printf("## m_nic=%s\n", l->m_nic);
@@ -112,7 +110,7 @@ CheckConfig(ruijie_packet* l)
     printf("## m_echoInterval=%d\n", m_echoInterval);
     printf("## m_intelligentReconnect=%d\n", m_intelligentReconnect);// NOT supported now!!
     printf("## m_fakeVersion=%s\n", m_fakeVersion);
-    printf("## m_fakeAddress=%s\n", inet_ntoa(l->m_ip));
+    printf("## m_fakeAddress=%s\n",buf);
     printf("## m_fakeMAC=%s\n", m_fakeMAC);
     puts("-- END");
 #endif
@@ -154,16 +152,16 @@ main(int argc, char* argv[])
   {
   		{"-D", (char*)&setdaemon,0,sizeof(setdaemon),2, BOOL_both},
   		{"--daemon", (char*)&setdaemon,"-D,--daemon\trun as a daemon",sizeof(setdaemon),8, BOOL_both},
-  		{"-n", nic ,0,sizeof(nic),2, STRING},
-  		{"--nic", nic ,"-n,--nic\tnet card",sizeof(nic),5, STRING},
+  		{"-n", sender.m_nic ,0,sizeof(sender.m_nic),2, STRING},
+  		{"--nic", sender.m_nic ,"-n,--nic\tnet card",sizeof(sender.m_nic),5, STRING},
   		{"-g", (char*)&genfile ,"-g\t\tauto generate a sample configuration",sizeof(genfile),2, BOOL_both},
   		{"--noconfig",(char*)&nocfg,"--noconfig\tdo not read config from file",sizeof(nocfg),10,BOOL_both},
   		{"-f",config_file,0,sizeof(config_file),2,STRING},
   		{"--config",config_file,"-f,--config\tsupply alternative config file",sizeof(config_file),8,STRING},
-  		{"-u",name ,0,sizeof(name),2,STRING},
-  		{"--user",name,"-u,--user\tsupply username",sizeof(name),6,STRING},
-  		{"-p",password ,0,sizeof(password),2,STRING},
-  		{"--passwd",password,"-p,--passwd\tsupply password",sizeof(password),6,STRING},
+  		{"-u",sender.m_name ,0,sizeof(sender.m_name),2,STRING},
+  		{"--user",sender.m_name,"-u,--user\tsupply username",sizeof(sender.m_name),6,STRING},
+  		{"-p",sender.m_password ,0,sizeof(sender.m_password),2,STRING},
+  		{"--passwd",sender.m_password,"-p,--passwd\tsupply password",sizeof(sender.m_password),6,STRING},
   		{"-K", (char*)&kill_ruijieclient ,"-k,-K\t\tKill all ruijieclient daemon",sizeof(kill_ruijieclient),2, BOOL_both},
   		{"-k", (char*)&kill_ruijieclient ,0,sizeof(kill_ruijieclient),2, BOOL_both},
   		{0}
@@ -192,13 +190,6 @@ main(int argc, char* argv[])
   if(!nocfg)
   {
 	  GetConfig();
-  }
-  else
-  {
-	  // get form cmd line, hehe
-	  sender.m_nic = nic;
-	  sender.m_name = name;
-	  sender.m_password = password;
   }
   //NOTE:check if we had get all the config
   CheckConfig(&sender);
@@ -288,9 +279,7 @@ main(int argc, char* argv[])
        */
       if( sender.m_dhcpmode == 3)
       {
-    	  char cmd[50];
-    	  sprintf(cmd,"dhclient -4 %s",nic);
-    	  system(cmd);
+     	  system(cmd);
     	  sender.m_dhcpmode = 0;
     	  sender.m_ip = 0;
     	  continue; // re-authentication
@@ -348,7 +337,7 @@ main(int argc, char* argv[])
 #ifdef LIBXML_TREE_ENABLED
 
 static void
-get_element(xmlNode * a_node)
+get_element(xmlNode * a_node,ruijie_packet * l)
   {
     xmlNode *cur_node = NULL;
     char *node_content, *node_name;
@@ -365,35 +354,32 @@ get_element(xmlNode * a_node)
           {
             if (strcmp(node_name, "Name") == 0)
               {
-            	if(name[0]==0) // not got from cmd line
+            	if(l->m_name[0]==0) // not got from cmd line
             	{
-					strncpy(name, node_content, sizeof(name) - 1);
-					name[sizeof(name) - 1] = 0;
+					strncpy(l->m_name, node_content, sizeof(l->m_name) - 1);
+					l->m_name[sizeof(l->m_name) - 1] = 0;
 				}
-				sender.m_name = name;
               }
             else if (strcmp(node_name, "Password") == 0)
               {
-				if (password[0]==0)// not got from cmd line
+				if (l->m_password[0]==0)// not got from cmd line
 				{
-					strncpy(password, node_content, sizeof(password) - 1);
-					password[sizeof(password) - 1] = 0;
+					strncpy(l->m_password, node_content, sizeof(l->m_password) - 1);
+					l->m_password[sizeof(l->m_password) - 1] = 0;
 				}
-				sender.m_password = password;
               }
             else if (strcmp(node_name, "AuthenticationMode") == 0)
               {
-                sender.m_authenticationMode = atoi(node_content);
+                l->m_authenticationMode = atoi(node_content);
               }
             else if (strcmp(node_name, "NIC") == 0)
               {
-                if(nic[0]==0)
+                if(l->m_nic[0]==0)
                 {
-                	sender.m_nic = nic;
 					for (i = 0; i < strlen(node_content); i++)
 					node_content[i] = tolower(node_content[i]);
-					strncpy(nic, node_content, sizeof(nic) - 1);
-					nic[sizeof(nic) - 1] = 0;
+					strncpy(l->m_nic, node_content, sizeof(l->m_nic) - 1);
+					l->m_nic[sizeof(l->m_nic) - 1] = 0;
 				}
               }
             else if (strcmp(node_name, "EchoInterval") == 0)
@@ -412,7 +398,7 @@ get_element(xmlNode * a_node)
               }
             else if (strcmp(node_name, "DHCPmode") == 0)
               {
-                sender.m_dhcpmode = atoi(node_content);
+                l->m_dhcpmode = atoi(node_content);
               }
             /* comment out for further useage
              else if (strcmp(node_name, "FakeMAC") == 0)
@@ -426,18 +412,18 @@ get_element(xmlNode * a_node)
               {
                 if (strlen(node_content) == 0)
                 {
- 					sender.m_ip = 0;
+ 					l->m_ip = 0;
 				}
                 else
                 {
-					sender.m_ip = inet_addr(node_content);
-					if (sender.m_ip == 0)
+					l->m_ip = inet_addr(node_content);
+					if (l->m_ip == 0)
 						err_msg("invalid fakeAddress found in ruijie.conf, ignored...\n");
                 }
               }
           }
 
-        get_element(cur_node->children);
+        get_element(cur_node->children,l);
       }
   }
 static void
@@ -476,7 +462,7 @@ GetConfig()
     /*Get the root element node */
     root_element = xmlDocGetRootElement(doc);
 
-    get_element(root_element);
+    get_element(root_element,&sender);
 
     /*free the document */
     xmlFreeDoc(doc);
@@ -501,7 +487,9 @@ GenSetting(void)
     int rc;
 
     // Creates a new document, a node and set it as a root node
-
+#ifdef XXXXMMMMMLLLLL
+#define BAD_CAST (char*)
+#endif
     doc = xmlNewDoc(BAD_CAST "1.0");
 
     root_node = xmlNewNode(NULL, BAD_CAST CONF_NAME);
@@ -556,7 +544,10 @@ GenSetting(void)
     xmlAddChild(setting_node, xmlNewComment((xmlChar *) "Fake IP for cheating server"));
     xmlNewChild(setting_node, NULL, BAD_CAST "FakeAddress", BAD_CAST "");
     xmlAddChild(setting_node, xmlNewComment((xmlChar *) "DHCP mode 0: Disable, "
-            "1: Enable DHCP before authentication, 2: Enable DHCP after authentication "));
+            "1: Enable DHCP before authentication, "
+    		"2: Enable DHCP after authentication "
+    		"3: DHCP after DHCP authentication and"
+    		"re-authentication(You should use this if your net env is DHCP)"));
     xmlNewChild(setting_node, NULL, BAD_CAST "DHCPmode", BAD_CAST "0");
 
     //Dumping document to stdio or file
