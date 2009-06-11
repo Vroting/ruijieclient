@@ -40,23 +40,11 @@
 #include <string.h>
 #include <signal.h>
 #include <errno.h>
-#include <setjmp.h>
 #include <sys/types.h>
-#include <sys/time.h>
 #include <time.h>
-#include <sys/select.h>
-#include <sys/socket.h>
-#include <net/ethernet.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <sys/poll.h>
-#include <sys/epoll.h>
-#include <pcap.h>
 #include <libxml2/libxml/parser.h>
 #include <libxml2/libxml/tree.h>
 #include "global.h"
-
-#define FILTER_STR "ether[12:2]=0x888e and ether dst %02x:%02x:%02x:%02x:%02x:%02x"
 
 #define MAX_MSG_LEN 1024
 #define MAX_U_MSG_LEN MAX_MSG_LEN*2

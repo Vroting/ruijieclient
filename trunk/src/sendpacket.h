@@ -32,12 +32,9 @@
 #ifndef SENDPACKET_H
 #define SENDPACKET_H
 
-#include <sys/types.h>
-#include <poll.h>
 #include <netinet/in.h>
 #include <net/ethernet.h>
 #include <pcap.h>
-#include <openssl/md5.h>
 #include <string.h>
 
 #include "global.h"
@@ -49,7 +46,15 @@ typedef struct __ruijie_packet
 
   int m_lastID; // last ID send form server.
   int m_MD5value_len; // MD5 key
-  // DHCP mode: 0: Off, 1:On, DHCP before authentication, 2: On, DHCP after authentication
+  /*
+   * DHCP mode:
+   * 0: Off
+   * 1: On, DHCP before authentication
+   * 2: On, DHCP after authentication
+   * 3: On, DHCP after DHCP authentication and re-authentication
+   *
+   */
+
   int m_dhcpmode;
   // auth mode: 0:standard 1:Star private
   int m_authenticationMode;
@@ -63,10 +68,12 @@ typedef struct __ruijie_packet
   u_char m_ETHHDR[ETH_HLEN];
 
   u_char circleCheck[2]; // two magic vaules!
+  u_char* m_ruijieExtra;
+
   char* m_name; // user name
   char* m_password; // password
+  char*	m_nic; // net adapter name
 
-  u_char* m_ruijieExtra;
   in_addr_t m_ip;
   in_addr_t m_mask;
   in_addr_t m_gate;
@@ -90,6 +97,10 @@ typedef struct __ruijie_packet
 /* fill packets with 2 bytes indicates fake version */
 int
 FillVersion(char * m_fakeVersion);
+
+/*get nic param*/
+int
+GetNicParam(ruijie_packet *this);
 
 /* comment out for further usage
  * Fill MAC bytes in packets with a fake one
@@ -120,6 +131,9 @@ SendEndCertPacket(ruijie_packet *);
 int
 IfOnline(ruijie_packet*this);
 
+/*Flush the recv buffer*/
+int
+FlushRecvBuf(ruijie_packet*this);
 /*Get Server message in UTF-8 encode*/
 int
 GetServerMsg(ruijie_packet*this, char*outbuf, size_t buflen);
