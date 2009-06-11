@@ -31,13 +31,12 @@
 #include <netinet/in.h>
 #include "conn_monitor.h"
 
-
 /*Ping the address inet to see if the network works!*/
-int Ping(in_addr_t inet)
+int
+Ping(in_addr_t inet)
 {
 
-
-	/*here we will use*/
-	return -1;
+  /*here we will use*/
+  return -1;
 }
 

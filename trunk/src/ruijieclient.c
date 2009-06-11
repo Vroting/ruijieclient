@@ -209,13 +209,6 @@ main(int argc, char* argv[])
 
   strcat(cmd, sender.m_nic);
 
-  if (sender.m_dhcpmode > 0)
-    {
-      // kill all other dhclients which are running
-      kill_all("dhclient");
-    }
-
-
   signal(SIGHUP, logoff);
   signal(SIGINT, logoff);
   signal(SIGQUIT, logoff);

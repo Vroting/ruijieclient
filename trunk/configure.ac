@@ -13,8 +13,6 @@ AC_PROG_CC
 # Checks for libraries.
 # FIXME: Replace `main' with a function in `-lpcap':
 AC_CHECK_LIB([pcap], [main], [],[exit])
-# FIXME: Replace `main' with a function in `-lssl':
-AC_CHECK_LIB([ssl], [main], [],[exit])
 # FIXME: Replace `main' with a function in `-lxml2':
 AC_CHECK_LIB([xml2], [main], [], [exit])
 
