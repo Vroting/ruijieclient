@@ -119,6 +119,8 @@ CheckConfig(ruijie_packet* l)
 /* kill other processes */
 static int
 kill_all(char* process);
+/*check root*/
+static void check_as_root();
 
 // this is a top crucial change that eliminated all global variables
 static ruijie_packet sender =   { 0 };
@@ -137,6 +139,7 @@ logoff(int signo)
 int
 main(int argc, char* argv[])
 {
+  check_as_root();
   /* message buffer define*/
   // utf-8 msg buf. note that each utf-8 character takes 4 bytes
   char u_msgBuf[MAX_U_MSG_LEN];
@@ -580,4 +583,13 @@ kill_all(char * process)
       err_sys("Killall Failure !");
     }
   return cmd_return;
+}
+
+static void
+check_as_root()
+{
+    if(geteuid()!=0)
+    {
+    	err_sys("Ruijieclient must be run as root.");
+    }
 }
