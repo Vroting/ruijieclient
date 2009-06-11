@@ -135,11 +135,11 @@ static uint8_t RuijieExtra[144] = {
 
 
 int
-FillVersion(char * m_fakeVersion)
+FillVersion(ruijie_packet * this)
 {
   unsigned int c_ver1, c_ver2;
 
-  if (m_fakeVersion && sscanf(m_fakeVersion, "%u.%u", &c_ver1, &c_ver2))
+  if (this->m_fakeVersion && sscanf(this->m_fakeVersion, "%u.%u", &c_ver1, &c_ver2))
     {
 #ifdef DEBUG
       printf("## c_ver1=%u ## c_ver2=%u\n", c_ver1, c_ver2);

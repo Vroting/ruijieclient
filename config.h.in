@@ -12,6 +12,12 @@
 /* Define to 1 if you have the `xml2' library (-lxml2). */
 #undef HAVE_LIBXML2
 
+/* Define to 1 if you have the <libxml2/libxml/parser.h> header file. */
+#undef HAVE_LIBXML2_LIBXML_PARSER_H
+
+/* Define to 1 if you have the <libxml2/libxml/tree.h> header file. */
+#undef HAVE_LIBXML2_LIBXML_TREE_H
+
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
 
@@ -50,9 +56,6 @@
 
 /* Define to 1 if you have the <sys/stat.h> header file. */
 #undef HAVE_SYS_STAT_H
-
-/* Define to 1 if you have the <sys/time.h> header file. */
-#undef HAVE_SYS_TIME_H
 
 /* Define to 1 if you have the <sys/types.h> header file. */
 #undef HAVE_SYS_TYPES_H
