@@ -10,7 +10,6 @@
  *
  * AUTHORS:
  *   Gong Han  <gong AT fedoraproject.org> from CSE@FJNU CN
- *   Chen Tingjun <chentingjun AT gmail.com> from POET@FJNU CN
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -27,3 +26,42 @@
  * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
  * Boston, MA 02111-1307, USA.
  */
+
+#ifndef CONN_MONITOR_H
+#define CONN_MONITOR_H
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <net/if.h>
+#include <linux/rtnetlink.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+
+#define BUFSIZE 8192
+
+struct route_info
+{
+  in_addr_t dstAddr;
+  in_addr_t srcAddr;
+  in_addr_t gateWay;
+  char ifName[IF_NAMESIZE];
+};
+
+/* Ping the address to check connectivity of the network */
+int
+Ping(in_addr_t host_addr);
+
+int
+readNlSock(int sockFd, char *bufPtr, int seqNum, int pId);
+
+/* analyse and return route information */
+void
+parseRoutes(struct nlmsghdr *nlHdr, struct route_info *rtInfo);
+
+/* get default gateway as a string */
+in_addr_t
+get_gateway();
+
+#endif
