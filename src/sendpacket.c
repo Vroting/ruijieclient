@@ -217,9 +217,10 @@ GetServerMsg(ruijie_packet*this, char*outbuf, size_t buflen)
 #endif
   code_convert(outbuf, buflen, msgBuf, strlen(msgBuf));
 }
-#ifndef _WIN32
+#ifndef _MAC_OSX
 static in_addr_t GetDefaultGateway()
 {
+  //prase form /proc/net/route
 
 
 }

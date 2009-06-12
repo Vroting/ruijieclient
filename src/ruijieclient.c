@@ -304,8 +304,10 @@ kill_all(char * process)
 static void
 check_as_root()
 {
+#ifndef DEBUG
     if(geteuid()!=0)
     {
     	err_sys("Ruijieclient must be run as root.");
     }
+#endif
 }
