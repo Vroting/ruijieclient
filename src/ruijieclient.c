@@ -37,8 +37,6 @@
 
 // fake MAC, e.g. "00:11:D8:44:D5:0D"
 static char *m_fakeMAC = NULL;
-// detective gateway address
-static char m_intelligentHost[16] = "4.2.2.2";
 
 // flag of afterward DHCP status
 int noip_afterauth = 1;
@@ -89,14 +87,16 @@ main(int argc, char* argv[])
   // system command
   char cmd[32] = "dhclient -4"; //ipv4 only
 
-  long setdaemon=0;
+  long setdaemon=1;
+  long nodaemon = 0;
   long genfile=0;
   long nocfg=0;
-  long kill_ruijieclient=0;
+  long kill_ruijieclient =0;
+  long showversion =0;
   struct parameter_tags param[] =
   {
-    {"-D", (char*)&setdaemon,0,sizeof(setdaemon),2, BOOL_both},
-    {"--daemon", (char*)&setdaemon,"-D,--daemon\trun as a daemon",sizeof(setdaemon),8, BOOL_both},
+    {"-D", (char*)&nodaemon,"-D\t\tDO NOT fork as a deamon",sizeof(setdaemon),2, BOOL_both},
+    {"--daemon", (char*)&setdaemon,"-D,--daemon\trun as a daemon(default)",sizeof(setdaemon),8, BOOL_both},
     {"-n", sender.m_nic ,0,sizeof(sender.m_nic),2, STRING},
     {"--nic", sender.m_nic ,"-n,--nic\tnet card",sizeof(sender.m_nic),5, STRING},
     {"-g", (char*)&genfile ,"-g\t\tauto generate a sample configuration",sizeof(genfile),2, BOOL_both},
@@ -109,37 +109,42 @@ main(int argc, char* argv[])
     {"--passwd",sender.m_password,"-p,--passwd\tsupply password",sizeof(sender.m_password),6,STRING},
     {"-K", (char*)&kill_ruijieclient ,"-k,-K\t\tKill all ruijieclient daemon",sizeof(kill_ruijieclient),2, BOOL_both},
     {"-k", (char*)&kill_ruijieclient ,0,sizeof(kill_ruijieclient),2, BOOL_both},
+    {"--version", (char*)&showversion ,0,sizeof(kill_ruijieclient),9, BOOL_both},
     {0}
   };
+
+  if (showversion)
+    err_quit("%s", PACKAGE_VERSION);
 
   // the initial serial number, a magic number!
   sender.m_serialNo.ulValue = 0x1000002a;
 
   // Parse command line parameters
-  ParseParameters(&argc,&argv,param);
+  ParseParameters(&argc, &argv, param);
 
   // if '-g' is passed as argument then generate a sample configuration
-  if(genfile)
-  {
-    check_as_root();
-    GenSetting();
-    exit(EXIT_SUCCESS);
-  }
- //if '-g' is passed as argument then kill all other ruijieclients which are running
+  if (genfile)
+    {
+      check_as_root();
+      GenSetting();
+      exit(EXIT_SUCCESS);
+    }
+  //if '-g' is passed as argument then kill all other ruijieclients which are running
   if (kill_ruijieclient)
-  {
-	 if(kill_all("ruijieclient"))
-		 err_quit("Can not kill ruijieclient, permission denied or no such process");
-	 exit(EXIT_SUCCESS);
-  }
+    {
+      if (kill_all("ruijieclient"))
+        err_quit(
+            "Can not kill ruijieclient, permission denied or no such process");
+      exit(EXIT_SUCCESS);
+    }
 
-  if(!nocfg)
-  {
-	  check_as_root();
-	  GetConfig(&sender);
-  }
+  if (!nocfg)
+    {
+      check_as_root();
+      GetConfig(&sender);
+    }
   //NOTE:check if we had get all the config
-  void   CheckConfig(ruijie_packet*);
+  void CheckConfig(ruijie_packet*);
   CheckConfig(&sender);
 #ifndef DEBUG
   // kill all other ruijieclients which are running
@@ -157,9 +162,18 @@ main(int argc, char* argv[])
   signal(SIGTSTP, logoff);
 
   if(nocfg)
-	  check_as_root();
+    check_as_root();
 
-  while (1)
+  //print copyright and bug report message
+  printf("\n\n%s - a powerful ruijie Supplicant for UNIX, base on mystar.\n"
+    "Copyright %s\n\n"
+    "Please see/send bug report to \n%s\n"
+    "or mail to %s \n\n", PACKAGE,
+      "Gong Han, Chen Tingjun, Microcai, and others",
+      "http://code.google.com/p/ruijieclient/issues/list", PACKAGE_BUGREPORT);
+
+  int tryed;
+  for(tryed=0;tryed < 3 ;++tryed)
     {
       sender.m_state = 0;
 #ifdef DEBUG
@@ -181,7 +195,7 @@ main(int argc, char* argv[])
         {
           fputs("@@ Server found, requesting user name...\n", stdout);
         }
-//LABLE_SENDNAME:
+LABLE_SENDNAME:
       if (SendNamePacket(&sender))
         {
           continue;
@@ -194,7 +208,8 @@ main(int argc, char* argv[])
       switch (SendPasswordPacket(&sender))
         {
       case -1:
-        continue;
+      //
+        goto LABLE_SENDNAME;
       case 1:
         /* authenticate fail
          * possible reasons:
@@ -248,11 +263,11 @@ main(int argc, char* argv[])
           return 0; //user has echo disabled
         }
       // continue echoing
-      if (!setdaemon)
+      if (nodaemon)
         fputs("Keeping sending echo...\nPress Ctrl+C to logoff \n", stdout);
       else
         {
-          fputs("Daemonize and Keeping sending echo...\n", stdout);
+          fprintf(stdout,"Daemonize and Keeping sending echo...\nUse %s -K to quit",PACKAGE_TARNAME);
           if (daemon(0, 0))
             {
               err_quit("Init daemon error!");
@@ -289,10 +304,12 @@ main(int argc, char* argv[])
             }
         }
       pcap_close(sender.m_pcap);
-      return 1; // this should never happen.
-
+      return EXIT_FAILURE; // this should never happen.
       break;
     }// end while
+  if(tryed >=3)
+    fprintf(stderr,"##重试太多，退出\n");
+  return (EXIT_FAILURE);
 }
 
 static int

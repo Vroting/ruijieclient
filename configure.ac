@@ -3,14 +3,14 @@
 
 AC_PREREQ([2.63])
 AC_INIT([ruijieclient], [0.1.3], [gong@fedoraproject.org])
+
 AM_INIT_AUTOMAKE([-Wall -Werror])
 AC_CONFIG_SRCDIR([config.h.in])
 AC_CONFIG_HEADERS([config.h])
 
 # Checks for programs.
 AC_PROG_CC
-
-
+AC_PROG_INSTALL
 
 # Checks for libraries.
 # FIXME: Replace `main' with a function in `-lpcap':
