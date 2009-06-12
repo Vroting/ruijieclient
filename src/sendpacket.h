@@ -91,6 +91,8 @@ typedef struct __ruijie_packet
   in_addr_t m_mask;
   in_addr_t m_gate; //Default gateway
   in_addr_t m_dns;
+  in_addr_t m_pinghost;
+
   // serial number, initialised when received the first valid Authentication-Success-packet
   ULONG_BYTEARRAY m_serialNo;
   // password private key, initialised at the beginning of function main()
