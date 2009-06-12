@@ -27,11 +27,12 @@
  * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
  * Boston, MA 02111-1307, USA.
  */
-
+#define DEBUG_NOXML
 #include "sendpacket.h"
 #if defined(HAVE_LIBXML2) && defined(DEBUG_NOXML)
 #undef HAVE_LIBXML2
 #endif
+
 #ifdef HAVE_LIBXML2
 #define LIBXML_TREE_ENABLED 1
 #include <libxml2/libxml/xmlstring.h>
@@ -224,6 +225,12 @@ Gensetting(struct cfg_tags * t)
         xmlAddChild(setting_node, xmlNewComment((xmlChar *)t->description));
         xmlNewChild(account_node, NULL, BAD_CAST t->key, BAD_CAST t->val);
     }
+#else
+  /*
+   * TODO: here, generate ini format file
+   * and contains Name= and password=
+   */
+
 #endif
   /*
    * Not all machine name the first nic eth0
@@ -263,6 +270,13 @@ Gensetting(struct cfg_tags * t)
   if (rc == -1)
     return -1;
   return 0;
+#else
+  /*
+   * TODO: here, generate ini format file
+   * and contains the rest
+   */
+
+
 #endif
 
 }
@@ -275,7 +289,7 @@ int GenSetting()
 #ifndef HAVE_LIBXML2
 
 int
-get_profile_string(FILE *fp, char *AppName, char *KeyName, char *KeyValue)
+get_profile_string(FILE *fp, char *AppName, const char const *KeyName, char *KeyValue)
 {
   int KEYVALLEN = 20;
   char appname[20], keyname[20];
@@ -341,24 +355,19 @@ get_profile_string(FILE *fp, char *AppName, char *KeyName, char *KeyValue)
     return (-1);
 }
 
-static void GetConfig_noxml(struct cfg_tags * tg,ruijie_packet * l)
+static void
+GetConfig_noxml(struct cfg_tags * tg, ruijie_packet * l)
 {
-  FILE *fp=fopen("./ruijie.ini","r" );
-
-
-
-  //TODO 在这里进行其他形式的配置处理。
-    get_profile_string(fp,"ruijieclient","m_name",l->m_name );
-    //TODO 读取其他参数。。。。。。关闭文件
-    //file_example:ruijie.ini
-    //[ruijieclient]
-    //m_name=aesfcfqfw
-    //......
-
-
-
-
-
+  FILE *fp = fopen(config_file, "r");
+  if(!fp)
+    err_quit("file %s not found",config_file);
+  struct cfg_tags * t;
+  t = tg;
+  while (t->key)
+    {
+      get_profile_string(fp, "ruijieclient", t->key, t->val);
+      t++;
+    }
   fclose(fp);
 }
 
@@ -415,7 +424,7 @@ GetConfig(ruijie_packet * l)
   GetConfig_noxml(cfgtags,l);
 
 #endif
-  //NOTE: 现在，将处理到的东西弄到 ruijiepacket *  里面
+  //NOTE: now , move things to  ruijiepacket * l
   strcpy(l->m_name , cfgtags[USERNAME].val);
   strcpy(l->m_password, cfgtags[PASSWORD].val );
   strcpy(l->m_nic,cfgtags[NIC].val);
@@ -423,7 +432,6 @@ GetConfig(ruijie_packet * l)
   l->m_fakeVersion = cfgtags[FAKEVERSION].val;
   if(cfgtags[FAKEADDRESS].val[0])
     l->m_ip = inet_addr(cfgtags[FAKEADDRESS].val);
-  strcpy(l->m_nic,cfgtags[NIC].val);
   l->m_dhcpmode = atoi(cfgtags[DHCPMODE].val);
   l->m_intelligentReconnect = atoi(cfgtags[INTELLIGENTRECONNECT].val);
 
