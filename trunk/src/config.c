@@ -27,7 +27,7 @@
  * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
  * Boston, MA 02111-1307, USA.
  */
-#define DEBUG_NOXML
+//#define DEBUG_NOXML
 #include "sendpacket.h"
 #if defined(HAVE_LIBXML2) && defined(DEBUG_NOXML)
 #undef HAVE_LIBXML2
@@ -136,160 +136,10 @@ void get_element(xmlNode * a_node,struct cfg_tags * tg)
       get_element(cur_node->children, tg);
     }
 }
-
-#endif
-
-static char name[32];
-static char password[32];
-static char nic[32];
-static char EchoInterval[32]="25";
-static char IntelligentReconnect[32]="1";
-static char AutoConnect[32]="0";
-static char FakeVersion[32]="3.99";
-static char DHCPmode[32]="0";
-static char FakeAddress[32];
-
-static struct cfg_tags cfgtags[]=
-  {
-#define DEF_ITEM(k,v) { k ,v, 0 , sizeof( v )},
-#define DEF_ITEM_d(k,v,d) { k ,v, d , sizeof( v )},
-#define DEF_ITEM_flag(k,v) { k ,v, 0,  sizeof( v ),CFG_TAGS_NOTSET_IF_NOT_NULL},
-#define DEF_ITEM_flag_d(k,v,d) { k ,v, d,  sizeof( v ),CFG_TAGS_NOTSET_IF_NOT_NULL},
-    DEF_ITEM_flag("Name",name)
-#define USERNAME 0
-    DEF_ITEM_flag("Password",password)
-#define PASSWORD 1
-    DEF_ITEM_d("NIC",nic,"Network Adapter Name")
-#define NIC 2
-    DEF_ITEM("EchoInterval",EchoInterval)
-#define ECHOINTERVAL 3
-
-    DEF_ITEM_d("IntelligentReconnect",IntelligentReconnect,
-        "IntelligentReconnect: "
-        "0: Disable IntelligentReconnect, 1: Enable IntelligentReconnect ")
-#define INTELLIGENTRECONNECT 4
-    DEF_ITEM_d("AutoConnect",AutoConnect,"AutoConnect: "
-        "0: Disable AutoConnect, 1: Enable AutoConnect (only available in"
-        " gruijieclient) ")
-#define AUTOCONNET 5
-
-    DEF_ITEM_d("FakeVersion",FakeVersion,"Fake Version for cheating server")
-#define FAKEVERSION 6
-
-    DEF_ITEM_d("FakeAddress",FakeAddress,"Fake IP for cheating server")
-#define FAKEADDRESS 7
-    DEF_ITEM_d("DHCPmode",DHCPmode,"DHCP mode 0: Disable, "
-        "1: Enable DHCP before authentication, "
-        "2: Enable DHCP after authentication "
-        "3: DHCP after DHCP authentication and"
-        "re-authentication(You should use this if your net env is DHCP)")
-#define DHCPMODE 8
-    {0}
-#undef DEF_ITEM
-#undef DEF_ITEM_d
-#undef DEF_ITEM_flag
-#undef DEF_ITEM_flag_d
-  };
-
-
-
-static int
-Gensetting(struct cfg_tags * t)
-{
-  pcap_if_t *if_t,*cur_nic;
-  char  errbuf[256];
-  int rc;
-
-#if defined(LIBXML_TREE_ENABLED) && defined(HAVE_LIBXML2)
-  xmlDocPtr doc = NULL; /* document pointer */
-
-  xmlNodePtr root_node = NULL, account_node = NULL, setting_node = NULL;//, msg_node = NULL;/* node pointers */
-
-  // Creates a new document, a node and set it as a root node
-  doc = xmlNewDoc(BAD_CAST"1.0");
-
-  root_node = xmlNewNode(NULL, BAD_CAST CONF_NAME);
-  xmlNewProp(root_node, BAD_CAST "version", BAD_CAST C_VERSION);
-  xmlAddChild(root_node, xmlNewComment((xmlChar *)
-          "This is a sample configuration file of RuijieClient, "
-          "change it appropriately according to your settings."));
-
-  xmlDocSetRootElement(doc, root_node);
-
-  //creates a new node, which is "attached" as child node of root_node node.
-  account_node = xmlNewChild(root_node, NULL, BAD_CAST "account", NULL);
-
-  for( rc=0; rc < 2; ++t)
-    {
-      if(t->description)
-        xmlAddChild(setting_node, xmlNewComment((xmlChar *)t->description));
-        xmlNewChild(account_node, NULL, BAD_CAST t->key, BAD_CAST t->val);
-    }
 #else
-  /*
-   * TODO: here, generate ini format file
-   * and contains Name= and password=
-   */
-
-#endif
-  /*
-   * Not all machine name the first nic eth0
-   * So we just have to retrieve the first nic's name
-   */
-  pcap_findalldevs(&if_t,errbuf);
-  //Can not open ?
-  if(if_t)
-    {
-      cur_nic = if_t;
-      while(cur_nic && cur_nic->flags == PCAP_IF_LOOPBACK )cur_nic = cur_nic->next;
-      /*The first non loopback devices */
-      if(cur_nic)
-        strcpy(t->val, cur_nic->name );
-      else //OMG, all you have got is a loopbake devive
-        strcpy(t->val , "eth0" );
-      pcap_freealldevs(if_t);
-    }
-  else //So we have to assume that you are using Linux!
-    strcpy(t->val , "eth0" );
-
-#if defined(LIBXML_TREE_ENABLED) && defined(HAVE_LIBXML2)
-
-  setting_node = xmlNewChild(root_node, NULL, BAD_CAST "settings", NULL);
-  while( t->key)
-    {
-      if( t->description)
-        xmlAddChild(setting_node, xmlNewComment((xmlChar *)t->description));
-      xmlNewChild(account_node, NULL, BAD_CAST t->key, BAD_CAST t->val);
-    }
-  //Dumping document to stdio or file
-  rc = xmlSaveFormatFileEnc(config_file, doc, "UTF-8", 1);
-  /*free the document */
-  xmlFreeDoc(doc);
-  xmlCleanupParser();
-  xmlMemoryDump(); // debug memory for regression tests
-  if (rc == -1)
-    return -1;
-  return 0;
-#else
-  /*
-   * TODO: here, generate ini format file
-   * and contains the rest
-   */
-
-
-#endif
-
-}
-
-
-int GenSetting()
-{
-  return Gensetting(cfgtags);
-}
-#ifndef HAVE_LIBXML2
 
 int
-get_profile_string(FILE *fp, char *AppName, const char const *KeyName, char *KeyValue)
+get_profile_string(FILE *fp, char *AppName, const char const *KeyName,char *KeyValue)
 {
   int KEYVALLEN = 20;
   char appname[20], keyname[20];
@@ -346,32 +196,171 @@ get_profile_string(FILE *fp, char *AppName, const char const *KeyName, char *Key
             }
         }
     }
-
-
-
   if (found == 2)
     return (0);
   else
     return (-1);
 }
 
-static void
-GetConfig_noxml(struct cfg_tags * tg, ruijie_packet * l)
-{
-  FILE *fp = fopen(config_file, "r");
-  if(!fp)
-    err_quit("file %s not found",config_file);
-  struct cfg_tags * t;
-  t = tg;
-  while (t->key)
-    {
-      get_profile_string(fp, "ruijieclient", t->key, t->val);
-      t++;
-    }
-  fclose(fp);
-}
-
 #endif
+
+static char name[32];
+static char password[32];
+static char nic[32];
+static char EchoInterval[32]="25";
+static char IntelligentReconnect[32]="1";
+static char AutoConnect[32]="0";
+static char FakeVersion[32]="3.99";
+static char DHCPmode[32]="0";
+static char FakeAddress[32];
+
+static struct cfg_tags cfgtags[]=
+  {
+#define DEF_ITEM(k,v) { k ,v, 0 , sizeof( v )},
+#define DEF_ITEM_d(k,v,d) { k ,v, d , sizeof( v )},
+#define DEF_ITEM_flag(k,v) { k ,v, 0,  sizeof( v ),CFG_TAGS_NOTSET_IF_NOT_NULL},
+#define DEF_ITEM_flag_d(k,v,d) { k ,v, d,  sizeof( v ),CFG_TAGS_NOTSET_IF_NOT_NULL},
+    DEF_ITEM_flag("Name",name)
+#define USERNAME 0
+    DEF_ITEM_flag("Password",password)
+#define PASSWORD 1
+    DEF_ITEM_d("NIC",nic,"Network Adapter Name")
+#define NIC 2
+    DEF_ITEM("EchoInterval",EchoInterval)
+#define ECHOINTERVAL 3
+
+    DEF_ITEM_d("IntelligentReconnect",IntelligentReconnect,
+        "IntelligentReconnect: "
+        "0: Disable IntelligentReconnect, 1: Enable IntelligentReconnect ")
+#define INTELLIGENTRECONNECT 4
+    DEF_ITEM_d("AutoConnect",AutoConnect,"AutoConnect: "
+        "0: Disable AutoConnect, 1: Enable AutoConnect (only available in"
+        " gruijieclient) ")
+#define AUTOCONNET 5
+
+    DEF_ITEM_d("FakeVersion",FakeVersion,"Fake Version for cheating server")
+#define FAKEVERSION 6
+
+    DEF_ITEM_d("FakeAddress",FakeAddress,"Fake IP for cheating server")
+#define FAKEADDRESS 7
+    DEF_ITEM_d("DHCPmode",DHCPmode,"DHCP mode 0: Disable, "
+        "1: Enable DHCP before authentication, "
+        "2: Enable DHCP after authentication "
+        "3: DHCP after DHCP authentication and"
+        "re-authentication(You should use this if your net env is DHCP)")
+#define DHCPMODE 8
+    {0}
+#undef DEF_ITEM
+#undef DEF_ITEM_d
+#undef DEF_ITEM_flag
+#undef DEF_ITEM_flag_d
+  };
+
+
+static int
+Gensetting(struct cfg_tags * t)
+{
+  pcap_if_t *if_t,*cur_nic;
+  char  errbuf[256];
+  int rc;
+
+#if defined(LIBXML_TREE_ENABLED) && defined(HAVE_LIBXML2)
+  xmlDocPtr doc = NULL; /* document pointer */
+
+  xmlNodePtr root_node = NULL, account_node = NULL, setting_node = NULL;//, msg_node = NULL;/* node pointers */
+
+  // Creates a new document, a node and set it as a root node
+  doc = xmlNewDoc(BAD_CAST"1.0");
+
+  root_node = xmlNewNode(NULL, BAD_CAST CONF_NAME);
+  xmlNewProp(root_node, BAD_CAST "version", BAD_CAST C_VERSION);
+  xmlAddChild(root_node, xmlNewComment((xmlChar *)
+          "This is a sample configuration file of RuijieClient, "
+          "change it appropriately according to your settings."));
+
+  xmlDocSetRootElement(doc, root_node);
+#else
+
+  FILE * doc = fopen(config_file,"w");
+  if (!doc)
+    return -1;
+  fputs("[ruijieclient]\n",doc);
+#endif
+
+
+#ifdef HAVE_LIBXML2
+  //creates a new node, which is "attached" as child node of root_node node.
+  account_node = xmlNewChild(root_node, NULL, BAD_CAST "account", NULL);
+#endif
+
+  for( rc=0; rc < 2; ++t)
+    {
+      if(t->description)
+#ifdef HAVE_LIBXML2
+        xmlAddChild(setting_node, xmlNewComment((xmlChar *)t->description));
+        xmlNewChild(account_node, NULL, BAD_CAST t->key, BAD_CAST t->val);
+#else
+  /*
+   * TODO: here, generate ini format file
+   * and contains Name= and password=   *
+   */
+        fprintf(doc, "#%s\n%s=%s\n", t->description, t->key, t->val);
+      fprintf(doc, "%s=%s\n", t->key, t->val);
+#endif
+    }
+
+  /*
+   * Not all machine name the first nic eth0
+   * So we just have to retrieve the first nic's name
+   */
+  pcap_findalldevs(&if_t,errbuf);
+  //Can not open ?
+  if(if_t)
+    {
+      cur_nic = if_t;
+      while(cur_nic && cur_nic->flags == PCAP_IF_LOOPBACK )cur_nic = cur_nic->next;
+      /*The first non loopback devices */
+      if(cur_nic)
+        strcpy(t->val, cur_nic->name );
+      else //OMG, all you have got is a loopbake devive
+        strcpy(t->val , "eth0" );
+      pcap_freealldevs(if_t);
+    }
+  else //So we have to assume that you are using Linux!
+    strcpy(t->val , "eth0" );
+
+#if defined(LIBXML_TREE_ENABLED) && defined(HAVE_LIBXML2)
+  setting_node = xmlNewChild(root_node, NULL, BAD_CAST "settings", NULL);
+#else
+  fprintf(doc,"#This is %s\n","settings");
+#endif
+
+  while( t->key)
+    {
+      if( t->description)
+#if defined(LIBXML_TREE_ENABLED) && defined(HAVE_LIBXML2)
+        xmlAddChild(setting_node, xmlNewComment((xmlChar *)t->description));
+      xmlNewChild(account_node, NULL, BAD_CAST t->key, BAD_CAST t->val);
+#else
+      fprintf(doc, "#%s\n%s=%s\n", t->description, t->key, t->val);
+    fprintf(doc, "%s=%s\n", t->key, t->val);
+#endif
+    }
+  //Dumping document to stdio or file
+#if defined(LIBXML_TREE_ENABLED) && defined(HAVE_LIBXML2)
+  rc = xmlSaveFormatFileEnc(config_file, doc, "UTF-8", 1);
+  /*free the document */
+  xmlFreeDoc(doc);
+  xmlCleanupParser();
+  xmlMemoryDump(); // debug memory for regression tests
+  if (rc == -1)
+    return -1;
+  return 0;
+#else
+  fprintf(doc,"\n");
+  return fclose(doc);
+#endif
+}
 
 void
 GetConfig(ruijie_packet * l)
@@ -391,6 +380,10 @@ GetConfig(ruijie_packet * l)
 
   /*parse the file and get the DOM */
   doc = xmlReadFile(config_file, NULL, 0);
+#else
+  struct cfg_tags * t;
+  FILE *doc = fopen(config_file, "r");
+#endif
 
   if (doc == NULL)
     {
@@ -407,6 +400,7 @@ GetConfig(ruijie_packet * l)
         }
     }
 
+#ifdef  HAVE_LIBXML2
   /*Get the root element node */
   root_element = xmlDocGetRootElement(doc);
 
@@ -421,7 +415,13 @@ GetConfig(ruijie_packet * l)
    */
   xmlCleanupParser();
 #else
-  GetConfig_noxml(cfgtags,l);
+
+  while (t->key)
+    {
+      get_profile_string(doc, "ruijieclient", t->key, t->val);
+      t++;
+    }
+  fclose(doc);
 
 #endif
   //NOTE: now , move things to  ruijiepacket * l
@@ -435,6 +435,10 @@ GetConfig(ruijie_packet * l)
   l->m_dhcpmode = atoi(cfgtags[DHCPMODE].val);
   l->m_intelligentReconnect = atoi(cfgtags[INTELLIGENTRECONNECT].val);
 
+}
 
+int GenSetting()
+{
+  return Gensetting(cfgtags);
 }
 
