@@ -21,6 +21,9 @@
 /* Define to 1 if you have the <libxml2/libxml/tree.h> header file. */
 #undef HAVE_LIBXML2_LIBXML_TREE_H
 
+/* Define to 1 if you have the <linux/rtnetlink.h> header file. */
+#undef HAVE_LINUX_RTNETLINK_H
+
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
 

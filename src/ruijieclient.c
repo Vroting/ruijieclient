@@ -33,7 +33,6 @@
 #include "sendpacket.h"
 #include "myerr.h"
 #include "blog.h"
-#include "conn_monitor.h"
 #include "prase.h"
 
 // fake MAC, e.g. "00:11:D8:44:D5:0D"
@@ -122,9 +121,9 @@ main(int argc, char* argv[])
   // if '-g' is passed as argument then generate a sample configuration
   if(genfile)
   {
-	  check_as_root();
-      GenSetting();
-      exit(EXIT_SUCCESS);
+    check_as_root();
+    GenSetting();
+    exit(EXIT_SUCCESS);
   }
  //if '-g' is passed as argument then kill all other ruijieclients which are running
   if (kill_ruijieclient)
@@ -142,11 +141,11 @@ main(int argc, char* argv[])
   //NOTE:check if we had get all the config
   void   CheckConfig(ruijie_packet*);
   CheckConfig(&sender);
-
+#ifndef DEBUG
   // kill all other ruijieclients which are running
   kill_all("ruijieclient");
   kill_all("xgrsu 2> /dev/null");
-
+#endif
   strcat(cmd, sender.m_nic);
 
   signal(SIGHUP, logoff);
@@ -163,9 +162,12 @@ main(int argc, char* argv[])
   while (1)
     {
       sender.m_state = 0;
-
+#ifdef DEBUG
       GetNicParam(&sender);
-
+#else
+      if (GetNicParam(&sender))
+        return 0;
+#endif
       FillVersion(&sender); // fill 2 bytes with fake version
 
       FlushRecvBuf(&sender);

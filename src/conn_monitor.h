@@ -30,12 +30,18 @@
 #ifndef CONN_MONITOR_H
 #define CONN_MONITOR_H
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <net/if.h>
+#ifdef HAVE_LINUX_RTNETLINK_H
 #include <linux/rtnetlink.h>
+#endif
 #include <unistd.h>
 #include <arpa/inet.h>
 

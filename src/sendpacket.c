@@ -217,14 +217,7 @@ GetServerMsg(ruijie_packet*this, char*outbuf, size_t buflen)
 #endif
   code_convert(outbuf, buflen, msgBuf, strlen(msgBuf));
 }
-#ifndef _MAC_OSX
-static in_addr_t GetDefaultGateway()
-{
-  //prase form /proc/net/route
 
-
-}
-#endif
 int
 WaitPacket(ruijie_packet *this, int timeout)
 {
@@ -273,8 +266,6 @@ GetNicParam(ruijie_packet *this)
 	memcpy(this->m_ETHHDR + ETHER_ADDR_LEN, rif.ifr_hwaddr.sa_data,
 			ETHER_ADDR_LEN);
 
-	// here we will get default gateway, this may not work
-
 	close(tmp);
 
 	if (this->m_pcap)
@@ -307,6 +298,7 @@ GetNicParam(ruijie_packet *this)
 		return 1;
 	}
 	pcap_freecode(&filter_code); // avoid  memory-leak
+
 	return 0;
 }
 
@@ -332,6 +324,8 @@ SendFindServerPacket(ruijie_packet *this)
   // check blog.c and bloc.h for details
   InitializeBlog(this);
   FillNetParamater(this);
+  this->m_gate = get_gateway();
+
 
   memcpy(broadPackage + 18, this->m_ruijieExtra, sizeof(RuijieExtra));
 
@@ -429,7 +423,7 @@ SendPasswordPacket(ruijie_packet *this)
   ULONG_BYTEARRAY uTemp;
 
   unsigned char md5Data[256]; // password,md5 buffer
-  unsigned char *md5Dig; // result of md5 sum
+  unsigned char md5Dig[32]; // result of md5 sum
   int md5Len = 0;
 
   int nameLen, passwordLen;
@@ -453,7 +447,7 @@ SendPasswordPacket(ruijie_packet *this)
   memcpy(md5Data + md5Len, this->m_MD5value, this->m_MD5value_len);
   md5Len += this->m_MD5value_len; // private key
 
-  md5Dig = (unsigned char *) ComputeHash(md5Data, md5Len);
+  Computehash(md5Data, md5Len,md5Dig);
 
   ackPackage[0x17] = 16; // length of md5 sum is always 16.
   memcpy(ackPackage + 0x18, md5Dig, 16);
@@ -513,7 +507,7 @@ IfOnline(ruijie_packet *this)
 {
   // TODO: put code here
 //  WaitPacket()
-
+  Ping(this->m_gate);
   return 0;
 }
 int
