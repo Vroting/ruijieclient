@@ -26,16 +26,69 @@
  * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
  * Boston, MA 02111-1307, USA.
  */
-
+#include <sys/poll.h>
 #include "conn_monitor.h"
+#include <netinet/ip_icmp.h>
+
+
+static u_int16_t checksum(u_int16_t *buffer, int size)
+{
+    uint32_t cksum = 0;
+
+    while (size > 1)
+    {
+        cksum += *buffer++;
+        size -= sizeof ( unsigned short);
+    }
+
+    if (size)
+        cksum += *buffer;
+
+    cksum = (cksum >> 16) + (cksum & 0xffff);
+
+    cksum += (cksum >> 16);
+
+    return (uint16_t) (~cksum);
+}
 
 int
 Ping(in_addr_t host_addr)
 {
-
   // TODO usage: Ping(get_gateway()
+  struct sockaddr_in ad;
+  ad.sin_family = AF_INET;
+  ad.sin_port = 0;
+  bzero(ad.sin_zero,sizeof(ad.sin_zero));
+  ad.sin_addr.s_addr = host_addr;
+
+  /*create a raw socket for sending and receiving ping/echo*/
+  int sk = socket(AF_INET,SOCK_RAW,IPPROTO_ICMP);
+  struct icmp  echo;
+  memset(&echo,0,sizeof(echo));
+  echo.icmp_type = ICMP_ECHO;
+
+  echo.icmp_cksum = checksum((uint16_t*)&echo,sizeof(echo));
+
+  sendto(sk,&echo,sizeof(echo),0,(struct sockaddr*)&ad, INET_ADDRSTRLEN);
+
+  struct pollfd pfd;
+  pfd.fd = sk;
+  pfd.events = POLLIN;
+
+  switch(poll(&pfd,1,2000)) // 2 秒够的吧
+  {
+    puts("hahhaasdf\n");
+    close(sk);
+    case 0:
+    case -1:
+    return -1;
+    case 1:
+      return 0;
+  }
   return -1;
 }
+
+#ifdef HAVE_LINUX_RTNETLINK_H
 
 static int
 readNlSock(int sockFd, char *bufPtr, int seqNum, int pId)
@@ -83,7 +136,7 @@ readNlSock(int sockFd, char *bufPtr, int seqNum, int pId)
 }
 
 // analyse and return route information
-static void
+static int
 parseRoutes(struct nlmsghdr *nlHdr, struct route_info *rtInfo)
 {
   struct rtmsg *rtMsg;
@@ -99,7 +152,7 @@ parseRoutes(struct nlmsghdr *nlHdr, struct route_info *rtInfo)
   // If the route is not for AF_INET or does not belong to main routing table
   //then return.
   if ((rtMsg->rtm_family != AF_INET) || (rtMsg->rtm_table != RT_TABLE_MAIN))
-    return;
+    return 0;
   /* get the rtattr field */
   rtAttr = (struct rtattr *) RTM_RTA(rtMsg);
   rtLen = RTM_PAYLOAD(nlHdr);
@@ -127,21 +180,27 @@ parseRoutes(struct nlmsghdr *nlHdr, struct route_info *rtInfo)
     {
       gate.s_addr = rtInfo->gateWay;
 #ifdef DEBUG
-      printf("## gateway: %s", (char *) inet_ntoa(gate));
+      printf("## gateway: %s\n", (char *) inet_ntoa(gate));
 #endif
+      return 1;
     }
   free(tempBuf);
-  return;
+  return 0;
 }
+#endif
 
 in_addr_t
 get_gateway()
 {
+
+  in_addr_t gateway;
+
+#ifdef HAVE_LINUX_RTNETLINK_H
+
   struct nlmsghdr *nlMsg;
   struct rtmsg *rtMsg;
   struct route_info *rtInfo;
   char msgBuf[BUFSIZE];
-  in_addr_t gateway;
 
 
   int sock, len, msgSeq = 0;
@@ -186,10 +245,17 @@ get_gateway()
   for (;NLMSG_OK(nlMsg,len); nlMsg = NLMSG_NEXT(nlMsg,len))
     {
       memset(rtInfo, 0, sizeof(struct route_info));
-      parseRoutes(nlMsg, rtInfo);
-      gateway = rtInfo->gateWay;
+      if (parseRoutes(nlMsg, rtInfo))
+        {
+          gateway = rtInfo->gateWay;
+          break;
+        }
     }
   free(rtInfo);
   close(sock);
+#endif
   return gateway;
+  //TODO: add support for non-Linux users
+
 }
+

@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.63])
-AC_INIT([ruijieclient], [0.1.3], [gong@fedoraproject.org])
+AC_INIT([ruijieclient], [0.1.4], [gong@fedoraproject.org])
 AM_INIT_AUTOMAKE([-Wall -Werror])
 AC_CONFIG_SRCDIR([config.h.in])
 AC_CONFIG_HEADERS([config.h])
@@ -33,7 +33,7 @@ AC_ARG_ENABLE(debug,
 AC_CHECK_LIB([pcap], [main], [],[exit])
 
 # Checks for header files.
-AC_CHECK_HEADERS([pcap.h])
+AC_CHECK_HEADERS([pcap.h linux/rtnetlink.h ])
 
 # FIXME: Replace `main' with a function in `-lxml2':
 AC_CHECK_LIB(xml2, [main], [],

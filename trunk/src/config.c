@@ -207,6 +207,7 @@ get_profile_string(FILE *fp, char *AppName, const char const *KeyName,char *KeyV
 static char name[32];
 static char password[32];
 static char nic[32];
+static char AuthenticationMode[32];
 static char EchoInterval[32]="25";
 static char IntelligentReconnect[32]="1";
 static char AutoConnect[32]="0";
@@ -220,35 +221,44 @@ static struct cfg_tags cfgtags[]=
 #define DEF_ITEM_d(k,v,d) { k ,v, d , sizeof( v )},
 #define DEF_ITEM_flag(k,v) { k ,v, 0,  sizeof( v ),CFG_TAGS_NOTSET_IF_NOT_NULL},
 #define DEF_ITEM_flag_d(k,v,d) { k ,v, d,  sizeof( v ),CFG_TAGS_NOTSET_IF_NOT_NULL},
+
     DEF_ITEM_flag("Name",name)
 #define USERNAME 0
+
     DEF_ITEM_flag("Password",password)
 #define PASSWORD 1
+
     DEF_ITEM_d("NIC",nic,"Network Adapter Name")
 #define NIC 2
+
+    DEF_ITEM_d("AuthenticationMode",AuthenticationMode,
+        "<!--0: Standard, 1: Private-->")
+#define AUATHENTICATIONMODE 3
+
     DEF_ITEM("EchoInterval",EchoInterval)
-#define ECHOINTERVAL 3
+#define ECHOINTERVAL 4
 
     DEF_ITEM_d("IntelligentReconnect",IntelligentReconnect,
         "IntelligentReconnect: "
         "0: Disable IntelligentReconnect, 1: Enable IntelligentReconnect ")
-#define INTELLIGENTRECONNECT 4
+
+#define INTELLIGENTRECONNECT 5
     DEF_ITEM_d("AutoConnect",AutoConnect,"AutoConnect: "
         "0: Disable AutoConnect, 1: Enable AutoConnect (only available in"
         " gruijieclient) ")
-#define AUTOCONNET 5
+#define AUTOCONNET 6
 
     DEF_ITEM_d("FakeVersion",FakeVersion,"Fake Version for cheating server")
-#define FAKEVERSION 6
+#define FAKEVERSION 7
 
     DEF_ITEM_d("FakeAddress",FakeAddress,"Fake IP for cheating server")
-#define FAKEADDRESS 7
+#define FAKEADDRESS 8
     DEF_ITEM_d("DHCPmode",DHCPmode,"DHCP mode 0: Disable, "
         "1: Enable DHCP before authentication, "
         "2: Enable DHCP after authentication "
         "3: DHCP after DHCP authentication and"
         "re-authentication(You should use this if your net env is DHCP)")
-#define DHCPMODE 8
+#define DHCPMODE 9
     {0}
 #undef DEF_ITEM
 #undef DEF_ITEM_d
@@ -434,7 +444,7 @@ GetConfig(ruijie_packet * l)
     l->m_ip = inet_addr(cfgtags[FAKEADDRESS].val);
   l->m_dhcpmode = atoi(cfgtags[DHCPMODE].val);
   l->m_intelligentReconnect = atoi(cfgtags[INTELLIGENTRECONNECT].val);
-
+  l->m_authenticationMode = atoi(cfgtags[AUATHENTICATIONMODE].val);
 }
 
 int GenSetting()
