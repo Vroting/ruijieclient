@@ -30,16 +30,16 @@
  * Boston, MA 02111-1307, USA.
  */
 
+
+#include "sendpacket.h"
 #include <sys/ioctl.h>
 #include <net/if.h>
 #include <net/route.h>
 #include <poll.h>
 #include <errno.h>
-#include "md5.h"
-#include "sendpacket.h"
-#include "blog.h"
 
-// broadcast packet for finding server
+#include "md5.h"
+#include "blog.h"// broadcast packet for finding server
 static
 uint8_t broadPackage[0x3E8] =
 {
@@ -215,7 +215,7 @@ GetServerMsg(ruijie_packet*this, char*outbuf, size_t buflen)
       puts("-- END");
     }
 #endif
-#if defined( HAVE_ICONV_H) && defined (_ICONV_H)
+#if defined( HAVE_ICONV_H)
   code_convert(outbuf, buflen, msgBuf, strlen(msgBuf));
 #endif
 }
