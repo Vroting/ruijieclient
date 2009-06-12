@@ -207,13 +207,14 @@ get_profile_string(FILE *fp, char *AppName, const char const *KeyName,char *KeyV
 static char name[32];
 static char password[32];
 static char nic[32];
-static char AuthenticationMode[32];
+static char AuthenticationMode[32]="0";
 static char EchoInterval[32]="25";
 static char IntelligentReconnect[32]="1";
 static char AutoConnect[32]="0";
 static char FakeVersion[32]="3.99";
 static char DHCPmode[32]="0";
 static char FakeAddress[32];
+static char PingHost[32];
 
 static struct cfg_tags cfgtags[]=
   {
@@ -232,7 +233,7 @@ static struct cfg_tags cfgtags[]=
 #define NIC 2
 
     DEF_ITEM_d("AuthenticationMode",AuthenticationMode,
-        "<!--0: Standard, 1: Private-->")
+        "0: Standard, 1: Private")
 #define AUATHENTICATIONMODE 3
 
     DEF_ITEM("EchoInterval",EchoInterval)
@@ -259,7 +260,11 @@ static struct cfg_tags cfgtags[]=
         "3: DHCP after DHCP authentication and"
         "re-authentication(You should use this if your net env is DHCP)")
 #define DHCPMODE 9
+
+    DEF_ITEM_d("PingHost",PingHost,"Add if you don't want ruijieclient to ping the default gateway")
+#define PINGHOST 10
     {0}
+
 #undef DEF_ITEM
 #undef DEF_ITEM_d
 #undef DEF_ITEM_flag
@@ -303,11 +308,11 @@ Gensetting(struct cfg_tags * t)
   account_node = xmlNewChild(root_node, NULL, BAD_CAST "account", NULL);
 #endif
 
-  for( rc=0; rc < 2; ++t)
+  for( rc=0; rc < 2; rc++,++t)
     {
       if(t->description)
 #ifdef HAVE_LIBXML2
-        xmlAddChild(setting_node, xmlNewComment((xmlChar *)t->description));
+        xmlAddChild(account_node, xmlNewComment((xmlChar *)t->description));
         xmlNewChild(account_node, NULL, BAD_CAST t->key, BAD_CAST t->val);
 #else
   /*
@@ -350,11 +355,12 @@ Gensetting(struct cfg_tags * t)
       if( t->description)
 #if defined(LIBXML_TREE_ENABLED) && defined(HAVE_LIBXML2)
         xmlAddChild(setting_node, xmlNewComment((xmlChar *)t->description));
-      xmlNewChild(account_node, NULL, BAD_CAST t->key, BAD_CAST t->val);
+      xmlNewChild(setting_node, NULL, BAD_CAST t->key, BAD_CAST t->val);
 #else
       fprintf(doc, "#%s\n%s=%s\n", t->description, t->key, t->val);
     fprintf(doc, "%s=%s\n", t->key, t->val);
 #endif
+    t++;
     }
   //Dumping document to stdio or file
 #if defined(LIBXML_TREE_ENABLED) && defined(HAVE_LIBXML2)
@@ -445,6 +451,8 @@ GetConfig(ruijie_packet * l)
   l->m_dhcpmode = atoi(cfgtags[DHCPMODE].val);
   l->m_intelligentReconnect = atoi(cfgtags[INTELLIGENTRECONNECT].val);
   l->m_authenticationMode = atoi(cfgtags[AUATHENTICATIONMODE].val);
+  if(PingHost[0])
+    l->m_pinghost = inet_addr(PingHost);
 }
 
 int GenSetting()

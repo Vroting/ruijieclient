@@ -253,11 +253,6 @@ GetNicParam(ruijie_packet *this)
 		ioctl(tmp, SIOCGIFADDR, &rif);
 		memcpy(&(this->m_ip), rif.ifr_addr.sa_data + 2, 4);
 	}
-//	else
-//	{
-//		printf("%d\n",this->m_ip);
-//
-//	}
 	// else m_ip has been initialized in SetConfig()
 
 	ioctl(tmp, SIOCGIFNETMASK, &rif);
@@ -327,7 +322,8 @@ SendFindServerPacket(ruijie_packet *this)
   InitializeBlog(this);
   FillNetParamater(this);
   this->m_gate = get_gateway();
-
+  if(this->m_pinghost==0)
+    this->m_pinghost = this->m_gate;
 
   memcpy(broadPackage + 18, this->m_ruijieExtra, sizeof(RuijieExtra));
 
