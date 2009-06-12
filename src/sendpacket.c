@@ -215,7 +215,9 @@ GetServerMsg(ruijie_packet*this, char*outbuf, size_t buflen)
       puts("-- END");
     }
 #endif
+#if defined( HAVE_ICONV_H) && defined (_ICONV_H)
   code_convert(outbuf, buflen, msgBuf, strlen(msgBuf));
+#endif
 }
 
 int
