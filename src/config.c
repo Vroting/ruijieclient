@@ -34,10 +34,10 @@
 #endif
 
 #ifdef HAVE_LIBXML2
-#define LIBXML_TREE_ENABLED 1
-#include <libxml2/libxml/xmlstring.h>
-#include <libxml2/libxml/parser.h>
-#include <libxml2/libxml/tree.h>
+//#define LIBXML_TREE_ENABLED 1
+#include <libxml/xmlstring.h>
+#include <libxml/parser.h>
+#include <libxml/tree.h>
 #endif
 
 #include "ruijieclient.h"
