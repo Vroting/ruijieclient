@@ -30,6 +30,8 @@
 
 #include "sendpacket.h"
 
+#undef HAVE_LIBXML2
+
 #ifdef HAVE_LIBXML2
 #define LIBXML_TREE_ENABLED 1
 #include <libxml2/libxml/xmlstring.h>
@@ -261,8 +263,10 @@ Gensetting(struct cfg_tags * t)
   if (rc == -1)
     return -1;
   return 0;
-}
 #endif
+
+}
+
 
 int GenSetting()
 {
@@ -352,54 +356,72 @@ void GetConfig_noxml(ruijie_packet * l)
 
 
 }
-int get_profile_string(FILE *fp,char *AppName,char *KeyName,char *KeyValue )
+#ifndef HAVE_LIBXML2
+
+int
+get_profile_string(FILE *fp, char *AppName, char *KeyName, char *KeyValue)
 {
-        int KEYVALLEN = 20 ;
-        char appname[20],keyname[20];
-        char buf[KEYVALLEN],*c;
-        int found=0; /* 1 AppName 2 KeyName */
+  int KEYVALLEN = 20;
+  char appname[20], keyname[20];
+  char buf[KEYVALLEN], *c;
+  int found = 0; /* 1 AppName 2 KeyName */
 
+  fseek(fp, 0, SEEK_SET);
 
-        fseek( fp, 0, SEEK_SET );
+  sprintf(appname, "[%s]", AppName);
+  memset(keyname, 0, sizeof(keyname));
+  while (!feof(fp) && fgets(buf, KEYVALLEN, fp) != NULL)
+    {
+      //if( l_trim( buf )==0 )
+      //        continue;
 
-        sprintf( appname,"[%s]", AppName );
-        memset( keyname, 0, sizeof(keyname) );
-        while( !feof(fp) && fgets( buf, KEYVALLEN, fp )!=NULL ){
-                //if( l_trim( buf )==0 )
-                //        continue;
-
-                if( found==0 ){
-                        if( buf[0]!='[' ) {
-                                continue;
-                        } else if ( strncmp(buf,appname,strlen(appname))==0 ){
-                                found=1;
-                                continue;
-                        }
-                } else if( found==1 ){
-                        if( buf[0]=='#' ){
-                                continue;
-                        } else if ( buf[0]=='[' ) {
-                                break;
-                        } else {
-                                if( (c=(char*)strchr(buf,'='))==NULL )
-                                        continue;
-                                memset( keyname, 0, sizeof(keyname) );
-                                sscanf( buf, "%[^=]", keyname );
-                                if( strcmp(keyname, KeyName)==0 ){
-                                        sscanf( ++c, "%[^\n]", KeyValue );
-                                        found=2;
-                                        break;
-                                } else {
-                                        continue;
-                                }
-                        }
-                }
+      if (found == 0)
+        {
+          if (buf[0] != '[')
+            {
+              continue;
+            }
+          else if (strncmp(buf, appname, strlen(appname)) == 0)
+            {
+              found = 1;
+              continue;
+            }
         }
+      else if (found == 1)
+        {
+          if (buf[0] == '#')
+            {
+              continue;
+            }
+          else if (buf[0] == '[')
+            {
+              break;
+            }
+          else
+            {
+              if ((c = (char*) strchr(buf, '=')) == NULL)
+                continue;
+              memset(keyname, 0, sizeof(keyname));
+              sscanf(buf, "%[^=]", keyname);
+              if (strcmp(keyname, KeyName) == 0)
+                {
+                  sscanf(++c, "%[^\n]", KeyValue);
+                  found = 2;
+                  break;
+                }
+              else
+                {
+                  continue;
+                }
+            }
+        }
+    }
 
-        fclose( fp );
+  fclose(fp);
 
-        if( found==2 )
-                return(0);
-        else
-                return(-1);
+  if (found == 2)
+    return (0);
+  else
+    return (-1);
 }
+#endif
