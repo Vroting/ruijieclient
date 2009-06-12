@@ -40,10 +40,11 @@ AC_CHECK_LIB(xml2, [main], [],
 	 [ echo -e "!Warnning: libxml2 not found! xml feature will not work!" ;
 	   echo "ruijieclient will continue to work , but will use text file instead" 	   
 	])
+#AC_CHECK_FUNC(iconv_open,[],[])
 
 # Checks for header files.
+AC_CHECK_HEADERS(iconv.h)
 AC_CHECK_HEADERS([libxml2/libxml/parser.h libxml2/libxml/tree.h])
-
 
 AC_CONFIG_FILES([Makefile
                  src/Makefile])
