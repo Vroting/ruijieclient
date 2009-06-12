@@ -27,7 +27,7 @@
  * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
  * Boston, MA 02111-1307, USA.
  */
-#define DEBUG_NOXML
+//#define DEBUG_NOXML
 #include "sendpacket.h"
 #if defined(HAVE_LIBXML2) && defined(DEBUG_NOXML)
 #undef HAVE_LIBXML2

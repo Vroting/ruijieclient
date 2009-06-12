@@ -59,7 +59,7 @@ err_sys(const char *fmt, ...)
   va_start(ap, fmt);
   err_doit(1, fmt, ap);
   va_end(ap);
-  exit(1);
+  exit(EXIT_FAILURE);
 }
 
 /* Fatal error related to a system call.
@@ -73,7 +73,7 @@ err_dump(const char *fmt, ...)
   err_doit(1, fmt, ap);
   va_end(ap);
   abort(); /* dump core and terminate */
-  exit(1); /* shouldn't get here */
+  exit(EXIT_FAILURE); /* shouldn't get here */
 }
 
 /* Nonfatal error unrelated to a system call.
@@ -99,7 +99,7 @@ err_quit(const char *fmt, ...)
   va_start(ap, fmt);
   err_doit(0, fmt, ap);
   va_end(ap);
-  exit(1);
+  exit(EXIT_FAILURE);
 }
 
 /* Print a message and return to caller.
