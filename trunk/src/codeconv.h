@@ -30,12 +30,23 @@
 #ifndef CODECONV_H
 #define CODECONV_H
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#ifdef HAVE_ICONV_H
 #include <iconv.h>
+#endif
 #include <string.h>
 #include <stdio.h>
 
 /* convert GB codes into UTF-8 */
+#ifdef HAVE_ICONV_H
 int
 code_convert(char *outbuf, size_t outlen, char *inbuf, size_t inlen);
 
+
+#else
+#define code_convert(x,y,z) do{}while(0)
+#endif
 #endif
