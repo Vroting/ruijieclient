@@ -29,9 +29,9 @@
  */
 
 #include "sendpacket.h"
-
+#if defined(HAVE_LIBXML2) && defined(DEBUG_NOXML)
 #undef HAVE_LIBXML2
-
+#endif
 #ifdef HAVE_LIBXML2
 #define LIBXML_TREE_ENABLED 1
 #include <libxml2/libxml/xmlstring.h>
@@ -112,7 +112,7 @@ void get_element(xmlNode * a_node,struct cfg_tags * tg)
   for (cur_node = a_node; cur_node != NULL; cur_node = cur_node->next)
     {
       t = tg;
-      node_name = cur_node->name;
+      node_name = (typeof(node_name))cur_node->name;
       while (t->key)
         {
           if (!strcmp(node_name, t->key))
@@ -272,90 +272,6 @@ int GenSetting()
 {
   return Gensetting(cfgtags);
 }
-void
-GetConfig(ruijie_packet * l)
-{
-
-#ifdef HAVE_LIBXML2
-
-  xmlDoc *doc = NULL;
-  xmlNode *root_element = NULL;
-
-  /*
-   * this initialize the library and check potential ABI mismatches
-   * between the version it was compiled for and the actual shared
-   * library used.
-   */
-  LIBXML_TEST_VERSION
-
-  /*parse the file and get the DOM */
-  doc = xmlReadFile(config_file, NULL, 0);
-
-  if (doc == NULL)
-    {
-      puts("Could not parse or find file. A sample file will be generated "
-        "automatically. Try 'gedit /etc/ruijie.conf'");
-      if (Gensetting( cfgtags ) != -1)
-        {
-          puts("Configuration file has been generated.");
-          exit(0);
-        }
-      else
-        {
-          err_quit("Configuration file fail in generating.");
-        }
-    }
-
-  /*Get the root element node */
-  root_element = xmlDocGetRootElement(doc);
-
-  get_element(root_element, cfgtags);
-
-  /*free the document */
-  xmlFreeDoc(doc);
-
-  /*
-   *Free the global variables that may
-   *have been allocated by the parser.
-   */
-  xmlCleanupParser();
-#else
-  //TODO 在这里进行其他形式的配置处理。
-  FILE *fp=fopen("./ruijie.ini","r" );
-    get_profile_string(fp,"ruijieclient","m_name",l->m_name );
-    //TODO 读取其他参数。。。。。。关闭文件
-    //file_example:ruijie.ini
-    //[ruijieclient]
-    //m_name=aesfcfqfw
-    //......
-
-
-#endif
-  //NOTE: 现在，将处理到的东西弄到 ruijiepacket *  里面
-  strcpy(l->m_name , cfgtags[USERNAME].val);
-  strcpy(l->m_password, cfgtags[PASSWORD].val );
-  strcpy(l->m_nic,cfgtags[NIC].val);
-  l->m_echoInterval = atoi(cfgtags[ECHOINTERVAL].val);
-  l->m_fakeVersion = cfgtags[FAKEVERSION].val;
-  if(cfgtags[FAKEADDRESS].val[0])
-    l->m_ip = inet_addr(cfgtags[FAKEADDRESS].val);
-  strcpy(l->m_nic,cfgtags[NIC].val);
-  l->m_dhcpmode = atoi(cfgtags[DHCPMODE].val);
-  l->m_intelligentReconnect = atoi(cfgtags[INTELLIGENTRECONNECT].val);
-
-
-
-
-
-}
-
-void GetConfig_noxml(ruijie_packet * l)
-{
-
-
-
-
-}
 #ifndef HAVE_LIBXML2
 
 int
@@ -417,11 +333,100 @@ get_profile_string(FILE *fp, char *AppName, char *KeyName, char *KeyValue)
         }
     }
 
-  fclose(fp);
+
 
   if (found == 2)
     return (0);
   else
     return (-1);
 }
+
+static void GetConfig_noxml(struct cfg_tags * tg,ruijie_packet * l)
+{
+  FILE *fp=fopen("./ruijie.ini","r" );
+
+
+
+  //TODO 在这里进行其他形式的配置处理。
+    get_profile_string(fp,"ruijieclient","m_name",l->m_name );
+    //TODO 读取其他参数。。。。。。关闭文件
+    //file_example:ruijie.ini
+    //[ruijieclient]
+    //m_name=aesfcfqfw
+    //......
+
+
+
+
+
+  fclose(fp);
+}
+
 #endif
+
+void
+GetConfig(ruijie_packet * l)
+{
+
+#ifdef HAVE_LIBXML2
+
+  xmlDoc *doc = NULL;
+  xmlNode *root_element = NULL;
+
+  /*
+   * this initialize the library and check potential ABI mismatches
+   * between the version it was compiled for and the actual shared
+   * library used.
+   */
+  LIBXML_TEST_VERSION
+
+  /*parse the file and get the DOM */
+  doc = xmlReadFile(config_file, NULL, 0);
+
+  if (doc == NULL)
+    {
+      puts("Could not parse or find file. A sample file will be generated "
+        "automatically. Try 'gedit /etc/ruijie.conf'");
+      if (Gensetting( cfgtags ) != -1)
+        {
+          puts("Configuration file has been generated.");
+          exit(0);
+        }
+      else
+        {
+          err_quit("Configuration file fail in generating.");
+        }
+    }
+
+  /*Get the root element node */
+  root_element = xmlDocGetRootElement(doc);
+
+  get_element(root_element, cfgtags);
+
+  /*free the document */
+  xmlFreeDoc(doc);
+
+  /*
+   *Free the global variables that may
+   *have been allocated by the parser.
+   */
+  xmlCleanupParser();
+#else
+  GetConfig_noxml(cfgtags,l);
+
+#endif
+  //NOTE: 现在，将处理到的东西弄到 ruijiepacket *  里面
+  strcpy(l->m_name , cfgtags[USERNAME].val);
+  strcpy(l->m_password, cfgtags[PASSWORD].val );
+  strcpy(l->m_nic,cfgtags[NIC].val);
+  l->m_echoInterval = atoi(cfgtags[ECHOINTERVAL].val);
+  l->m_fakeVersion = cfgtags[FAKEVERSION].val;
+  if(cfgtags[FAKEADDRESS].val[0])
+    l->m_ip = inet_addr(cfgtags[FAKEADDRESS].val);
+  strcpy(l->m_nic,cfgtags[NIC].val);
+  l->m_dhcpmode = atoi(cfgtags[DHCPMODE].val);
+  l->m_intelligentReconnect = atoi(cfgtags[INTELLIGENTRECONNECT].val);
+
+
+}
+
