@@ -508,9 +508,8 @@ int
 IfOnline(ruijie_packet *this)
 {
   // TODO: put code here
-//  WaitPacket()
-  Ping(this->m_gate);
-  return 0;
+
+  return Ping(this->m_gate);
 }
 int
 SendEchoPacket(ruijie_packet *this)
