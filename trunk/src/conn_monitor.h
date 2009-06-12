@@ -53,12 +53,12 @@ struct route_info
 int
 Ping(in_addr_t host_addr);
 
-int
-readNlSock(int sockFd, char *bufPtr, int seqNum, int pId);
+//int
+//readNlSock(int sockFd, char *bufPtr, int seqNum, int pId);
 
 /* analyse and return route information */
-void
-parseRoutes(struct nlmsghdr *nlHdr, struct route_info *rtInfo);
+//void
+//parseRoutes(struct nlmsghdr *nlHdr, struct route_info *rtInfo);
 
 /* get default gateway as a string */
 in_addr_t

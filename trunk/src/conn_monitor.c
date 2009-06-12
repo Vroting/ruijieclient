@@ -37,7 +37,7 @@ Ping(in_addr_t host_addr)
   return -1;
 }
 
-int
+static int
 readNlSock(int sockFd, char *bufPtr, int seqNum, int pId)
 {
   struct nlmsghdr *nlHdr;
@@ -83,7 +83,7 @@ readNlSock(int sockFd, char *bufPtr, int seqNum, int pId)
 }
 
 // analyse and return route information
-void
+static void
 parseRoutes(struct nlmsghdr *nlHdr, struct route_info *rtInfo)
 {
   struct rtmsg *rtMsg;
