@@ -231,7 +231,10 @@ main(int argc, char* argv[])
        */
       if( sender.m_dhcpmode == 3)
       {
-     	  system(cmd);
+    	  if(system(cmd))
+    	  {
+    		  err_quit("DHCP error!");
+    	  }
     	  sender.m_dhcpmode = 0;
     	  sender.m_ip = 0;
     	  continue; // re-authentication
@@ -248,7 +251,10 @@ main(int argc, char* argv[])
       else
     	  {
 			  fputs("Daemonize and Keeping sending echo...\n", stdout);
-			  daemon(0,0);
+			  if (daemon(0,0))
+				  {
+				  err_quit("Init daemon error!");;
+				  }
     	  }
       // start ping monitoring
       FlushRecvBuf(&sender);

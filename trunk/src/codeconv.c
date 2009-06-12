@@ -32,6 +32,7 @@
 int
 code_convert(char *outbuf, size_t outlen, char *inbuf, size_t inlen)
 {
+#ifdef _ICONV_H
   iconv_t cd;
   char **pin = &inbuf;
   char **pout = &outbuf;
@@ -52,5 +53,6 @@ code_convert(char *outbuf, size_t outlen, char *inbuf, size_t inlen)
       return -1;
     }
   iconv_close(cd);
+#endif
   return 0;
 }
