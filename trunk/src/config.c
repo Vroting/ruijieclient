@@ -27,7 +27,7 @@
  * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
  * Boston, MA 02111-1307, USA.
  */
-//#define DEBUG_NOXML
+#define DEBUG_NOXML
 #include "sendpacket.h"
 #if defined(HAVE_LIBXML2) && defined(DEBUG_NOXML)
 #undef HAVE_LIBXML2
@@ -357,8 +357,9 @@ Gensetting(struct cfg_tags * t)
         xmlAddChild(setting_node, xmlNewComment((xmlChar *)t->description));
       xmlNewChild(setting_node, NULL, BAD_CAST t->key, BAD_CAST t->val);
 #else
-      fprintf(doc, "#%s\n%s=%s\n", t->description, t->key, t->val);
-    fprintf(doc, "%s=%s\n", t->key, t->val);
+        fprintf(doc, "#%s\n%s=%s\n", t->description, t->key, t->val);
+      else
+        fprintf(doc, "%s=%s\n", t->key, t->val);
 #endif
     t++;
     }
