@@ -56,6 +56,7 @@ Ping(in_addr_t host_addr)
 {
   // TODO usage: Ping(get_gateway()
   struct sockaddr_in ad;
+
   ad.sin_family = AF_INET;
   ad.sin_port = 0;
   bzero(ad.sin_zero,sizeof(ad.sin_zero));
@@ -74,15 +75,25 @@ Ping(in_addr_t host_addr)
   struct pollfd pfd;
   pfd.fd = sk;
   pfd.events = POLLIN;
-
   switch(poll(&pfd,1,2000)) // 2 秒够的吧
   {
-    puts("hahhaasdf\n");
     close(sk);
     case 0:
     case -1:
+    close(sk);
+#ifdef DEBUG
+    puts("## ping timed out\n");
+#endif
     return -1;
     case 1:
+#ifdef DEBUG
+      {
+        struct in_addr ip;
+        ip.s_addr = host_addr;
+        fprintf(stdout,"##ping %s alive\n",inet_ntoa(ip));
+      }
+#endif
+      close(sk);
       return 0;
   }
   return -1;

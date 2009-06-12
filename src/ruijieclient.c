@@ -95,21 +95,21 @@ main(int argc, char* argv[])
   long kill_ruijieclient=0;
   struct parameter_tags param[] =
   {
-  		{"-D", (char*)&setdaemon,0,sizeof(setdaemon),2, BOOL_both},
-  		{"--daemon", (char*)&setdaemon,"-D,--daemon\trun as a daemon",sizeof(setdaemon),8, BOOL_both},
-  		{"-n", sender.m_nic ,0,sizeof(sender.m_nic),2, STRING},
-  		{"--nic", sender.m_nic ,"-n,--nic\tnet card",sizeof(sender.m_nic),5, STRING},
-  		{"-g", (char*)&genfile ,"-g\t\tauto generate a sample configuration",sizeof(genfile),2, BOOL_both},
-  		{"--noconfig",(char*)&nocfg,"--noconfig\tdo not read config from file",sizeof(nocfg),10,BOOL_both},
-  		{"-f",config_file,0,sizeof(config_file),2,STRING},
-  		{"--config",config_file,"-f,--config\tsupply alternative config file",sizeof(config_file),8,STRING},
-  		{"-u",sender.m_name ,0,sizeof(sender.m_name),2,STRING},
-  		{"--user",sender.m_name,"-u,--user\tsupply username",sizeof(sender.m_name),6,STRING},
-  		{"-p",sender.m_password ,0,sizeof(sender.m_password),2,STRING},
-  		{"--passwd",sender.m_password,"-p,--passwd\tsupply password",sizeof(sender.m_password),6,STRING},
-  		{"-K", (char*)&kill_ruijieclient ,"-k,-K\t\tKill all ruijieclient daemon",sizeof(kill_ruijieclient),2, BOOL_both},
-  		{"-k", (char*)&kill_ruijieclient ,0,sizeof(kill_ruijieclient),2, BOOL_both},
-  		{0}
+    {"-D", (char*)&setdaemon,0,sizeof(setdaemon),2, BOOL_both},
+    {"--daemon", (char*)&setdaemon,"-D,--daemon\trun as a daemon",sizeof(setdaemon),8, BOOL_both},
+    {"-n", sender.m_nic ,0,sizeof(sender.m_nic),2, STRING},
+    {"--nic", sender.m_nic ,"-n,--nic\tnet card",sizeof(sender.m_nic),5, STRING},
+    {"-g", (char*)&genfile ,"-g\t\tauto generate a sample configuration",sizeof(genfile),2, BOOL_both},
+    {"--noconfig",(char*)&nocfg,"--noconfig\tdo not read config from file",sizeof(nocfg),10,BOOL_both},
+    {"-f",config_file,0,sizeof(config_file),2,STRING},
+    {"--config",config_file,"-f,--config\tsupply alternative config file",sizeof(config_file),8,STRING},
+    {"-u",sender.m_name ,0,sizeof(sender.m_name),2,STRING},
+    {"--user",sender.m_name,"-u,--user\tsupply username",sizeof(sender.m_name),6,STRING},
+    {"-p",sender.m_password ,0,sizeof(sender.m_password),2,STRING},
+    {"--passwd",sender.m_password,"-p,--passwd\tsupply password",sizeof(sender.m_password),6,STRING},
+    {"-K", (char*)&kill_ruijieclient ,"-k,-K\t\tKill all ruijieclient daemon",sizeof(kill_ruijieclient),2, BOOL_both},
+    {"-k", (char*)&kill_ruijieclient ,0,sizeof(kill_ruijieclient),2, BOOL_both},
+    {0}
   };
 
   // the initial serial number, a magic number!
@@ -248,16 +248,17 @@ main(int argc, char* argv[])
           return 0; //user has echo disabled
         }
       // continue echoing
-      if(!setdaemon)
-    	  fputs("Keeping sending echo...\nPress Ctrl+C to logoff \n", stdout);
+      if (!setdaemon)
+        fputs("Keeping sending echo...\nPress Ctrl+C to logoff \n", stdout);
       else
-    	  {
-			  fputs("Daemonize and Keeping sending echo...\n", stdout);
-			  if (daemon(0,0))
-				  {
-				  err_quit("Init daemon error!");;
-				  }
-    	  }
+        {
+          fputs("Daemonize and Keeping sending echo...\n", stdout);
+          if (daemon(0, 0))
+            {
+              err_quit("Init daemon error!");
+              ;
+            }
+        }
       // start ping monitoring
       FlushRecvBuf(&sender);
       if ( sender.m_intelligentReconnect == 1)
