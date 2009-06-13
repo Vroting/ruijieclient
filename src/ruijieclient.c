@@ -169,7 +169,7 @@ main(int argc, char* argv[])
     "Copyright %s\n\n"
     "Please see/send bug report to \n%s\n"
     "or mail to %s \n\n", PACKAGE,
-      "Gong Han, Chen Tingjun, Microcai, and others",
+      "Gong Han, Chen Tingjun, Microcai, sthots, and others",
       "http://code.google.com/p/ruijieclient/issues/list", PACKAGE_BUGREPORT);
 
   int tryed;
