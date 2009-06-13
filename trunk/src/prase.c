@@ -157,7 +157,7 @@ ParseParameters(int * argc, char ** argv[], struct parameter_tags p_[])
                     }
                   p++;
                 }
-              printf("\nReport bugs to http://ruijieclient.googlecode.com.\n");
+              printf("\nReport bugs to http://code.google.com/p/ruijieclient/\n");
               exit(0);
               return;
             }
