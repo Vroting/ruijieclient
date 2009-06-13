@@ -41,7 +41,6 @@
 #endif
 
 #include "ruijieclient.h"
-#include "prase.h"
 
 static char fakeVersion[8];
 //static char fakeMAC[32];
@@ -158,8 +157,8 @@ void get_element(xmlNode * a_node,struct cfg_tags * tg)
 static int
 get_profile_string(FILE *fp, char *AppName, const char const *KeyName,char *KeyValue)
 {
-  int KEYVALLEN = 20;
-  char appname[20], keyname[20];
+  int KEYVALLEN = 80;
+  char appname[KEYVALLEN], keyname[KEYVALLEN];
   char buf[KEYVALLEN], *c;
   int found = 0; /* 1 AppName 2 KeyName */
 

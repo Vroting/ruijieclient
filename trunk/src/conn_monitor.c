@@ -29,7 +29,9 @@
 #include <sys/poll.h>
 #include "conn_monitor.h"
 #include <netinet/ip_icmp.h>
-
+#ifdef HAVE_LINUX_RTNETLINK_H
+#include <linux/rtnetlink.h>
+#endif
 
 static u_int16_t checksum(u_int16_t *buffer, int size)
 {
@@ -54,7 +56,6 @@ static u_int16_t checksum(u_int16_t *buffer, int size)
 int
 Ping(in_addr_t host_addr)
 {
-  // TODO usage: Ping(get_gateway()
   struct sockaddr_in ad;
 
   ad.sin_family = AF_INET;
