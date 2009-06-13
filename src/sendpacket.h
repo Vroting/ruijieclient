@@ -111,6 +111,7 @@ typedef struct __ruijie_packet
 
   struct pcap_pkthdr *pkt_hdr;
   const u_char *pkt_data;
+  int   m_nocofigfile; // 1 if we should not read from config file
 
 } ruijie_packet;
 
@@ -119,6 +120,8 @@ typedef struct __ruijie_packet
  * return -1 normally, hence, we usually ignore return values FOR CONVENIENCE. They might be
  * helpful for debug.
  */
+void
+init_ruijie_packet(ruijie_packet*);
 
 /* fill packets with 2 bytes indicates fake version */
 int
