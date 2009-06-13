@@ -96,26 +96,26 @@ CheckConfig(ruijie_packet* l)
     ccerr("invalid nic");
   if ((l->m_echoInterval < 0) || (l->m_echoInterval > 100))
     ccerr("invalid echo interval");
-  if ((l->m_intelligentReconnect < 0) || (l->m_intelligentReconnect> 1))
+  if ((l->m_intelligentReconnect < 0) || (l->m_intelligentReconnect > 1))
     ccerr("invalid intelligentReconnect");
 
 #undef ccerr
 
 #ifdef DEBUG
-    char buf[80];
-    inet_ntop(AF_INET,&l->m_ip,buf,80);
+  char buf[80];
+  inet_ntop(AF_INET, &l->m_ip, buf, 80);
 
-	puts("-- CONF INFO");
-    printf("## m_name=%s\n", l->m_name);
-    printf("## m_password=%s\n", l->m_password);
-    printf("## m_nic=%s\n", l->m_nic);
-    printf("## m_authenticationMode=%d\n", l->m_authenticationMode);
-    printf("## m_echoInterval=%d\n", l->m_echoInterval);
-    printf("## m_intelligentReconnect=%d\n", l->m_intelligentReconnect);// NOT supported now!!
-    printf("## m_fakeVersion=%s\n", l->m_fakeVersion);
-    printf("## m_fakeAddress=%s\n",buf);
-//    printf("## m_fakeMAC=%s\n",l->m_fakeMAC);
-    puts("-- END");
+  puts("-- CONF INFO");
+  printf("## m_name=%s\n", l->m_name);
+  printf("## m_password=%s\n", l->m_password);
+  printf("## m_nic=%s\n", l->m_nic);
+  printf("## m_authenticationMode=%d\n", l->m_authenticationMode);
+  printf("## m_echoInterval=%d\n", l->m_echoInterval);
+  printf("## m_intelligentReconnect=%d\n", l->m_intelligentReconnect);// NOT supported now!!
+  printf("## m_fakeVersion=%s\n", l->m_fakeVersion);
+  printf("## m_fakeAddress=%s\n", buf);
+  //    printf("## m_fakeMAC=%s\n",l->m_fakeMAC);
+  puts("-- END");
 #endif
 }
 
@@ -291,8 +291,8 @@ static struct cfg_tags cfgtags[]=
 static int
 Gensetting(struct cfg_tags * t)
 {
-  pcap_if_t *if_t,*cur_nic;
-  char  errbuf[256];
+  pcap_if_t *if_t, *cur_nic;
+  char errbuf[256];
   int rc;
 
 #if defined(LIBXML_TREE_ENABLED) && defined(HAVE_LIBXML2)
@@ -314,10 +314,9 @@ Gensetting(struct cfg_tags * t)
 
   FILE * doc = fopen(config_file,"w");
   if (!doc)
-    return -1;
-  fputs("[ruijieclient]\n",doc);
+  return -1;
+  fprintf(doc,"[%s]\n",PACKAGE);
 #endif
-
 
 #ifdef HAVE_LIBXML2
   //creates a new node, which is "attached" as child node of root_node node.
@@ -329,18 +328,17 @@ Gensetting(struct cfg_tags * t)
       if(t->description)
 #ifdef HAVE_LIBXML2
         xmlAddChild(account_node, xmlNewComment((xmlChar *)t->description));
-        xmlNewChild(account_node, NULL, BAD_CAST t->key, BAD_CAST t->val);
+      xmlNewChild(account_node, NULL, BAD_CAST t->key, BAD_CAST t->val);
 #else
-  /*
-   * NOTE: here, generate ini format file
-   * and contains Name= and password=   *
-   */
-        fprintf(doc, "#%s\n%s=%s\n", t->description, t->key, t->val);
+      /*
+       * NOTE: here, generate ini format file
+       * and contains Name= and password=   *
+       */
+        fprintf(doc, "\n#%s\n%s=%s\n", t->description, t->key, t->val);
       else
         fprintf(doc, "%s=%s\n", t->key, t->val);
 #endif
     }
-
   /*
    * Not all machine name the first nic eth0
    * So we just have to retrieve the first nic's name
@@ -452,7 +450,7 @@ GetConfig(ruijie_packet * l)
 
   while (t->key)
     {
-      get_profile_string(doc, "ruijieclient", t->key, t->val);
+      get_profile_string(doc, PACKAGE, t->key, t->val);
       t++;
     }
   fclose(doc);
