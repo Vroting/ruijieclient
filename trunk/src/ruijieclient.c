@@ -95,6 +95,7 @@ main(int argc, char* argv[])
   long nodaemon = 0;
   long genfile = 0;
   long kill_ruijieclient = 0;
+  long flag_nokill = 0;
   long showversion = 0;
   char pinghost[32] = "";
 
@@ -104,6 +105,7 @@ main(int argc, char* argv[])
     {"--version", (char*)&showversion ,"--version\tShow current version",sizeof(showversion),9, BOOL_both},
     {"-K", (char*)&kill_ruijieclient ,"-k,-K\t\tKill all ruijieclient daemon",sizeof(kill_ruijieclient),2, BOOL_both},
     {"-k", (char*)&kill_ruijieclient ,0,sizeof(kill_ruijieclient),2, BOOL_both},
+    {"-M", (char*)&flag_nokill ,"-k,-K\t\tMulti ruijieclient ",sizeof(flag_nokill),2, BOOL_both},
     {"-D", (char*)&nodaemon,"-D\t\tDO NOT fork as a deamon",sizeof(nodaemon),2, BOOL_both},
     {"--daemon", (char*)&setdaemon,"--daemon\trun as a daemon(default)",sizeof(setdaemon),8, BOOL_both},
     {"-n", sender.m_nic ,0,sizeof(sender.m_nic),2, STRING},
@@ -154,7 +156,9 @@ main(int argc, char* argv[])
   CheckConfig(&sender);
 #ifndef DEBUG
   // kill all other ruijieclients which are running
-  kill_all("ruijieclient");
+  if (!flag_nokill){
+	  kill_all("ruijieclient");
+  }
   kill_all("xgrsu 2> /dev/null");
 #endif
   strcat(cmd, sender.m_nic);
@@ -179,7 +183,7 @@ main(int argc, char* argv[])
       "http://code.google.com/p/ruijieclient/issues/list", PACKAGE_BUGREPORT);
 
   int tryed;
-  for (tryed = 0; tryed < 3; ++tryed)
+  for (tryed = 0; tryed < 5; ++tryed)
     {
       sender.m_state = 0;
 #ifdef DEBUG
