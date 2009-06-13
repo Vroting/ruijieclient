@@ -13,7 +13,7 @@ Source0:   http://ruijieclient.googlecode.com/files/ruijieclient-%{version}.tar.
 BuildRoot: %{_tmppath}/%{name}_%{version}-%{release}-root_%(%{__id_u} -n)
 
 BuildRequires: libpcap-devel glibc-devel libxml2-devel
-Requires: libpcap glibc kernel zlib libxml2
+Requires: libpcap glibc kernel libxml2
 
 %description
 RuijieClient is a ruijie network supplicant for GNU/Linux  which is based on mystar, but re-writed form scratch.
