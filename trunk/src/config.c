@@ -398,7 +398,7 @@ GetConfig(ruijie_packet * l)
   /*parse the file and get the DOM */
   doc = xmlReadFile(config_file, NULL, 0);
 #else
-  struct cfg_tags * t;
+  struct cfg_tags * t = cfgtags;
   FILE *doc = fopen(config_file, "r");
 #endif
 
