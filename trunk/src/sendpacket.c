@@ -514,7 +514,7 @@ IfOnline(ruijie_packet *this)
 {
   // TODO: put code here
 
-  return Ping(this->m_gate);
+  return Ping(this->m_pinghost);
 }
 int
 SendEchoPacket(ruijie_packet *this)
