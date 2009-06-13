@@ -14,15 +14,20 @@
 
 ==Version：0.7==
 
+  * errors occur in './configure'
+  Generally，compiling requires libpcap-devel and libxml2-devel , make sure you have installed them correctly.
+
+==version：0.1.2==
   * RuijieClient has succeeded in passing the authentication and the network is already accessible, however, it continues to restart authenticating permanently
   The bug has been fixed in r66, you should use ruijieclient-0.7 to tackle or preclude the issue.
   * errors occur in './configure'
-  Generally，compiling requires libpcap-devel and libxml2 , make sure you have installed them correctly.
+  Generally，compiling requires libpcap-devel and libxml2-devel(or libssl-dev) and opssl-devel , make sure you have installed them correctly.
+  
 
 ==Version：0.1.1==
 
   * errors occur in './configure'
-  Generally，compiling requires libnet-devel, openssl-devel(or libssl-dev), libpcap-devel and libxml2 , make sure you have installed them correctly.
+  Generally，compiling requires libnet-devel, openssl-devel(or libssl-dev), libpcap-devel and libxml2-devel , make sure you have installed them correctly.
 
 ==Version：0.1 (deprecated)==
 
