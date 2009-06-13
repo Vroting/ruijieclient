@@ -39,9 +39,6 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <net/if.h>
-#ifdef HAVE_LINUX_RTNETLINK_H
-#include <linux/rtnetlink.h>
-#endif
 #include <unistd.h>
 #include <arpa/inet.h>
 

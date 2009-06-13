@@ -9,8 +9,8 @@ URL:            http://code.google.com/p/ruijieclient/
 Source0:        ruijieclient-%{version}
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-BuildRequires:  
-Requires:       
+BuildRequires:  libpcap-devel glibc-devel
+Requires:       libpcap glibc
 
 %description
 
