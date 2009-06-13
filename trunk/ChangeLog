@@ -1,3 +1,12 @@
+version 0.7.0
+  NEW: add support for non-xml
+  NEW: add support for ICMP to detect online/offline
+  NEW: auto reconnect when ruijieclient think it's offline
+  NEW: support for DHCP mode 3
+  NEW: daemonize is the default  
+  CHG: new struct for sending/recving packets  
+  DEL: libnet dependence    
+
 version 0.1.1
 - NEW: add support for DHCP
 - CHG: exert XML to manage configuration and it can be generated automatically
