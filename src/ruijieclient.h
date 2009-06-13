@@ -50,7 +50,7 @@
 #define MAX_MSG_LEN 1024
 #define MAX_U_MSG_LEN MAX_MSG_LEN*2
 
-#define C_VERSION "0.1.1"
+#define C_VERSION "0.7.1"
 #define CONF_NAME "ruijie.conf"
 
 #define TMP_FILE "/tmp/ruijieclient_tmp"

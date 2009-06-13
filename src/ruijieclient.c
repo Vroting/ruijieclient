@@ -36,12 +36,12 @@
 #include "prase.h"
 
 // fake MAC, e.g. "00:11:D8:44:D5:0D"
-static char *m_fakeMAC = NULL;
+//static char *m_fakeMAC = NULL;
 
 // flag of afterward DHCP status
 int noip_afterauth = 1;
 
-char config_file[256]= "/etc/ruijie.conf";
+char config_file[256] = "/etc/ruijie.conf";
 
 /* These info should be worked out by initialisation portion. */
 
@@ -56,15 +56,19 @@ char config_file[256]= "/etc/ruijie.conf";
 static int
 kill_all(char* process);
 /*check root*/
-static void check_as_root();
+static void
+check_as_root();
 
 /*Get config*/
-void GetConfig(ruijie_packet * l);
+void
+GetConfig(ruijie_packet * l);
 /*generate default settings */
-void GenSetting();
+void
+GenSetting();
 
 // this is a top crucial change that eliminated all global variables
-static ruijie_packet sender =   { 0 };
+static ruijie_packet sender =
+  { 0 };
 
 /* cleanup on exit when detected Ctrl+C */
 static void
@@ -87,12 +91,14 @@ main(int argc, char* argv[])
   // system command
   char cmd[32] = "dhclient -4"; //ipv4 only
 
-  long setdaemon= 0;
+  long setdaemon = 0;
   long nodaemon = 0;
-  long genfile=0;
-  long kill_ruijieclient =0;
-  long showversion =0;
-  char pinghost[32]="";
+  long genfile = 0;
+  long kill_ruijieclient = 0;
+  long showversion = 0;
+  char pinghost[32] = "";
+
+  //gonhan 大哥，不要动这个结构体的code style,eclipse 的自动格式化总是把这个搞的更难看
   struct parameter_tags param[] =
   {
     {"--version", (char*)&showversion ,"--version\tShow current version",sizeof(showversion),9, BOOL_both},
@@ -141,7 +147,7 @@ main(int argc, char* argv[])
       check_as_root();
       GetConfig(&sender);
     }
-  if(pinghost[0])
+  if (pinghost[0])
     sender.m_pinghost = inet_addr(pinghost);
 
   //NOTE:check if we had get all the config
@@ -161,7 +167,7 @@ main(int argc, char* argv[])
   signal(SIGSTOP, logoff);
   signal(SIGTSTP, logoff);
 
-  if(sender.m_nocofigfile)
+  if (sender.m_nocofigfile)
     check_as_root();
 
   //print copyright and bug report message
@@ -173,7 +179,7 @@ main(int argc, char* argv[])
       "http://code.google.com/p/ruijieclient/issues/list", PACKAGE_BUGREPORT);
 
   int tryed;
-  for(tryed=0;tryed < 3 ;++tryed)
+  for (tryed = 0; tryed < 3; ++tryed)
     {
       sender.m_state = 0;
 #ifdef DEBUG
@@ -185,7 +191,7 @@ main(int argc, char* argv[])
       FillVersion(&sender); // fill 2 bytes with fake version
 
       FlushRecvBuf(&sender);
-
+      LABE_FINDDSERVER:
       // search for the server
       if (SendFindServerPacket(&sender))
         {
@@ -195,8 +201,7 @@ main(int argc, char* argv[])
         {
           fputs("@@ Server found, requesting user name...\n", stdout);
         }
-LABLE_SENDNAME:
-      if (SendNamePacket(&sender))
+      LABLE_SENDNAME: if (SendNamePacket(&sender))
         {
           continue;
         }
@@ -204,11 +209,11 @@ LABLE_SENDNAME:
         {
           fputs("@@ User name valid, requesting password...\n", stdout);
         }
-//LABLE_SENDPASSWD:
+      //LABLE_SENDPASSWD:
       switch (SendPasswordPacket(&sender))
         {
       case -1:
-      //
+        //
         goto LABLE_SENDNAME;
       case 1:
         /* authenticate fail
@@ -246,16 +251,16 @@ LABLE_SENDNAME:
        * 2: On, DHCP after authentication
        * 3: On, DHCP after DHCP authentication and re-authentication       *
        */
-      if( sender.m_dhcpmode == 3)
-      {
-    	  if(system(cmd))
-    	  {
-    		  err_quit("DHCP error!");
-    	  }
-    	  sender.m_dhcpmode = 0;
-    	  sender.m_ip = 0;
-    	  continue; // re-authentication
-      }
+      if (sender.m_dhcpmode == 3)
+        {
+          if (system(cmd))
+            {
+              err_quit("DHCP error!");
+            }
+          sender.m_dhcpmode = 0;
+          sender.m_ip = 0;
+          continue; // re-authentication
+        }
 
       if (sender.m_echoInterval <= 0)
         {
@@ -263,21 +268,21 @@ LABLE_SENDNAME:
           return 0; //user has echo disabled
         }
       // continue echoing
-      printf("%d",nodaemon);
       if (nodaemon)
         fputs("Keeping sending echo...\nPress Ctrl+C to logoff \n", stdout);
       else
         {
-          fprintf(stdout,"Daemonize and Keeping sending echo...\nUse %s -K to quit",PACKAGE_TARNAME);
+          fprintf(stdout,
+              "Daemonize and Keeping sending echo...\nUse %s -K to quit",
+              PACKAGE_TARNAME);
           if (daemon(0, 0))
             {
               err_quit("Init daemon error!");
-              ;
             }
         }
       // start ping monitoring
       FlushRecvBuf(&sender);
-      if ( sender.m_intelligentReconnect == 1)
+      if (sender.m_intelligentReconnect == 1)
         {
           while (SendEchoPacket(&sender) == 0)
             {
@@ -287,8 +292,8 @@ LABLE_SENDNAME:
               sleep(sender.m_echoInterval);
             }
           // continue this big loop when offline
+          tryed = 0; // or we will not truly re-connect.
           continue;
-
         }
       if (sender.m_intelligentReconnect > 10)
         {
@@ -299,7 +304,7 @@ LABLE_SENDNAME:
               if (time_count >= sender.m_intelligentReconnect)
                 {
                   fputs("Time to reconect!\n", stdout);
-                  continue;
+                  goto LABE_FINDDSERVER;
                 }
               sleep(sender.m_echoInterval);
             }
@@ -308,8 +313,8 @@ LABLE_SENDNAME:
       return EXIT_FAILURE; // this should never happen.
       break;
     }// end while
-  if(tryed >=3)
-    fprintf(stderr,"##重试太多，退出\n");
+  if (tryed >= 3)
+    fprintf(stderr, "##重试太多，退出\n");
   return (EXIT_FAILURE);
 }
 
@@ -332,9 +337,9 @@ static void
 check_as_root()
 {
 #ifndef DEBUG
-    if(geteuid()!=0)
+  if (geteuid() != 0)
     {
-    	err_sys("Ruijieclient must be run as root.");
+      err_sys("Ruijieclient must be run as root.");
     }
 #endif
 }
