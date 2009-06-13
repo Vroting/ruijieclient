@@ -181,6 +181,15 @@ FillVersion(ruijie_packet * this)
  }
  }
  */
+void init_ruijie_packet(ruijie_packet*this)
+{
+  memset(this,0,sizeof(ruijie_packet));
+  // Initialize non-zero variable.
+  this->m_intelligentReconnect = this->m_authenticationMode =this->m_dhcpmode = -1;
+  this->m_echoInterval = 20;
+  // the initial serial number, a magic number!
+  this->m_serialNo.ulValue = 0x1000002a;
+}
 
 int
 GetServerMsg(ruijie_packet*this, char*outbuf, size_t buflen)

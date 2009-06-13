@@ -87,41 +87,40 @@ main(int argc, char* argv[])
   // system command
   char cmd[32] = "dhclient -4"; //ipv4 only
 
-  long setdaemon=1;
+  long setdaemon= 0;
   long nodaemon = 0;
   long genfile=0;
-  long nocfg=0;
   long kill_ruijieclient =0;
   long showversion =0;
+  char pinghost[32]="";
   struct parameter_tags param[] =
   {
-    {"-D", (char*)&nodaemon,"-D\t\tDO NOT fork as a deamon",sizeof(setdaemon),2, BOOL_both},
-    {"--daemon", (char*)&setdaemon,"-D,--daemon\trun as a daemon(default)",sizeof(setdaemon),8, BOOL_both},
+    {"--version", (char*)&showversion ,"--version\tShow current version",sizeof(showversion),9, BOOL_both},
+    {"-K", (char*)&kill_ruijieclient ,"-k,-K\t\tKill all ruijieclient daemon",sizeof(kill_ruijieclient),2, BOOL_both},
+    {"-k", (char*)&kill_ruijieclient ,0,sizeof(kill_ruijieclient),2, BOOL_both},
+    {"-D", (char*)&nodaemon,"-D\t\tDO NOT fork as a deamon",sizeof(nodaemon),2, BOOL_both},
+    {"--daemon", (char*)&setdaemon,"--daemon\trun as a daemon(default)",sizeof(setdaemon),8, BOOL_both},
     {"-n", sender.m_nic ,0,sizeof(sender.m_nic),2, STRING},
     {"--nic", sender.m_nic ,"-n,--nic\tnet card",sizeof(sender.m_nic),5, STRING},
     {"-g", (char*)&genfile ,"-g\t\tauto generate a sample configuration",sizeof(genfile),2, BOOL_both},
-    {"--noconfig",(char*)&nocfg,"--noconfig\tdo not read config from file",sizeof(nocfg),10,BOOL_both},
+    {"--noconfig",(char*)&(sender.m_nocofigfile),"--noconfig\tdo not read config from file",sizeof(sender.m_nocofigfile),10,BOOL_both},
     {"-f",config_file,0,sizeof(config_file),2,STRING},
     {"--config",config_file,"-f,--config\tsupply alternative config file",sizeof(config_file),8,STRING},
     {"-u",sender.m_name ,0,sizeof(sender.m_name),2,STRING},
     {"--user",sender.m_name,"-u,--user\tsupply username",sizeof(sender.m_name),6,STRING},
     {"-p",sender.m_password ,0,sizeof(sender.m_password),2,STRING},
     {"--passwd",sender.m_password,"-p,--passwd\tsupply password",sizeof(sender.m_password),6,STRING},
-    {"-K", (char*)&kill_ruijieclient ,"-k,-K\t\tKill all ruijieclient daemon",sizeof(kill_ruijieclient),2, BOOL_both},
-    {"-k", (char*)&kill_ruijieclient ,0,sizeof(kill_ruijieclient),2, BOOL_both},
-    {"--version", (char*)&showversion ,0,sizeof(kill_ruijieclient),9, BOOL_both},
+    {"--dhcpmode",(char*)&sender.m_dhcpmode,"--dhcpmode=?\tdhcpmode, default is 0\n\t\t0:disable\n\t\t1:dhcp before auth\n\t\t2:dhcp after auth,3:dhcp-auth and re-auth after dhcp",sizeof(sender.m_dhcpmode),10,INTEGER},
+    {"--pinghost",pinghost,"--pinghost\tthe host to ping(default is your default gateway).\n\t\truijieclient use this to detect network state",sizeof(pinghost),10,STRING},
+
     {0}
   };
 
-  if (showversion)
-    err_quit("%s", PACKAGE_VERSION);
-
-  // the initial serial number, a magic number!
-  sender.m_serialNo.ulValue = 0x1000002a;
-
+  init_ruijie_packet(&sender);
   // Parse command line parameters
   ParseParameters(&argc, &argv, param);
-
+  if (showversion)
+    err_quit("%s", PACKAGE_VERSION);
   // if '-g' is passed as argument then generate a sample configuration
   if (genfile)
     {
@@ -138,13 +137,14 @@ main(int argc, char* argv[])
       exit(EXIT_SUCCESS);
     }
 
-  if (!nocfg)
+  if (!sender.m_nocofigfile)
     {
       check_as_root();
       GetConfig(&sender);
     }
+
+
   //NOTE:check if we had get all the config
-  void CheckConfig(ruijie_packet*);
   CheckConfig(&sender);
 #ifndef DEBUG
   // kill all other ruijieclients which are running
@@ -161,7 +161,7 @@ main(int argc, char* argv[])
   signal(SIGSTOP, logoff);
   signal(SIGTSTP, logoff);
 
-  if(nocfg)
+  if(sender.m_nocofigfile)
     check_as_root();
 
   //print copyright and bug report message
@@ -263,6 +263,7 @@ LABLE_SENDNAME:
           return 0; //user has echo disabled
         }
       // continue echoing
+      printf("%d",nodaemon);
       if (nodaemon)
         fputs("Keeping sending echo...\nPress Ctrl+C to logoff \n", stdout);
       else

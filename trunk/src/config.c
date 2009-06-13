@@ -41,6 +41,7 @@
 #endif
 
 #include "ruijieclient.h"
+#include "prase.h"
 
 static char fakeVersion[8];
 //static char fakeMAC[32];
@@ -70,20 +71,36 @@ CheckConfig(ruijie_packet* l)
 #else
 #define  ccerr(x) err_quit(x "\n")
 #endif
-    if ((l->m_name == NULL) || (l->m_name[0] == 0))
-      ccerr("invalid name");
-    if ((l->m_password == NULL) || (l->m_password[0] == 0))
-      ccerr("invalid password");
-    if ((l->m_authenticationMode < 0) || (l->m_authenticationMode> 1))
-      ccerr("invalid authenticationMode");
-    if ((l->m_nic == NULL) || (strcmp(l->m_nic, "") == 0)
-        || (strcmp(l->m_nic, "any") == 0))
-      ccerr("invalid nic");
-    if ((l->m_echoInterval < 0) || (l->m_echoInterval> 100))
-      ccerr("invalid echo interval");
-    //if ((m_intelligentReconnect < 0) || (m_intelligentReconnect> 1))
-    if ((l->m_intelligentReconnect < 0))
-      ccerr("invalid intelligentReconnect");
+
+  if (l->m_nocofigfile)
+    {
+      if (l->m_echoInterval == -1)
+        l->m_echoInterval = 0;
+      if (l->m_authenticationMode == -1)
+        l->m_authenticationMode = 0;
+      if (l->m_intelligentReconnect == -1)
+        l->m_intelligentReconnect = 1;
+      if (l->m_dhcpmode == -1)
+        l->m_dhcpmode = 0;
+    }
+
+  if( !l->m_fakeVersion)
+    l->m_fakeVersion = "3.99";
+
+  if ((l->m_name == NULL) || (l->m_name[0] == 0))
+    ccerr("invalid name");
+  if ((l->m_password == NULL) || (l->m_password[0] == 0))
+    ccerr("invalid password");
+  if ((l->m_authenticationMode < 0) || (l->m_authenticationMode > 1))
+    ccerr("invalid authenticationMode");
+  if ((strcmp(l->m_nic, "") == 0) || (strcmp(l->m_nic, "any") == 0))
+    ccerr("invalid nic");
+  if ((l->m_echoInterval < 0) || (l->m_echoInterval > 100))
+    ccerr("invalid echo interval");
+  if ((l->m_intelligentReconnect < 0) || (l->m_intelligentReconnect> 1))
+    ccerr("invalid intelligentReconnect");
+
+#undef ccerr
 
 #ifdef DEBUG
     char buf[80];
@@ -138,7 +155,7 @@ void get_element(xmlNode * a_node,struct cfg_tags * tg)
 }
 #else
 
-int
+static int
 get_profile_string(FILE *fp, char *AppName, const char const *KeyName,char *KeyValue)
 {
   int KEYVALLEN = 20;
@@ -443,18 +460,36 @@ GetConfig(ruijie_packet * l)
 
 #endif
   //NOTE: now , move things to  ruijiepacket * l
-  strcpy(l->m_name , cfgtags[USERNAME].val);
-  strcpy(l->m_password, cfgtags[PASSWORD].val );
-  strcpy(l->m_nic,cfgtags[NIC].val);
-  l->m_echoInterval = atoi(cfgtags[ECHOINTERVAL].val);
-  l->m_fakeVersion = cfgtags[FAKEVERSION].val;
-  if(cfgtags[FAKEADDRESS].val[0])
+  if(l->m_name[0]==0)
+    strcpy(l->m_name , cfgtags[USERNAME].val);
+  //else m_name has been filled by cmdline
+  if(l->m_password[0]==0)
+    strcpy(l->m_password, cfgtags[PASSWORD].val );
+  //else m_password has been filled by cmdline
+  if(l->m_nic[0]==0)
+    strcpy(l->m_nic,cfgtags[NIC].val);
+  //else m_nic has been filled by cmdline
+  if(l->m_echoInterval==0)
+    l->m_echoInterval = atoi(cfgtags[ECHOINTERVAL].val);
+  //else m_echoInterval has been filled by cmdline
+  if(!l->m_fakeVersion)
+    l->m_fakeVersion = cfgtags[FAKEVERSION].val;
+  //else m_fakeVersion has been filled by cmdline
+  if(cfgtags[FAKEADDRESS].val[0] && l->m_ip==0)
     l->m_ip = inet_addr(cfgtags[FAKEADDRESS].val);
-  l->m_dhcpmode = atoi(cfgtags[DHCPMODE].val);
-  l->m_intelligentReconnect = atoi(cfgtags[INTELLIGENTRECONNECT].val);
-  l->m_authenticationMode = atoi(cfgtags[AUATHENTICATIONMODE].val);
+  //else fakeaddress has been filled by cmdline
+  if(l->m_dhcpmode == -1)
+    l->m_dhcpmode = atoi(cfgtags[DHCPMODE].val);
+  //else m_dhcpmode has been filled by cmdline
+  if(l->m_intelligentReconnect == -1)
+    l->m_intelligentReconnect = atoi(cfgtags[INTELLIGENTRECONNECT].val);
+  //else m_intelligentReconnect has been filled by cmdline
+  if(l->m_authenticationMode==-1)
+    l->m_authenticationMode = atoi(cfgtags[AUATHENTICATIONMODE].val);
+  //else m_authenticationMode has been filled by cmdline
   if(PingHost[0])
     l->m_pinghost = inet_addr(PingHost);
+  //else use default gateway
 }
 
 int GenSetting()
