@@ -112,7 +112,6 @@ main(int argc, char* argv[])
     {"--passwd",sender.m_password,"-p,--passwd\tsupply password",sizeof(sender.m_password),6,STRING},
     {"--dhcpmode",(char*)&sender.m_dhcpmode,"--dhcpmode=?\tdhcpmode, default is 0\n\t\t0:disable\n\t\t1:dhcp before auth\n\t\t2:dhcp after auth,3:dhcp-auth and re-auth after dhcp",sizeof(sender.m_dhcpmode),10,INTEGER},
     {"--pinghost",pinghost,"--pinghost\tthe host to ping(default is your default gateway).\n\t\truijieclient use this to detect network state",sizeof(pinghost),10,STRING},
-
     {0}
   };
 
@@ -142,7 +141,8 @@ main(int argc, char* argv[])
       check_as_root();
       GetConfig(&sender);
     }
-
+  if(pinghost[0])
+    sender.m_pinghost = inet_addr(pinghost);
 
   //NOTE:check if we had get all the config
   CheckConfig(&sender);
