@@ -1,7 +1,7 @@
 /*******************************************************************************\
  * RuijieClient -- a CLI based Ruijie Client authentication modified from mystar *
  *                                                                               *
- * Copyright (C) Gong Han, Chen Tingjun  microcai                                        *
+ * Copyright (C) Gong Han, Chen Tingjun  microcai  sthots                                      *
  \*******************************************************************************/
 
 /*
@@ -316,11 +316,12 @@ Gensetting(struct cfg_tags * t)
         xmlNewChild(account_node, NULL, BAD_CAST t->key, BAD_CAST t->val);
 #else
   /*
-   * TODO: here, generate ini format file
+   * NOTE: here, generate ini format file
    * and contains Name= and password=   *
    */
         fprintf(doc, "#%s\n%s=%s\n", t->description, t->key, t->val);
-      fprintf(doc, "%s=%s\n", t->key, t->val);
+      else
+        fprintf(doc, "%s=%s\n", t->key, t->val);
 #endif
     }
 
