@@ -8,6 +8,7 @@ Homepage: http://ruijieclient.googlecode.com
 
 Package: ruijieclient
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}
+Depends: libpcap0.8 (>= 0.9.8-2),libxml2 (>= 2.6.31) 
+Suggests: gruijieclient
 Description: A powerful ruijie Supplicant 
  ruijieclient - a powerful ruijie Supplicant for UNIX, base on mystar.
