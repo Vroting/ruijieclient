@@ -324,7 +324,7 @@ kill_all(char * process)
   char cmd[256] = "";
   int cmd_return = 0;
 
-  sprintf(cmd, "killall --signal 2 %s", process);
+  sprintf(cmd, "killall -2 %s", process);
   cmd_return = system(cmd);
   if (cmd_return < 0)
     {
