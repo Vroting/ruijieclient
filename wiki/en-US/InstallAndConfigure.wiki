@@ -1,39 +1,48 @@
 #labels Featured,Phase-Deploy
 #describes how to install and configure ruijieclient
 
-*corresponding version：0.1.1*
+=How To Install=
 
-  * install from source(tar.gz)
+ ==install from source package==
+  * general installation
 {{{
 ./configure
 make
 make install
 }}}
+  * ini tpye configuration file (optional, thus libxml2 will not be necessary for executing)
+   search the following line in config.c
+{{{
+  //#define DEBUG_NOXML
+}}}
+   replace it with
+{{{
+  #define DEBUG_NOXML
+}}}
+   and then compile it according to general installation steps mentioned above.
 
-  * install from complied package(rpm, deb etc..)
-    exert your package managing program to install it.
+ ==install from complied package(rpm, deb etc..)==
+  exert your package managing program to install it.
 
-  * instructions about configuring
-    * simplify startup procedure (optional)
-    Thus, prefix 'sudo' is not necessary to executing ruijieclient next time.
+=Particular Configuring Instructions to Particular Versions=
+
+ ==Version 0.7, 0.1.1==
+
+  * simplify startup procedure (optional, if ruijieclient is installed from compiled packages(deb, rpm) which is downloaded from ruijieclient website, this step can be skipped )
+   Thus, prefix 'sudo' is not necessary to executing ruijieclient next time.
 {{{
 sudo chmod 4755 /usr/local/bin/ruijieclient
 }}}
-    * generate configuration template (needed the first time you use it)
+  * generate configuration template (needed the first time you use it)
 {{{
 sudo ruijieclient -g
-
-or directly execute
-
-sudo ruijieclient
-
-which produces the same result as the former one.
 }}}
-    * edit configuration
+  * edit configuration
 {{{
-gedit /etc/ruijie.conf
+sudo gedit /etc/ruijie.conf
 }}}
-    * configuration file format specification
+  * configuration file format specification
+      * xml(default)
 {{{
 <?xml version="1.0" ?>
 <ruijie.conf version="0.1.1">
@@ -55,63 +64,41 @@ gedit /etc/ruijie.conf
     <FakeVersion>3.99</FakeVersion>
     <!--Fake IP for cheating server-->
     <FakeAddress></FakeAddress>
-    <!--DHCP mode 0: Disable, 1: Enable DHCP before authentication, 2: Enable DHCP after authentication -->
+    <!--DHCP mode 0: Disable, 1: Enable DHCP before authentication, 2: Enable DHCP after authentication 3: DHCP after DHCP authentication andre-authentication(You should use this if your net env is DHCP)-->
     <DHCPmode>0</DHCPmode>
+    <!--Add if you don't want ruijieclient to ping the default gateway-->
+    <PingHost>4.2.2.2</PingHost> # this is the testing hose address for detecting the accessibility of network.
   </settings>
 </ruijie.conf>
 }}}
+      * ini configuration(e.g. being used in embeded devices )
+{{{
+[ruijieclient]
+Name=123012007078
+Password=888888
+#This is settings
+#Network Adapter Name
+NIC=eth0
+#0: Standard, 1: Private
+AuthenticationMode=1
+EchoInterval=25
+#IntelligentReconnect: 0: Disable IntelligentReconnect, 1: Enable IntelligentReconnect
+IntelligentReconnect=1
+#AutoConnect: 0: Disable AutoConnect, 1: Enable AutoConnect (only available in gruijieclient) 
+AutoConnect=0
+#Fake Version for cheating server
+FakeVersion=3.99
+#Fake IP for cheating server
+FakeAddress=123.123.123.123
+#DHCP mode 0: Disable, 1: Enable DHCP before authentication, 2: Enable DHCP after authentication 3: DHCP after DHCP authentication andre-authentication(You should use this if your net env is DHCP)
+DHCPmode=0
+#Add if you don't want ruijieclient to ping the default gateway
+PingHost=202.102.154.3
+}}}
 
-  * run
-    * by 'su'
-    open terminal, input 'su'
-{{{
-ruijieclient
-}}}
-    * by 'sudo' (provided that sudoer has been set correctly. ubuntu has set it by default)
-    open terminal, input the following
-{{{
-sudo ruijieclient
-}}}
-    * simplified method (with the prerequisite that you have done optional steps mentioned before)
-   open terminal, directly run
-{{{
-ruijieclient
-}}}
+ ==Version: 0.1 (deprecated)==
 
-*corresponding version：0.1*
-
-  * install from source(tar.gz)
-     * download and edit configuration
-{{{
-wget http://ruijieclient.googlecode.com/svn/trunk/src/ruijie.conf
-gedit ruijie.conf
-}}}
-     * copy configuration
-     open terminal, input 'su'
-{{{
-mkdir -p /etc/ruijieclient
-cp ruijie.conf /etc/ruijieclient
-}}}
-     * compile and install
-{{{
-./configure
-make
-make install
-}}}
-  * install from complied package(rpm, deb etc..)
-    * edit configuration
+  * edit configuration
 {{{
 gedit /etc/ruijieclient/ruijie.conf
-}}}
-
-  * run
-    * by 'su'
-    open terminal, input 'su'
-{{{
-ruijieclient
-}}}
-    * by 'sudo' (provided that sudoer has been set correctly. ubuntu has set it by default)
-    open terminal, input the following
-{{{
-sudo ruijieclient
 }}}

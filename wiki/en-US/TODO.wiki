@@ -2,6 +2,7 @@
 #TODO list
 
 development plan:
-  * auto-start in start-up
   * improve intelligent re-connect
   * some auxiliary HACKs ;-)
+  * install and configure instructions for building deb packages
+  * enhance support for cross-platform implementation

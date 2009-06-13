@@ -1,20 +1,35 @@
 #labels Featured,Phase-Deploy
 #描述了如何安装配置ruijieclient
 
-*适用版本：0.1.1*
+=如何安装=
 
-  * 从源代码编译并安装程序
+ ==从源代码编译并安装程序==
+  * 一般安装
 {{{
 ./configure
 make
 make install
 }}}
+  * ini类型配置文件版本编译安装（可选，如此不需要依赖libxml2库运行）
+在config.c中找到
+{{{
+  //#define DEBUG_NOXML
+}}}
+改为
+{{{
+  #define DEBUG_NOXML
+}}}
+然后按照一般安装步骤编译安装。
 
-  * 安装包安装(rpm, deb etc..)
+ ==从安装包安装(rpm, deb etc..)==
    直接使用包管理器安装。
 
+=特定版本配置=
+
+ ==版本：0.7, 0.1.1==
+
   * 配置说明
-    * 简化启动（可选）
+    * 简化启动（可选，如果使用站点上提供的安装包安装，可以跳过这步）
 {{{
 sudo chmod 4755 /usr/local/bin/ruijieclient
 }}}
@@ -22,18 +37,13 @@ sudo chmod 4755 /usr/local/bin/ruijieclient
     * 生成配置文件模板(第一次使用时)
 {{{
 sudo ruijieclient -g
-
-或者直接
-
-sudo ruijieclient
-
-效果相同。
 }}}
     * 编辑配置
 {{{
-gedit /etc/ruijie.conf
+sudo gedit /etc/ruijie.conf
 }}}
     * 配置文件格式说明
+      * xml配置文件（默认）
 {{{
 <?xml version="1.0" ?>
 <ruijie.conf version="0.1.1"> #配置版本
@@ -44,9 +54,9 @@ gedit /etc/ruijie.conf
   </account>
   <settings>
     <!--0: Standard, 1: Private-->
-    <AuthenticationMode>1</AuthenticationMode> #认证模式
-    <NIC>eth0</NIC> #网络设备
-    <EchoInterval>4</EchoInterval> #保活延时
+    <AuthenticationMode>1</AuthenticationMode> #服务器发现包类型 0 标准发现包 1 锐捷私有发现包
+    <NIC>eth0</NIC> #网卡设备界面名
+    <EchoInterval>4</EchoInterval> #保活延时 单位秒
     <!--IntelligentReconnect: 0: Disable IntelligentReconnect, 1: Enable IntelligentReconnect -->
     <IntelligentReconnect>1</IntelligentReconnect> #智能重连
     <!--AutoConnect: 0: Disable AutoConnect, 1: Enable AutoConnect (only available in gruijieclient) -->
@@ -55,48 +65,49 @@ gedit /etc/ruijie.conf
     <FakeVersion>3.99</FakeVersion> #版本伪装
     <!--Fake IP for cheating server-->
     <FakeAddress></FakeAddress> #IP地址伪装
-    <!--DHCP mode 0: Disable, 1: Enable DHCP before authentication, 2: Enable DHCP after authentication -->
-    <DHCPmode>0</DHCPmode> #DHCP认证模式
+    <!--DHCP mode 0: Disable, 1: Enable DHCP before authentication, 2: Enable DHCP after authentication 3: DHCP after DHCP authentication andre-authentication(You should use this if your net env is DHCP)-->
+    <DHCPmode>0</DHCPmode> #DHCP认证模式 0 关闭 1 认证前DHCP 2 认证后DHCP
+    <!--Add if you don't want ruijieclient to ping the default gateway-->
+    <PingHost>4.2.2.2</PingHost> #自动重连使用的测试主机地址
   </settings>
 </ruijie.conf>
 }}}
-
-  * 启动程序
-    * su方式
-    打开终端，输入su，进入root状态后
+      * ini配置文件（比如用于嵌入式设备）
 {{{
-ruijieclient
-}}}
-    * sudo方式 (前提是已经设置好sudoer，ubuntu已经默认设置好了)
-    打开终端，输入
-{{{
-sudo ruijieclient
-}}}
-    * 简化方式（如果已经完成了可选配置）
-    打开终端，直接输入
-{{{
-ruijieclient
+[ruijieclient]
+Name=123012007078 #用户名
+Password=888888 #密码
+#This is settings
+#Network Adapter Name 网卡设备界面名
+NIC=eth0
+#0: Standard, 1: Private 服务器发现包类型 0 标准发现包 1 锐捷私有发现包
+AuthenticationMode=1
+#保活延时 单位秒
+EchoInterval=25
+#IntelligentReconnect: 0: Disable IntelligentReconnect, 1: Enable IntelligentReconnect
+#智能重连 
+IntelligentReconnect=1
+#AutoConnect: 0: Disable AutoConnect, 1: Enable AutoConnect (only available in gruijieclient) 
+#自动连接
+AutoConnect=0
+#Fake Version for cheating server
+#版本伪装
+FakeVersion=3.99
+#Fake IP for cheating server
+#IP地址伪装
+FakeAddress=123.123.123.123
+#DHCP mode 0: Disable, 1: Enable DHCP before authentication, 2: Enable DHCP after authentication 3: DHCP after DHCP authentication andre-authentication(You should use this if your net env is DHCP)
+#DHCP认证模式 0 关闭 1 认证前DHCP 2 认证后DHCP
+DHCPmode=0
+#Add if you don't want ruijieclient to ping the default gateway
+#自动重连使用的测试主机地址
+PingHost=202.102.154.3
 }}}
 
-*适用版本：0.1*
-
-  * 源码安装(tar.gz)
-  不推荐使用0.1版本
+ ==版本：0.1（已经废弃）==
 
   * 安装包安装(rpm, deb etc..)
     * 直接编辑配置
 {{{
 gedit /etc/ruijieclient/ruijie.conf
-}}}
-
-  * 启动程序
-    * su方式
-    打开终端，输入su，进入root状态后
-{{{
-ruijieclient
-}}}
-    * sudo方式 (前提是已经设置好sudoer，ubuntu已经默认设置好了)
-    打开终端，输入
-{{{
-sudo ruijieclient
 }}}

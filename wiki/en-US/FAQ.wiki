@@ -1,21 +1,30 @@
 #labels Featured,Phase-QA
 #FAQ
 
-*corresponding version：0.1.1*
+=General Questions=
 
-  * why the program suspended in stage of finding server？
+  * why the program suspended in the stage of finding server？
   Probably, network adapter has been slept by Windows (wake on after shutdown)。Numerous solutions are available on the Internet, so, check them out.
   * why Gnome network manager can not save my configuration status?(e.g. IP)
-  Please add a new configuration in the manager and also set it as default choice.
-  * errors occur in './configure' 
-  Generally，compiling requires libnet-devel, openssl-devel(or libssl-dev), libpcap-devel and libxml2 , make sure you have installed them correctly. Furthermore, you should never try to compile it static, for it's harmful.
-  
-*corresponding version：0.1*
+  Please add a new configuration in the manager, and also set it as the default choice.
+  * Can I try to complie libpcap statically?
+  Yes, but we DO NOT recommend you to do so due to the announcement from libpcap develop team that static compiling might be harmful.
 
-  * why the program suspended in stage of finding server？
-  Probably, network adapter has been slept by Windows (wake on after shutdown)。Numerous solutions are available on the Internet, so, check them out.
-  * why Gnome network manager can not save my configuration status?(e.g. IP)
-  Please add a new configuration in the manager and also set it as default choice.
-  * errors occur in './configure' 
-  Generally，compiling requires libnet-devel, openssl-devel(or libssl-dev), libpcap-devel , make sure you have installed them correctly. Furthermore, you should never try to compile it static, for it's harmful.
-  
+=Questions To Particular Versions=
+
+==Version：0.7==
+
+  * RuijieClient has succeeded in passing the authentication and the network is already accessible, however, it continues to restart authenticating permanently
+  The bug has been fixed in r66, you should use ruijieclient-0.7 to tackle or preclude the issue.
+  * errors occur in './configure'
+  Generally，compiling requires libpcap-devel and libxml2 , make sure you have installed them correctly.
+
+==Version：0.1.1==
+
+  * errors occur in './configure'
+  Generally，compiling requires libnet-devel, openssl-devel(or libssl-dev), libpcap-devel and libxml2 , make sure you have installed them correctly.
+
+==Version：0.1 (deprecated)==
+
+  * errors occur in './configure'
+  Generally，compiling requires libnet-devel, openssl-devel(or libssl-dev), libpcap-devel , make sure you have installed them correctly.
