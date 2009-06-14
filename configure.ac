@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.63])
-AC_INIT([ruijieclient], [0.7.0], [gong@fedoraproject.org])
+AC_INIT([ruijieclient], [0.7.8], [gong@fedoraproject.org])
 
 AM_INIT_AUTOMAKE([-Wall -Werror])
 AC_CONFIG_SRCDIR([config.h.in])
@@ -17,34 +17,37 @@ AC_TYPE_PID_T
 AC_TYPE_SIZE_T
 AC_TYPE_UINT8_T
 
-# Checks for libraries.
-# FIXME: Replace `main' with a function in `-lpcap':
-AC_CHECK_LIB([pcap], [main], [],[exit])
-
-# FIXME: Replace `main' with a function in `-lxml2':
-AC_CHECK_LIB(xml2, [main], [],
-	 [ AC_VERBOSE(!Warnning: libxml2 not found! xml feature will not work!")
-	   AC_VERBOSE(ruijieclient will continue to work , but will use text file instead) 	   
-	])
-	
-# Checks for header files.
-AC_CHECK_HEADERS([pcap.h iconv.h linux/rtnetlink.h arpa/inet.h netinet/in.h stdlib.h string.h sys/socket.h sys/time.h unistd.h net/ethernet.h])
-
 # Checks for library functions.
 AC_CHECK_FUNCS([memset strerror])
 
+# Checks for libraries.
+# FIXME: Replace `main' with a function in `-lpcap':
+AC_CHECK_LIB([pcap], [main], [],AC_MSG_FAILURE( libpcap not found!,1))
+
+# FIXME: Replace `main' with a function in `-lxml2':
+AC_CHECK_LIB(xml2, [main], [],
+	 [ AC_WARN(libxml2 not found! xml feature will not work!)
+	  AC_WARN(ruijieclient will continue to work , but will use text file instead) 	   
+	])
+	
+# Checks for header files.
+AC_CHECK_HEADERS([iconv.h linux/rtnetlink.h arpa/inet.h netinet/in.h stdlib.h string.h sys/socket.h sys/time.h unistd.h net/ethernet.h])
+AC_CHECK_HEADER(pcap.h,[],AC_MSG_FAILURE( libpcap development files not found!, 1 )) 
+
 
 AC_ARG_ENABLE(debug,
-		[  --enable-debug Enable DEBUG output. This is a debugging feature \
-		 which should not be only enabled by develpoers],
-		 	[ CFLAGS="$CFLAGS -g -DDEBUG" ] )
+                [  --enable-debug Enable DEBUG output. This is a debugging feature  which should not be only enabled by develpoers],
+                [ CFLAGS="$CFLAGS -g -DDEBUG" ],
+                [ CFLAGS="$CFLAGS -g0"]
+              )
+              
 # important ! here we just determin where the user have got libxml2-devel installed
-AC_SUBST(XML_INCLUDE,/usr/include/libxml2)
 		 	
-AC_CHECK_FILE( /usr/include/libxml2/libxml/xmlexports.h,AC_SUBST(XML_INCLUDE),
-			CFLAGS="$CFLAGS -DDEBUG_NOXML"
-			AC_WARN(libxml2-devel not found! xml feature will not work!)				
-		)
+AC_CHECK_FILE( /usr/include/libxml2/libxml/xmlexports.h,AC_SUBST(XML_INCLUDE,/usr/include/libxml2),
+	          [
+	          	AC_MSG_RESULT(libxml2-devel not found! xml feature will not work!)
+	          	CFLAGS="$CFLAGS -DDEBUG_NOXML"				
+              ])
 		 	
 AC_CONFIG_FILES([Makefile
                  src/Makefile])
