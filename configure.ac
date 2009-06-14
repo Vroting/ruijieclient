@@ -20,34 +20,38 @@ AC_TYPE_UINT8_T
 # Checks for library functions.
 AC_CHECK_FUNCS([memset strerror])
 
+
+AC_CHECK_HEADERS([iconv.h linux/rtnetlink.h arpa/inet.h netinet/in.h stdlib.h string.h sys/socket.h sys/time.h unistd.h net/ethernet.h])
+
 # Checks for libraries.
 # FIXME: Replace `main' with a function in `-lpcap':
-AC_CHECK_LIB([pcap], [main], [],AC_MSG_FAILURE( libpcap not found!,1))
+AC_CHECK_LIB([pcap], [main],[],      
+            [AC_MSG_FAILURE( libpcap not found!,1)])
+            
+AC_CHECK_HEADER(pcap.h,[],
+			AC_MSG_FAILURE( libpcap development files not found!, 1 ))
+			
+# important ! here we just determin where the user have got libxml2-devel installed
 
-# FIXME: Replace `main' with a function in `-lxml2':
-AC_CHECK_LIB(xml2, [main], [],
-	 [ AC_WARN(libxml2 not found! xml feature will not work!)
-	  AC_WARN(ruijieclient will continue to work , but will use text file instead) 	   
-	])
+AC_CHECK_LIB(xml2, [main],[],[AC_WARN(libxml2 not found! xml feature will not work!)])
 	
-# Checks for header files.
-AC_CHECK_HEADERS([iconv.h linux/rtnetlink.h arpa/inet.h netinet/in.h stdlib.h string.h sys/socket.h sys/time.h unistd.h net/ethernet.h])
-AC_CHECK_HEADER(pcap.h,[],AC_MSG_FAILURE( libpcap development files not found!, 1 )) 
+AC_SUBST(XML_INCLUDE,/usr/include/libxml2) 
+	
+AC_SUBST_FILE(XML_INCLUDE)
 
+# Checks for header files.
 
 AC_ARG_ENABLE(debug,
                 [  --enable-debug Enable DEBUG output. This is a debugging feature  which should not be only enabled by develpoers],
-                [ CFLAGS="$CFLAGS -g -DDEBUG" ],
+                [ CFLAGS="$CFLAGS -g -O2 -DDEBUG" ],
                 [ CFLAGS="$CFLAGS -g0"]
               )
-              
-# important ! here we just determin where the user have got libxml2-devel installed
-		 	
-AC_CHECK_FILE( /usr/include/libxml2/libxml/xmlexports.h,AC_SUBST(XML_INCLUDE,/usr/include/libxml2),
-	          [
-	          	AC_MSG_RESULT(libxml2-devel not found! xml feature will not work!)
-	          	CFLAGS="$CFLAGS -DDEBUG_NOXML"				
-              ])
+             
+
+libpcap=40                
+AC_WITH(localpcap,
+	AC_CONFIG_COMMANDS( libpcap, echo makeing libpcap.so ; (cd src && make libpcap.so), libpcap=$libpcap)
+		  )
 		 	
 AC_CONFIG_FILES([Makefile
                  src/Makefile])
