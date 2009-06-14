@@ -192,7 +192,7 @@ main(int argc, char* argv[])
       GetNicParam(&sender);
 #else
       if (GetNicParam(&sender))
-        return 0;
+        err_quit("Err getting net parameters");
 #endif
       FillVersion(&sender); // fill 2 bytes with fake version
 

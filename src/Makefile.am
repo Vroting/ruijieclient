@@ -6,4 +6,4 @@ ruijieclient_SOURCES = blog.c codeconv.h myerr.c ruijieclient.h  \
 		 config.c
 		 
 ruijieclient_LDADD = 
-ruijieclient_CFLAGS = -I /usr/include/libxml2
+ruijieclient_CFLAGS = -I $(XML_INCLUDE)
