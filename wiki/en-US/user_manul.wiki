@@ -1,8 +1,9 @@
+#labels Featured,Phase-Deploy
 #instruct how to use RuijieClient
 
 ==view help of RuijieClient==
 
- Input the command below in terminal
+Input the command below in terminal
 {{{
 ruijieclient --help
 }}}
@@ -45,11 +46,16 @@ sudo ruijieclient -k
    or you can directly send a signal SIGINT(3) to the process.
    * otherwise
    you can press ctrl+c though keyboard or send a signal SIGINT(3) as the same.
-  * pass parameters which include user name ans password to authenticate
+  * pass parameters which include user name and password to authenticate
 {{{
 sudo ruijieclient -u name -p 1234
 }}}
-  * use you custom configuration file by providing the file path
+  * pass parameters which include user name and password to authenticate on the prerequisite that the program does not read configuration from file.
+  compared with the above mentioned, in this case, the other parameters will be defined by *internal values* instead of *being obtained from file* the way the above case does.
+{{{
+sudo ruijieclient --noconfig -u name -p 1234
+}}}
+  * use your custom configuration file by providing the file path
 {{{
 sudo ruijieclient -f /home/pretty_gril/ruijie.conf
 }}}
@@ -66,7 +72,7 @@ sudo ruijieclient --pinghost 4.2.2.2
 {{{
 sudo ruijieclient --dhcpmode 2
 }}}
-  * define the number of network detecting times. Once it exceeds the time provided, the procedure of re-authenticating will be triggered.
+  * define the number of network detecting times. Once it exceeds the time provided, the procedure of quit will be triggered.
 {{{
 sudo ruijieclient --try 3
 }}}

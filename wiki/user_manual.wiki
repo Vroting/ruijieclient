@@ -1,12 +1,13 @@
+#labels Featured,Phase-Deploy
 #描述了如何使用RuijieClient
 
 ==查看命令行参数帮助==
 
- 在终端中输入
+在终端中输入
 {{{
 ruijieclient --help
 }}}
- 在终端中看到显示结果
+在终端中看到显示结果
 {{{
 -D		DO NOT fork as a daemon
     --daemon	run as a daemon(default)
@@ -35,7 +36,7 @@ ruijieclient --help
 		0: 关闭
 		1: 认证前DHCP
 		2: 认证后DHCP
-		3: 先DHCP，然后认证，然后在DHCP认证后再进行一次认证（有的学校是这样）
+		3: 先认证，然后DHCP，然后在DHCP认证后再进行一次认证（有的学校是这样）
 -f, --config	指定自定义的配置文件地址
 -g		自动生成一份样例配置文件
 -k, --kill	杀死所有RuijieClient进程
@@ -69,6 +70,11 @@ sudo ruijieclient -k
 {{{
 sudo ruijieclient -u name -p 1234
 }}}
+  * 不使用配置文件认证，以传参方式用提供用户名、密码认证
+  和上面的相比，区别在于本次的其他参数是程序 *内定的默认值* ，本次不需要读取配置文件，而上面的_其他参数定义，还要再从_配置文件读取。
+{{{
+sudo ruijieclient --noconfig -u name -p 1234
+}}}
   * 用自己提供的配置文件认证
 {{{
 sudo ruijieclient -f /home/pretty_gril/ruijie.conf
@@ -86,7 +92,7 @@ sudo ruijieclient --pinghost 4.2.2.2
 {{{
 sudo ruijieclient --dhcpmode 2
 }}}
-  * 限制网络测试次数为3，超过后重连
+  * 限制网络测试次数为3，超过后退出
 {{{
 sudo ruijieclient --try 3
 }}}
