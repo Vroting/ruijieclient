@@ -1,5 +1,7 @@
-ruijieclient (0.7.0-1) unstable; urgency=low
+ruijieclient (0.7.9-1) unstable; urgency=high
+  
+  * The net connection would not broke NOW ! 
+  * FIXED: re-connect after a fixed time
+  * NEW: add support for non-versioned libpcap.so  
 
-  * Initial release (svn r95)
-
- -- G.S.Alex <sthots@gmail.com>  Sat, 13 Jun 2009 13:45:47 +0800
+ -- G.S.Alex <sthots@gmail.com>  Mon, 15 Jun 2009 16:39:53 +0800
