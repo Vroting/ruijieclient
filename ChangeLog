@@ -1,3 +1,8 @@
+version 0.7.9
+  FIXED: re-connect after a fixed time
+  NEW: add support for non-versioned libpcap.so  
+           
+
 version 0.7.0
 - NEW: add support for non-xml configuration
 - NEW: add support for ICMP to detect the interruption of network.

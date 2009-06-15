@@ -494,7 +494,7 @@ SendPasswordPacket(ruijie_packet *this)
               u_char s[4];
             } tmp;
 
-            printf("##key is %x %x %x %x",this->pkt_data[offset + 0x9],this->pkt_data[offset + 0xa],this->pkt_data[offset + 0xb],this->pkt_data[offset + 0xc]);
+//            printf("##key is %x %x %x %x",this->pkt_data[offset + 0x9],this->pkt_data[offset + 0xa],this->pkt_data[offset + 0xb],this->pkt_data[offset + 0xc]);
 
             tmp.s[0] = Alog(this->pkt_data[offset + 0x9]);//0xff
             tmp.s[1] = Alog(this->pkt_data[offset + 0xa]);//0xff

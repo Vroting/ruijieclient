@@ -235,7 +235,6 @@ main(int argc, char* argv[])
          */
         GetServerMsg(&sender, u_msgBuf, MAX_U_MSG_LEN);
         fprintf(stdout, "@@ Authentication failed: %s\n", u_msgBuf);
-//        SendEchoPacket(&sender);
         SendEndCertPacket(&sender);
         if (try_time == -1)
           tryed = 0;
@@ -299,6 +298,7 @@ main(int argc, char* argv[])
       FlushRecvBuf(&sender);
       if (sender.m_intelligentReconnect == 1)
         {
+          sleep(sender.m_echoInterval);
           while (SendEchoPacket(&sender) == 0)
             {
               //				printf("heart beat\n");
