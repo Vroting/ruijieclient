@@ -87,8 +87,10 @@ uint8_t ExitPacket[0x3E8] =
 static
 uint8_t echoPackage[] =
 {
-  0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x88,0x8E,0x01,0xBF,
-  0x00,0x1E,0xFF,0xFF,0x37,0x77,0x7F,0x9F,0xF7,0xFF,0x00,0x00,0xFF,0xFF,0x37,0x77,
+  0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+  0x88,0x8E, //802.1x
+  0x01,0xBF, 0x00,0x1E,
+  0xFF,0xFF,0x37,0x77,0x7F,0x9F,0xF7,0xFF,0x00,0x00,0xFF,0xFF,0x37,0x77,
   0x7F,0x9F,0xF7,0xFF,0x00,0x00,0xFF,0xFF,0x37,0x77,0x7F,0x3F,0xFF
 };
 
@@ -185,10 +187,8 @@ void init_ruijie_packet(ruijie_packet*this)
 {
   memset(this,0,sizeof(ruijie_packet));
   // Initialize non-zero variable.
-  this->m_intelligentReconnect = this->m_authenticationMode =this->m_dhcpmode = -1;
-  this->m_echoInterval = 20;
-  // the initial serial number, a magic number!
-  this->m_serialNo.ulValue = 0x1000002a;
+  this->m_echoInterval = this->m_intelligentReconnect = this->m_authenticationMode =this->m_dhcpmode = -1;
+//  this->m_serialNo.ulValue = 0x1000002a;
 }
 
 int
@@ -205,7 +205,7 @@ GetServerMsg(ruijie_packet*this, char*outbuf, size_t buflen)
   char *msgBuf = (typeof(msgBuf)) (this->pkt_data + 0x1c);
 
   //remove the leading "\r\n" which seems always exist!
-#ifdef DEBUG
+#if defined(DEBUG)
   puts("-- MSG INFO");
   printf("## msgBuf(GB) %s\n", msgBuf);
 #endif
@@ -427,7 +427,6 @@ SendPasswordPacket(ruijie_packet *this)
 
   // msg offset
   u_int16_t offset;
-  ULONG_BYTEARRAY uTemp;
 
   unsigned char md5Data[256]; // password,md5 buffer
   unsigned char md5Dig[32]; // result of md5 sum
@@ -481,7 +480,7 @@ SendPasswordPacket(ruijie_packet *this)
         if (pcap_next_ex(this->m_pcap, &this->pkt_hdr, &this->pkt_data) <= 0)
           continue;
         if (this->pkt_data[0x12] == 3)
-          // if succeed in sending password
+        // if succeed in sending password
           {
             //gets last ID
             this->m_lastID = this->pkt_data[0x13];
@@ -489,12 +488,22 @@ SendPasswordPacket(ruijie_packet *this)
             //get 心跳信息初始码
             //uTemp.ulValue = *(((u_long *)(pkt_data+0x9d)));
             offset = ntohs(*((u_int16_t*) (this->pkt_data + 0x10)));
-            uTemp.ulValue = *((u_int32_t *) (this->pkt_data + (0x11 + offset)
-                - 0x08));
-            this->m_key.btValue[0] = Alog(uTemp.btValue[3]);
-            this->m_key.btValue[1] = Alog(uTemp.btValue[2]);
-            this->m_key.btValue[2] = Alog(uTemp.btValue[1]);
-            this->m_key.btValue[3] = Alog(uTemp.btValue[0]);
+            union
+            {
+              u_int32_t l;
+              u_char s[4];
+            } tmp;
+
+            printf("##key is %x %x %x %x",this->pkt_data[offset + 0x9],this->pkt_data[offset + 0xa],this->pkt_data[offset + 0xb],this->pkt_data[offset + 0xc]);
+
+            tmp.s[0] = Alog(this->pkt_data[offset + 0x9]);//0xff
+            tmp.s[1] = Alog(this->pkt_data[offset + 0xa]);//0xff
+            tmp.s[2] = Alog(this->pkt_data[offset + 0xb]);//0x19
+            tmp.s[3] = Alog(this->pkt_data[offset + 0xc]);//0x09
+
+            this->m_Echo_diff = ntohl(tmp.l);
+            // the initial serial number, a magic number!
+            this->m_init_Echo_Key = htonl(0x1b8b4563);
 
             return 0;
           }
@@ -517,33 +526,30 @@ IfOnline(ruijie_packet *this)
 int
 SendEchoPacket(ruijie_packet *this)
 {
+  union
+  {
+    u_int32_t l;
+    u_char s[4];
 
-  ULONG_BYTEARRAY uCrypt1, uCrypt2, uCrypt1_After, uCrypt2_After;
+  } tmp;
 
-  this->m_serialNo.ulValue++;
-  /* m_serialNo is initialized at the beginning of main() of ruijieclient.c, and
-   * m_key is initialized in ruijieclient.c when the 1st Authentication-Success
-   * packet is received.
-   * */
+  tmp.l = this->m_init_Echo_Key;
 
-  uCrypt1.ulValue = this->m_key.ulValue + this->m_serialNo.ulValue;
-  uCrypt2.ulValue = this->m_serialNo.ulValue;
+  echoPackage[0x22] = Alog(tmp.s[0]);
+  echoPackage[0x23] = Alog(tmp.s[1]);
+  echoPackage[0x24] = Alog(tmp.s[2]);
+  echoPackage[0x25] = Alog(tmp.s[3]);
 
-  memcpy(echoPackage, this->m_ETHHDR, 12);
+  tmp.l = htonl(ntohl(this->m_init_Echo_Key)  + this->m_Echo_diff) ;
 
-  uCrypt1_After.ulValue = htonl(uCrypt1.ulValue);
-  uCrypt2_After.ulValue = htonl(uCrypt2.ulValue);
+  echoPackage[0x18] = Alog(tmp.s[0]);
+  echoPackage[0x19] = Alog(tmp.s[1]);
+  echoPackage[0x1a] = Alog(tmp.s[2]);
+  echoPackage[0x1b] = Alog(tmp.s[3]);
 
-  echoPackage[0x18] = Alog(uCrypt1_After.btValue[0]);
-  echoPackage[0x19] = Alog(uCrypt1_After.btValue[1]);
-  echoPackage[0x1a] = Alog(uCrypt1_After.btValue[2]);
-  echoPackage[0x1b] = Alog(uCrypt1_After.btValue[3]);
-  echoPackage[0x22] = Alog(uCrypt2_After.btValue[0]);
-  echoPackage[0x23] = Alog(uCrypt2_After.btValue[1]);
-  echoPackage[0x24] = Alog(uCrypt2_After.btValue[2]);
-  echoPackage[0x25] = Alog(uCrypt2_After.btValue[3]);
+  memcpy(echoPackage,this->m_ETHHDR,12);
 
-  if (WaitPacket(this, 1000) != 0)
+  if (WaitPacket(this, 1000) != 0) // The server send a packet to inform you offline
     {
       // watch out! Here is the crucial part of determining interruption
       // of network connection
@@ -551,7 +557,9 @@ SendEchoPacket(ruijie_packet *this)
       if (this->pkt_data[0x12] == 0x04) // if server send us Failure message
         return -1; // if the connection has been interrupted.
     }
-  return pcap_sendpacket(this->m_pcap, echoPackage, 0x2d);
+  pcap_sendpacket(this->m_pcap, echoPackage, sizeof(echoPackage));
+  this->m_init_Echo_Key = htonl(ntohl(this->m_init_Echo_Key) + 1);
+  return 0;
 }
 
 int

@@ -69,6 +69,7 @@ Ping(in_addr_t host_addr)
   memset(&echo,0,sizeof(echo));
   echo.icmp_type = ICMP_ECHO;
 
+
   echo.icmp_cksum = checksum((uint16_t*)&echo,sizeof(echo));
 
   sendto(sk,&echo,sizeof(echo),0,(struct sockaddr*)&ad, INET_ADDRSTRLEN);
@@ -78,12 +79,11 @@ Ping(in_addr_t host_addr)
   pfd.events = POLLIN;
   switch(poll(&pfd,1,2000)) // 2 秒够的吧
   {
-    close(sk);
     case 0:
     case -1:
     close(sk);
 #ifdef DEBUG
-    puts("## ping timed out\n");
+    puts("## pingd timed out\n");
 #endif
     return -1;
     case 1:

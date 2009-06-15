@@ -107,7 +107,7 @@ main(int argc, char* argv[])
     {"-K", (char*)&kill_ruijieclient ,"-k,-K\t\tKill all ruijieclient daemon",sizeof(kill_ruijieclient),2, BOOL_both},
     {"-k", (char*)&kill_ruijieclient ,0,sizeof(kill_ruijieclient),2, BOOL_both},
     {"-M", (char*)&flag_nokill ,0,sizeof(flag_nokill),2, BOOL_both},
-    {"--try", (char*)&try_time ,"--try=?\t\tTry number of times of reconnection ",sizeof(try_time),5,INTEGER},
+    {"--try", (char*)&try_time ,"--try=?\t\tTry number of times of reconnection,-1 = infinite",sizeof(try_time),5,INTEGER},
     {"-D", (char*)&nodaemon,"-D\t\tDO NOT fork as a deamon",sizeof(nodaemon),2, BOOL_both},
     {"--daemon", (char*)&setdaemon,"--daemon\trun as a daemon(default)",sizeof(setdaemon),8, BOOL_both},
     {"-n", sender.m_nic ,0,sizeof(sender.m_nic),2, STRING},
@@ -185,7 +185,7 @@ main(int argc, char* argv[])
       "http://code.google.com/p/ruijieclient/issues/list", PACKAGE_BUGREPORT);
 
   int tryed;
-  for (tryed = 0; (tryed < try_time)||(try_time == -1); ++tryed)
+  for (tryed = 0; (tryed < try_time); ++tryed)
     {
       sender.m_state = 0;
 #ifdef DEBUG
@@ -201,6 +201,8 @@ main(int argc, char* argv[])
       // search for the server
       if (SendFindServerPacket(&sender))
         {
+          if (try_time == -1)
+            tryed = 0;
           continue;
         }
       else
@@ -209,6 +211,8 @@ main(int argc, char* argv[])
         }
       LABLE_SENDNAME: if (SendNamePacket(&sender))
         {
+          if (try_time == -1)
+            tryed = 0;
           continue;
         }
       else
@@ -219,8 +223,9 @@ main(int argc, char* argv[])
       switch (SendPasswordPacket(&sender))
         {
       case -1:
-        //
-        goto LABLE_SENDNAME;
+        if (try_time == -1)
+          tryed = 0;
+        continue;
       case 1:
         /* authenticate fail
          * possible reasons:
@@ -230,7 +235,10 @@ main(int argc, char* argv[])
          */
         GetServerMsg(&sender, u_msgBuf, MAX_U_MSG_LEN);
         fprintf(stdout, "@@ Authentication failed: %s\n", u_msgBuf);
+//        SendEchoPacket(&sender);
         SendEndCertPacket(&sender);
+        if (try_time == -1)
+          tryed = 0;
         continue;
       case 0:// Authenticate successfully
         sender.m_state = 1;
@@ -265,6 +273,7 @@ main(int argc, char* argv[])
             }
           sender.m_dhcpmode = 0;
           sender.m_ip = 0;
+          tryed = 0;
           continue; // re-authentication
         }
 
