@@ -17,6 +17,8 @@ AC_TYPE_PID_T
 AC_TYPE_SIZE_T
 AC_TYPE_UINT8_T
 
+AC_C_BIGENDIAN()
+
 # Checks for library functions.
 AC_CHECK_FUNCS([memset strerror])
 
@@ -43,14 +45,15 @@ AC_SUBST_FILE(XML_INCLUDE)
 
 AC_ARG_ENABLE(debug,
                 [  --enable-debug Enable DEBUG output. This is a debugging feature  which should not be only enabled by develpoers],
-                [ CFLAGS="$CFLAGS -g -O2 -DDEBUG" ],
-                [ CFLAGS="$CFLAGS -g0"]
+                [ CFLAGS="$CFLAGS -g2 -O0 -DDEBUG" ],
+                [ CFLAGS="$CFLAGS -g0 -Os"]
               )
              
 
 libpcap=40                
 AC_WITH(localpcap,
-	AC_CONFIG_COMMANDS( libpcap, echo makeing libpcap.so ; (cd src && make libpcap.so), libpcap=$libpcap)
+	AC_SUBST(EXT_LIBS,-L.)
+	AC_CONFIG_COMMANDS( libpcap, echo makeing libpcap.so ; (cd src && gcc -lpcap -shared -o  libpcap.so), libpcap=$libpcap)
 		  )
 		 	
 AC_CONFIG_FILES([Makefile

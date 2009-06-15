@@ -74,7 +74,7 @@ CheckConfig(ruijie_packet* l)
   if (l->m_nocofigfile)
     {
       if (l->m_echoInterval == -1)
-        l->m_echoInterval = 0;
+        l->m_echoInterval = 20;
       if (l->m_authenticationMode == -1)
         l->m_authenticationMode = 0;
       if (l->m_intelligentReconnect == -1)
@@ -295,7 +295,7 @@ Gensetting(struct cfg_tags * t)
   char errbuf[256];
   int rc;
 
-#if defined(LIBXML_TREE_ENABLED) && defined(HAVE_LIBXML2)
+#ifdef HAVE_LIBXML2
   xmlDocPtr doc = NULL; /* document pointer */
 
   xmlNodePtr root_node = NULL, account_node = NULL, setting_node = NULL;//, msg_node = NULL;/* node pointers */
@@ -304,7 +304,7 @@ Gensetting(struct cfg_tags * t)
   doc = xmlNewDoc(BAD_CAST"1.0");
 
   root_node = xmlNewNode(NULL, BAD_CAST CONF_NAME);
-  xmlNewProp(root_node, BAD_CAST "version", BAD_CAST C_VERSION);
+  xmlNewProp(root_node, BAD_CAST "version", BAD_CAST PACKAGE_VERSION);
   xmlAddChild(root_node, xmlNewComment((xmlChar *)
           "This is a sample configuration file of RuijieClient, "
           "change it appropriately according to your settings."));
@@ -466,7 +466,7 @@ GetConfig(ruijie_packet * l)
   if(l->m_nic[0]==0)
     strcpy(l->m_nic,cfgtags[NIC].val);
   //else m_nic has been filled by cmdline
-  if(l->m_echoInterval==0)
+  if(l->m_echoInterval<=0)
     l->m_echoInterval = atoi(cfgtags[ECHOINTERVAL].val);
   //else m_echoInterval has been filled by cmdline
   if(!l->m_fakeVersion)

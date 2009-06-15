@@ -49,9 +49,6 @@
 #include <net/if.h>
 #include <poll.h>
 
-
-#include "global.h"
-
 typedef struct __ruijie_packet
 {
   pcap_t *m_pcap;
@@ -94,9 +91,9 @@ typedef struct __ruijie_packet
   in_addr_t m_pinghost;
 
   // serial number, initialised when received the first valid Authentication-Success-packet
-  ULONG_BYTEARRAY m_serialNo;
-  // password private key, initialised at the beginning of function main()
-  ULONG_BYTEARRAY m_key;
+  u_int32_t m_Echo_diff;
+  // password private key, initialised at the beginning of function init_ruijiepacket()
+  u_int32_t m_init_Echo_Key; // 0x1b8b4563
 
   u_char m_MD5value[64]; //private key
   /*

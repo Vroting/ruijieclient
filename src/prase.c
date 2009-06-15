@@ -28,6 +28,9 @@
  */
 
 #include "prase.h"
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 static inline int
 stob(char*s)
@@ -107,7 +110,7 @@ ParseParameters(int * argc, char ** argv[], struct parameter_tags p_[])
                     if (p->parameter_len == sizeof(long))
                       *(long*) p->parameter = atol((*argv)[i] + p->prefix_len
                           + 1);
-                    else if (p->parameter_len == sizeof(long))
+                    else if (p->parameter_len == sizeof(int))
                       *(int*) p->parameter = atoi((*argv)[i] + p->prefix_len
                           + 1);
                     else
