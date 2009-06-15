@@ -11,11 +11,11 @@ make
 make install
 }}}
   * ini类型配置文件版本编译安装（可选，如此不需要依赖libxml2库运行）
-在config.c中找到
+  在config.c中找到
 {{{
   //#define DEBUG_NOXML
 }}}
-改为
+  改为
 {{{
   #define DEBUG_NOXML
 }}}

@@ -1,0 +1,72 @@
+#instruct how to use RuijieClient
+
+==view help of RuijieClient==
+
+ Input the command below in terminal
+{{{
+ruijieclient --help
+}}}
+From the terminal, we could see the context of help
+{{{
+-D		DO NOT fork as a daemon
+    --daemon	run as a daemon(default)
+    --dhcpmode	dhcpmode, by default is 0
+		0: disable
+		1: DHCP before auth
+		2: DHCP after auth
+                3: dhcp-authenticate and re-authenticate after DHCP
+-f, --config	specify alternative config file
+-g		generate a sample configuration automatically
+-k, --kill	kill all RuijieClient daemon
+-n, --nic	specify an identifier of net adapter
+    --noconfig	do not read config from file
+-p, --passwd	specify password
+    --pinghost	the host to be pinged(by default is your default gateway).
+		RuijieClient uses this to detect network state
+    --try	Try number of times of reconnection,-1 = infinite
+-u, --user	specify user name
+-v, --version	show the version of RuijieClient
+}}}
+==Samples==
+  * generate a configuration template
+{{{
+sudo ruijieclient -g
+}}}
+  the file will be generated as '/etc/ruijie.conf'
+  * How can I run it in a non-daemon way? Thus, I could leave a window of terminal opened so as to control it directly.
+{{{
+sudo ruijieclient -D
+}}}
+  * how to log-off？
+   * in case that it's run as a daemon
+{{{
+sudo ruijieclient -k
+}}}
+   or you can directly send a signal SIGINT(3) to the process.
+   * otherwise
+   you can press ctrl+c though keyboard or send a signal SIGINT(3) as the same.
+  * pass parameters which include user name ans password to authenticate
+{{{
+sudo ruijieclient -u name -p 1234
+}}}
+  * use you custom configuration file by providing the file path
+{{{
+sudo ruijieclient -f /home/pretty_gril/ruijie.conf
+}}}
+  * use other net adapter to authenticate (e.g. eth1)
+{{{
+sudo ruijieclient -n eth1
+}}}
+  * use specified host address to detect connectivity of network instead of use default gateway by default (e.g. 4.2.2.2 a DNS server in U.S.A.)
+  _because of the gateway can be pinged successfully although the authentication has not been done._
+{{{
+sudo ruijieclient --pinghost 4.2.2.2
+}}}
+  * to authenticate by the way that perform retrieving network configuration by DHCP after authenticating
+{{{
+sudo ruijieclient --dhcpmode 2
+}}}
+  * define the number of network detecting times. Once it exceeds the time provided, the procedure of re-authenticating will be triggered.
+{{{
+sudo ruijieclient --try 3
+}}}
