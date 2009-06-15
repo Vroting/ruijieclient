@@ -2,7 +2,7 @@
 %define debug_package %{nil}
 
 Name:      ruijieclient
-Version:   0.7.0
+Version:   0.7.9
 Release:   %{build_number}%{?dist}
 Summary:   a ruijie network supplicant for GNU/Linux
 
