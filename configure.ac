@@ -27,7 +27,23 @@ AC_CHECK_HEADERS([iconv.h linux/rtnetlink.h arpa/inet.h netinet/in.h stdlib.h st
 
 # Checks for libraries.
 # FIXME: Replace `main' with a function in `-lpcap':
-AC_CHECK_LIB([pcap], [main],[],      
+
+USE_DYLIB=0
+
+AC_ARG_ENABLE(dyload,
+			[  --enable-dyload do not link to libpcap.so ,
+			                    but lookup libpcap.so when program starts],
+			[USE_DYLIB=1],
+			[USE_DYLIB=0])
+
+AC_CHECK_LIB([pcap], [main],
+			[
+			if [$USE_DYLIB=0] ; then 
+			  LIBS+=-lpcap
+			else
+			 CFLAGS+=" -DUSE_DYLIB "			 				
+			fi			
+			],      
             [AC_MSG_FAILURE( libpcap not found!,1)])
             
 AC_CHECK_HEADER(pcap.h,[],

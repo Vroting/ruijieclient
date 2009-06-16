@@ -29,6 +29,7 @@
  */
 //#define DEBUG_NOXML
 #include "sendpacket.h"
+#include <dlfcn.h>
 #if defined(HAVE_LIBXML2) && defined(DEBUG_NOXML)
 #undef HAVE_LIBXML2
 #endif
@@ -222,7 +223,7 @@ get_profile_string(FILE *fp, char *AppName, const char const *KeyName,char *KeyV
 
 static char name[32];
 static char password[32];
-static char nic[32];
+static char nic[32]="eth0";
 static char AuthenticationMode[32]="0";
 static char EchoInterval[32]="25";
 static char IntelligentReconnect[32]="1";
@@ -291,8 +292,6 @@ static struct cfg_tags cfgtags[]=
 static int
 Gensetting(struct cfg_tags * t)
 {
-  pcap_if_t *if_t, *cur_nic;
-  char errbuf[256];
   int rc;
 
 #ifdef HAVE_LIBXML2
@@ -343,21 +342,6 @@ Gensetting(struct cfg_tags * t)
    * Not all machine name the first nic eth0
    * So we just have to retrieve the first nic's name
    */
-  pcap_findalldevs(&if_t,errbuf);
-  //Can not open ?
-  if(if_t)
-    {
-      cur_nic = if_t;
-      while(cur_nic && cur_nic->flags == PCAP_IF_LOOPBACK )cur_nic = cur_nic->next;
-      /*The first non loopback devices */
-      if(cur_nic)
-        strcpy(t->val, cur_nic->name );
-      else //OMG, all you have got is a loopbake devive
-        strcpy(t->val , "eth0" );
-      pcap_freealldevs(if_t);
-    }
-  else //So we have to assume that you are using Linux!
-    strcpy(t->val , "eth0" );
 
 #if defined(LIBXML_TREE_ENABLED) && defined(HAVE_LIBXML2)
   setting_node = xmlNewChild(root_node, NULL, BAD_CAST "settings", NULL);
@@ -491,6 +475,30 @@ GetConfig(ruijie_packet * l)
 
 int GenSetting()
 {
+  char errbuf[256];
+  pcap_if_t *if_t, *cur_nic;
+
+  void *libpcap =FindLibPcap();
+
+  int   (*pcapfindalldevs)(pcap_if_t **, char *);
+  void  (*pcapfreealldevs)(pcap_if_t *);
+
+  pcapfindalldevs = dlsym(libpcap,"pcap_findalldevs");
+
+  pcapfreealldevs = dlsym(libpcap,"pcap_freealldevs");
+
+  pcapfindalldevs(&if_t,errbuf);
+  //Can not open ?
+  if(if_t)
+    {
+      cur_nic = if_t;
+      while(cur_nic && cur_nic->flags == PCAP_IF_LOOPBACK )cur_nic = cur_nic->next;
+      /*The first non loopback devices */
+      if(cur_nic)
+        strcpy(0 , cur_nic->name );
+      //else //OMG, all you have got is a loopbake devive
+      pcapfreealldevs(if_t);
+    }
   return Gensetting(cfgtags);
 }
 

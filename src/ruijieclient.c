@@ -125,11 +125,12 @@ main(int argc, char* argv[])
     {0}
   };
 
-  init_ruijie_packet(&sender);
   // Parse command line parameters
   ParseParameters(&argc, &argv, param);
   if (showversion)
     err_quit("%s", PACKAGE_VERSION);
+
+
   // if '-g' is passed as argument then generate a sample configuration
   if (genfile)
     {
@@ -137,7 +138,7 @@ main(int argc, char* argv[])
       GenSetting();
       exit(EXIT_SUCCESS);
     }
-  //if '-g' is passed as argument then kill all other ruijieclients which are running
+  //if '-k,K' is passed as argument then kill all other ruijieclients which are running
   if (kill_ruijieclient)
     {
       if (kill_all("ruijieclient"))
@@ -145,6 +146,7 @@ main(int argc, char* argv[])
             "Can not kill ruijieclient, permission denied or no such process");
       exit(EXIT_SUCCESS);
     }
+  init_ruijie_packet(&sender);
 
   if (!sender.m_nocofigfile)
     {
@@ -278,7 +280,7 @@ main(int argc, char* argv[])
 
       if (sender.m_echoInterval <= 0)
         {
-          pcap_close(sender.m_pcap);
+//          sender.pcap_close(sender.m_pcap);
           return 0; //user has echo disabled
         }
       // continue echoing
@@ -330,7 +332,7 @@ main(int argc, char* argv[])
               sleep(sender.m_echoInterval);
             }
         }
-      pcap_close(sender.m_pcap);
+//      pcap_close(sender.m_pcap);
       return EXIT_FAILURE; // this should never happen.
       break;
     }// end while
