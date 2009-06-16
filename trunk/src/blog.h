@@ -36,7 +36,6 @@
 /* We should thank him very much, because the algorithm is crucial.  */
 
 #include <sys/types.h>
-#include "myerr.h"
 #include "sendpacket.h"
 void
 InitializeBlog(ruijie_packet *);

@@ -110,6 +110,25 @@ typedef struct __ruijie_packet
   const u_char *pkt_data;
   int   m_nocofigfile; // 1 if we should not read from config file
 
+#ifdef USE_DYLIB
+  /*********************************************************************
+   * This is a hook for dy loaded libpcap.so
+   *********************************************************************/
+  void           *libpcap;
+  pcap_t *      (*pcap_open_live)(const char *, int, int, int, char *);
+  int           (*pcap_fileno)(pcap_t *);
+  char   *      (*pcap_geterr)(pcap_t *);
+
+  //The BPF
+  int           (*pcap_compile)(pcap_t *, struct bpf_program *, const char *, int, bpf_u_int32);
+  int           (*pcap_setfilter)(pcap_t *, struct bpf_program *);
+  void          (*pcap_freecode)(struct bpf_program *);
+
+  int           (*pcap_sendpacket)(pcap_t *, const u_char *, int);
+  void          (*pcap_close)(pcap_t *);
+  int           (*pcap_next_ex)(pcap_t *, struct pcap_pkthdr **, const u_char **);
+
+#endif
 } ruijie_packet;
 
 /*
@@ -117,6 +136,9 @@ typedef struct __ruijie_packet
  * return -1 normally, hence, we usually ignore return values FOR CONVENIENCE. They might be
  * helpful for debug.
  */
+void *
+FindLibPcap();
+
 void
 init_ruijie_packet(ruijie_packet*);
 

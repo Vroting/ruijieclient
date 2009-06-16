@@ -205,7 +205,7 @@ in_addr_t
 get_gateway()
 {
 
-  in_addr_t gateway;
+  in_addr_t gateway=0;
 
 #ifdef HAVE_LINUX_RTNETLINK_H
 

@@ -32,12 +32,13 @@
 
 
 #include "sendpacket.h"
+#include <crypt.h>
 #include <sys/ioctl.h>
 #include <net/if.h>
 #include <net/route.h>
 #include <poll.h>
 #include <errno.h>
-
+#include <dlfcn.h>
 #include "md5.h"
 #include "blog.h"// broadcast packet for finding server
 static
@@ -174,58 +175,53 @@ FillVersion(ruijie_packet * this)
  printf(" %2X ", fMAC[i]);
  putchar('\n');
  #endif
-
- return 0;
- }
- else
- {
- return -1;
- }
- }
  */
+void *
+FindLibPcap()
+{
+  return dlopen("libpcap.so", RTLD_LAZY);
+}
+
+
 void init_ruijie_packet(ruijie_packet*this)
 {
   memset(this,0,sizeof(ruijie_packet));
   // Initialize non-zero variable.
   this->m_echoInterval = this->m_intelligentReconnect = this->m_authenticationMode =this->m_dhcpmode = -1;
 //  this->m_serialNo.ulValue = 0x1000002a;
-}
+#ifdef USE_DYLIB
 
-int
-GetServerMsg(ruijie_packet*this, char*outbuf, size_t buflen)
-{
-  memset(outbuf, 0, buflen);
-  size_t len = ntohs(*((u_int16_t*) (this->pkt_data + 0x10))) - 10;
-  if (buflen < len)
-    // space allocation of buffer exceeded
-    return -1;
-  if (len < 0)
-    // did not retrieve any messages from sever.
-    return 0;
-  char *msgBuf = (typeof(msgBuf)) (this->pkt_data + 0x1c);
+  //search libpcap.so.* files
+  this->libpcap= FindLibPcap();
 
-  //remove the leading "\r\n" which seems always exist!
-#if defined(DEBUG)
-  puts("-- MSG INFO");
-  printf("## msgBuf(GB) %s\n", msgBuf);
-#endif
-  if (len > 3 && (msgBuf[0] == 0xd) && (msgBuf[1] == 0xa))
-    {
-#ifdef DEBUG
-      puts("@@ /r/n found");
-      puts("-- END");
-#endif
-      msgBuf += 2;
-    }
-#ifdef DEBUG
-  else
-    {
-      puts("@@ /r/n not found");
-      puts("-- END");
-    }
-#endif
-#if defined( HAVE_ICONV_H)
-  code_convert(outbuf, buflen, msgBuf, strlen(msgBuf));
+  //Get the number
+  this->pcap_open_live = dlsym(this->libpcap,"pcap_open_live");
+#define pcap_open_live(z,x,c,v,b) this->pcap_open_live(z,x,c,v,b)
+
+  this->pcap_fileno = dlsym(this->libpcap,"pcap_fileno");
+#define pcap_fileno(x) this->pcap_fileno(x)
+
+  this->pcap_geterr = dlsym(this->libpcap,"pcap_geterr");
+#define pcap_geterr(x) this->pcap_geterr(x)
+
+  this->pcap_compile = dlsym(this->libpcap,"pcap_compile");
+#define pcap_compile(z,x,c,v,b) this->pcap_compile(z,x,c,v,b)
+
+  this->pcap_setfilter = dlsym(this->libpcap,"pcap_setfilter");
+#define pcap_setfilter(x,c) this->pcap_setfilter(x,c)
+
+  this->pcap_freecode = dlsym(this->libpcap,"pcap_freecode");
+#define pcap_freecode(x) this->pcap_freecode(x)
+
+  this->pcap_next_ex = dlsym(this->libpcap,"pcap_next_ex");
+#define pcap_next_ex(z,x,c) this->pcap_next_ex(z,x,c)
+
+  this->pcap_sendpacket = dlsym(this->libpcap,"pcap_sendpacket");
+#define pcap_sendpacket(z,x,c) this->pcap_sendpacket(z,x,c)
+
+  this->pcap_close = dlsym(this->libpcap,"pcap_close");
+#define pcap_close(x) this->pcap_close(x)
+
 #endif
 }
 
@@ -428,7 +424,7 @@ SendPasswordPacket(ruijie_packet *this)
   // msg offset
   u_int16_t offset;
 
-  unsigned char md5Data[256]; // password,md5 buffer
+  unsigned char md5Data[256]=""; // password,md5 buffer
   unsigned char md5Dig[32]; // result of md5 sum
   int md5Len = 0;
 
@@ -453,10 +449,16 @@ SendPasswordPacket(ruijie_packet *this)
   memcpy(md5Data + md5Len, this->m_MD5value, this->m_MD5value_len);
   md5Len += this->m_MD5value_len; // private key
 
+//  char d[256]="";
+//  sprintf(d,"$1$%s$",this->m_password);
+//  memcpy(d + 4 + passwordLen,this->m_MD5value,this->m_MD5value_len);
+//  char * pp = (char*)crypt(md5Data,d);
+
   Computehash(md5Data, md5Len,md5Dig);
 
   ackPackage[0x17] = 16; // length of md5 sum is always 16.
   memcpy(ackPackage + 0x18, md5Dig, 16);
+//  memcpy(ackPackage + 0x18, pp, 16);
 
   memcpy(ackPackage + 0x28, this->m_name, nameLen);
 
@@ -521,7 +523,10 @@ SendPasswordPacket(ruijie_packet *this)
 int
 IfOnline(ruijie_packet *this)
 {
-  return Ping(this->m_pinghost);
+  if(this->m_pinghost)
+    return Ping(this->m_pinghost);
+  else
+    return 0;
 }
 int
 SendEchoPacket(ruijie_packet *this)
@@ -563,12 +568,12 @@ SendEchoPacket(ruijie_packet *this)
 }
 
 int
-SendEndCertPacket(ruijie_packet *l)
+SendEndCertPacket(ruijie_packet *this)
 {
-  memcpy(ExitPacket, l->m_ETHHDR, 12);// fill destined MAC and local MAC
+  memcpy(ExitPacket, this->m_ETHHDR, 12);// fill destined MAC and local MAC
 
-  memcpy(ExitPacket + 18, l->m_ruijieExtra, sizeof(RuijieExtra));
+  memcpy(ExitPacket + 18, this->m_ruijieExtra, sizeof(RuijieExtra));
 
   fputs(">> Logouting... \n", stdout);
-  return (pcap_sendpacket(l->m_pcap, ExitPacket, 0x80) == 0x80) ? 0 : -1;
+  return (pcap_sendpacket(this->m_pcap, ExitPacket, 0x80) == 0x80) ? 0 : -1;
 }
