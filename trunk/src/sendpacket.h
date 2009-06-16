@@ -74,7 +74,7 @@ typedef struct __ruijie_packet
   // Intelligent Reconnect 0:disable, 1: enable.
   int m_intelligentReconnect;
 
-  int m_state; //1 if online
+  int m_state; //1 if online 2 DHCP mode, 1st auth ok, but need 2nd auth
 
   // fake version, e.g. "3.22"
   char *m_fakeVersion;

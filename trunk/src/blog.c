@@ -91,14 +91,16 @@ InitializeBlog(ruijie_packet * this)
     {
       sCircleBase[0x04] = 0x01;
       this->m_ruijieExtra[0x04] = 0x7f;
+      this->m_ruijieExtra[0x119] = 0x1;
+
     }
   else
     {
+      this->m_ruijieExtra[0x119] = 0x0;
       sCircleBase[0x04] = 0x00;
-      this->m_ruijieExtra[0x04] = 0xff;
-    }
+      memcpy(sCircleBase + 5, &(this->m_ip), 4);
+   }
 
-  memcpy(sCircleBase + 5, &(this->m_ip), 4);
   memcpy(sCircleBase + 9, &(this->m_mask), 4);
   memcpy(sCircleBase + 13, &(this->m_gate), 4);
   memcpy(sCircleBase + 17, &(this->m_dns), 4);
