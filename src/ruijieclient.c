@@ -262,7 +262,7 @@ main(int argc, char* argv[])
        * 0: Off
        * 1: On, DHCP before authentication
        * 2: On, DHCP after authentication
-       * 3: On, DHCP after DHCP authentication and re-authentication       *
+       * 3: On, DHCP after DHCP authentication and re-authentication
        */
       if (sender.m_dhcpmode == 3)
         {
@@ -294,17 +294,22 @@ main(int argc, char* argv[])
               err_quit("Init daemon error!");
             }
         }
-      // start ping monitoring
       FlushRecvBuf(&sender);
+      // start ping monitoring
       if (sender.m_intelligentReconnect == 1)
         {
-          sleep(sender.m_echoInterval);
+    	  /*
+    	   * Why the hell we should send echo packet immediately?
+    	   * so, sleep ! wa haha
+    	   */
+          WaitPacket(&sender,sender.m_echoInterval);
           while (SendEchoPacket(&sender) == 0)
             {
-              //				printf("heart beat\n");
+              //printf("heart beat\n");
               if (IfOnline(&sender))
                 break;
-              sleep(sender.m_echoInterval);
+              //Accelerate the speed of detecting
+              WaitPacket(&sender,sender.m_echoInterval);
             }
           // continue this big loop when offline
           tryed = 0; // or we will not truly re-connect.
@@ -319,6 +324,7 @@ main(int argc, char* argv[])
               if (time_count >= sender.m_intelligentReconnect)
                 {
                   fputs("Time to reconect!\n", stdout);
+
                   goto LABE_FINDDSERVER;
                 }
               sleep(sender.m_echoInterval);

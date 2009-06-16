@@ -48,5 +48,5 @@ update-desktop-database %{_datadir}/applications &>/dev/null || :
 
 %changelog
 
-* Sat Jun 13 2009 Gong Han <gong@fedoraproject.org> - 0.7-1
+* Sat Jun 13 2009 Gong Han <gong@fedoraproject.org> - 0.7-9
 - Creat a spec file
