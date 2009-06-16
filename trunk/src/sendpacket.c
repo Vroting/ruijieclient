@@ -236,7 +236,7 @@ GetNicParam(ruijie_packet *this)
   strcpy(rif.ifr_name, this->m_nic);
   int tmp = socket(AF_INET, SOCK_DGRAM, 0);
 
-  if (this->m_ip == 0 && this->m_dhcpmode==0)
+  if ((this->m_ip == 0 && this->m_dhcpmode == 0) || this->m_state == 2)
     {
       ioctl(tmp, SIOCGIFADDR, &rif);
       memcpy(&(this->m_ip), rif.ifr_addr.sa_data + 2, 4);
@@ -251,7 +251,6 @@ GetNicParam(ruijie_packet *this)
     {
       this->m_mask = inet_addr("255.255.255.0");
     }
-
 
   ioctl(tmp, SIOCGIFHWADDR, &rif);
   memcpy(this->m_ETHHDR + ETHER_ADDR_LEN, rif.ifr_hwaddr.sa_data,
