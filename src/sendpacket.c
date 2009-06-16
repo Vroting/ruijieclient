@@ -179,9 +179,23 @@ FillVersion(ruijie_packet * this)
 void *
 FindLibPcap()
 {
-  return dlopen("libpcap.so", RTLD_LAZY);
+  char libpcap[32];
+  void *p;
+  p = dlopen("libpcap.so", RTLD_LAZY);
+  if (p)
+    return p;
+  int version;
+  for (version = 9; version > 0; --version)
+    {
+      sprintf(libpcap, "libpcap.so.0.%d", version);
+      p = dlopen(libpcap, RTLD_LAZY);
+      if (p)
+        break;
+    }
+  if (p)
+    return p;
+  err_quit("Cannot load libpcap.so,please install libpcap pacage\n");
 }
-
 
 void init_ruijie_packet(ruijie_packet*this)
 {
