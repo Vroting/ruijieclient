@@ -1,4 +1,4 @@
-ruijieclient (0.7.9-1) unstable; urgency=high
+ruijieclient (0.7.9-2) unstable; urgency=high
   
   * The net connection would not broke NOW ! 
   * FIXED: re-connect after a fixed time
