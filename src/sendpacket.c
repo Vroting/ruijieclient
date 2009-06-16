@@ -41,18 +41,7 @@
 #include <dlfcn.h>
 #include "md5.h"
 #include "blog.h"// broadcast packet for finding server
-static
-uint8_t broadPackage[0x3E8] =
-{
-  0x00,0x00,0x00,0x00,0x00,0x00,        // Destination MAC
-  0x00,0x00,0x00,0x00,0x00,0x00,        // Source MAC
-  0x88,0x8E,                            // Ethertype = 0x888E (8021X)
-  0x01,                                 // Version = 1
-  0x01,                                 // Packet Type  0x00
-                                        // 0x01,EAPOL-Start
-                                        // 0x02 ;0x03 ;0x04
-  0x00,0x00,                            // Packet Body Length
-};
+
 
 // echo packet incorporating user name and MD5 sum
 static
@@ -70,30 +59,6 @@ uint8_t ackPackage[0x3E8] =
   0x00                                  // type  1 identify  4 MD5-Challenge
 };
 
-// end certification packet
-static
-uint8_t ExitPacket[0x3E8] =
-{
-  0x00,0x00,0x00,0x00,0x00,0x00,        // Destination MAC
-  0x00,0x00,0x00,0x00,0x00,0x00,        // Source MAC
-  0x88,0x8E,                            // Ethertype = 0x888E (8021X)
-  0x01,                                 // Version = 1
-  0x02,                                 // Packet Type  0x00
-                                        // 0x01,EAPOL-Start
-                                        // 0x02 ;0x03 ;0x04
-  0x00,0x00,                            // Packet Body Length
-};
-
-// keep-alive echo packet
-static
-uint8_t echoPackage[] =
-{
-  0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
-  0x88,0x8E, //802.1x
-  0x01,0xBF, 0x00,0x1E,
-  0xFF,0xFF,0x37,0x77,0x7F,0x9F,0xF7,0xFF,0x00,0x00,0xFF,0xFF,0x37,0x77,
-  0x7F,0x9F,0xF7,0xFF,0x00,0x00,0xFF,0xFF,0x37,0x77,0x7F,0x3F,0xFF
-};
 
 //Ruijie OEM Extra （V2.56）  by soar
 static uint8_t RuijieExtra[144] = {
@@ -114,9 +79,9 @@ static uint8_t RuijieExtra[144] = {
   0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
   0x00,0x00,0x00,0x00,
 // 59 --> 77
-  0x00,0x00,0x00,0x00, // 8021x.exe File Version (2.56.00)
+  0x00,0x00,0x00,0x1a, // 8021x.exe File Version (2.56.00)
                        // base16 code.add by lsyer
-  0x00,                // unknow flag
+  0x0c,                // unknow flag
   // Const strings
   0x00,0x00,0x13,0x11,0x00,0x28,0x1A,0x28,0x00,0x00,0x13,0x11,0x17,0x22,
   // 78 --> 118
@@ -149,6 +114,10 @@ FillVersion(ruijie_packet * this)
 #endif
       RuijieExtra[0x3B] = c_ver1;
       RuijieExtra[0x3C] = c_ver2;
+      if( c_ver1 > 3 && c_ver2 > 50 &&  this->m_state != 2 )
+        {
+          this->m_init_Echo_Key = htonl(0x0000102b);
+        }
       return 0;
     }
   else
@@ -194,7 +163,7 @@ FindLibPcap()
     }
   if (p)
     return p;
-  err_quit("Cannot load libpcap.so,please install libpcap pacage\n");
+  err_quit("Cannot load libpcap.so,please install libpcap package\n");
 }
 
 void init_ruijie_packet(ruijie_packet*this)
@@ -202,7 +171,7 @@ void init_ruijie_packet(ruijie_packet*this)
   memset(this,0,sizeof(ruijie_packet));
   // Initialize non-zero variable.
   this->m_echoInterval = this->m_intelligentReconnect = this->m_authenticationMode =this->m_dhcpmode = -1;
-//  this->m_serialNo.ulValue = 0x1000002a;
+  this->m_init_Echo_Key = htonl(0x1b8b4563);
 #ifdef USE_DYLIB
 
   //search libpcap.so.* files
@@ -267,16 +236,22 @@ GetNicParam(ruijie_packet *this)
   strcpy(rif.ifr_name, this->m_nic);
   int tmp = socket(AF_INET, SOCK_DGRAM, 0);
 
-  if (this->m_ip == 0)
+  if (this->m_ip == 0 && this->m_dhcpmode==0)
     {
       ioctl(tmp, SIOCGIFADDR, &rif);
       memcpy(&(this->m_ip), rif.ifr_addr.sa_data + 2, 4);
     }
   // else m_ip has been initialized in SetConfig()
+  if (this->m_dhcpmode==0 ||this->m_state==2 )
+    {
+      ioctl(tmp, SIOCGIFNETMASK, &rif);
+      memcpy(&(this->m_mask), rif.ifr_addr.sa_data + 2, 4);
+    }
+  else
+    {
+      this->m_mask = inet_addr("255.255.255.0");
+    }
 
-  ioctl(tmp, SIOCGIFNETMASK, &rif);
-
-  memcpy(&(this->m_mask), rif.ifr_addr.sa_data + 2, 4);
 
   ioctl(tmp, SIOCGIFHWADDR, &rif);
   memcpy(this->m_ETHHDR + ETHER_ADDR_LEN, rif.ifr_hwaddr.sa_data,
@@ -321,17 +296,29 @@ GetNicParam(ruijie_packet *this)
 int
 SendFindServerPacket(ruijie_packet *this)
 {
-  uint8_t StandardAddr[] =
-    { 0x01, 0x80, 0xC2, 0x00, 0x00, 0x03 };
-  uint8_t StarAddr[] =
-    { 0x01, 0xD0, 0xF8, 0x00, 0x00, 0x03 };
+  uint8_t BoradCastAddr[2][6] =
+    {
+      { 0x01, 0x80, 0xC2, 0x00, 0x00, 0x03 },
+      { 0x01, 0xD0, 0xF8, 0x00, 0x00, 0x03 }
+    };
+
+
+  static
+  uint8_t broadPackage[0x3E8] =
+  {
+    0x00,0x00,0x00,0x00,0x00,0x00,        // Destination MAC
+    0x00,0x00,0x00,0x00,0x00,0x00,        // Source MAC
+    0x88,0x8E,                            // Ethertype = 0x888E (8021X)
+    0x01,                                 // Version = 1
+    0x01,                                 // Packet Type  0x00
+                                          // 0x01,EAPOL-Start
+                                          // 0x02 ;0x03 ;0x04
+    0x00,0x00,                            // Packet Body Length
+  };
 
   int i;
-
-  if (this->m_authenticationMode)
-    memcpy(broadPackage, StarAddr, 6);
-  else
-    memcpy(broadPackage, StandardAddr, 6);
+  if (!this->m_state)
+    memcpy(broadPackage, BoradCastAddr[this->m_authenticationMode], 6);
 
   memcpy(broadPackage + ETH_ALEN, this->m_ETHHDR + ETH_ALEN, ETH_ALEN); // fill local MAC
 
@@ -374,13 +361,6 @@ SendFindServerPacket(ruijie_packet *this)
         }
     }
   return -1;
-}
-
-int
-FlushRecvBuf(ruijie_packet*this)
-{
-	char buf[1500];
-	while(recvfrom(this->m_pcap_no,buf,1500,MSG_DONTWAIT,0,0)>0);
 }
 
 int
@@ -519,7 +499,7 @@ SendPasswordPacket(ruijie_packet *this)
 
             this->m_Echo_diff = ntohl(tmp.l);
             // the initial serial number, a magic number!
-            this->m_init_Echo_Key = htonl(0x1b8b4563);
+//            this->m_init_Echo_Key = htonl(0x1b8b4563);
 
             return 0;
           }
@@ -545,6 +525,17 @@ IfOnline(ruijie_packet *this)
 int
 SendEchoPacket(ruijie_packet *this)
 {
+  // keep-alive echo packet
+  static
+  uint8_t echoPackage[] =
+  {
+    0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+    0x88,0x8E, //802.1x
+    0x01,0xBF, 0x00,0x1E,
+    0xFF,0xFF,0x37,0x77,0x7F,0x9F,0xF7,0xFF,0x00,0x00,0xFF,0xFF,0x37,0x77,
+    0x7F,0x9F,0xF7,0xFF,0x00,0x00,0xFF,0xFF,0x37,0x77,0x7F,0x3F,0xFF
+  };
+
   union
   {
     u_int32_t l;
@@ -584,10 +575,30 @@ SendEchoPacket(ruijie_packet *this)
 int
 SendEndCertPacket(ruijie_packet *this)
 {
+  // end certification packet
+  static
+  uint8_t ExitPacket[0x3E8] =
+  {
+    0x00,0x00,0x00,0x00,0x00,0x00,        // Destination MAC
+    0x00,0x00,0x00,0x00,0x00,0x00,        // Source MAC
+    0x88,0x8E,                            // Ethertype = 0x888E (8021X)
+    0x01,                                 // Version = 1
+    0x02,                                 // Packet Type  0x00
+                                          // 0x01,EAPOL-Start
+                                          // 0x02 ;0x03 ;0x04
+    0x00,0x00,                            // Packet Body Length
+  };
+
   memcpy(ExitPacket, this->m_ETHHDR, 12);// fill destined MAC and local MAC
 
   memcpy(ExitPacket + 18, this->m_ruijieExtra, sizeof(RuijieExtra));
 
   fputs(">> Logouting... \n", stdout);
   return (pcap_sendpacket(this->m_pcap, ExitPacket, 0x80) == 0x80) ? 0 : -1;
+}
+int
+FlushRecvBuf(ruijie_packet*this)
+{
+        char buf[1500];
+        while(recvfrom(this->m_pcap_no,buf,1500,MSG_DONTWAIT,0,0)>0);
 }

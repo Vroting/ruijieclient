@@ -39,7 +39,6 @@
 //static char *m_fakeMAC = NULL;
 
 // flag of afterward DHCP status
-int noip_afterauth = 1;
 
 char config_file[256] = "/etc/ruijie.conf";
 
@@ -91,12 +90,13 @@ main(int argc, char* argv[])
   // system command
   char cmd[32] = "dhclient -4"; //ipv4 only
 
+  int noip_afterauth = 1;
   long setdaemon = 0;
   long nodaemon = 0;
   long genfile = 0;
   long kill_ruijieclient = 0;
   long flag_nokill = 0;
-  int  try_time = 5 ;
+  int try_time = 5;
   long showversion = 0;
   char pinghost[32] = "";
 
@@ -196,10 +196,10 @@ main(int argc, char* argv[])
       if (GetNicParam(&sender))
         err_quit("Err getting net parameters");
 #endif
-      FillVersion(&sender); // fill 2 bytes with fake version
+LABE_FINDDSERVER:
 
+      FillVersion(&sender); // fill 2 bytes with fake version
       FlushRecvBuf(&sender);
-      LABE_FINDDSERVER:
       // search for the server
       if (SendFindServerPacket(&sender))
         {
@@ -242,7 +242,6 @@ main(int argc, char* argv[])
           tryed = 0;
         continue;
       case 0:// Authenticate successfully
-        sender.m_state = 1;
         break;
         }
 
@@ -262,19 +261,20 @@ main(int argc, char* argv[])
       /*
        * DHCP mode:
        * 0: Off
-       * 1: On, DHCP before authentication
+       * 1: On, DHCP mode
        * 2: On, DHCP after authentication
-       * 3: On, DHCP after DHCP authentication and re-authentication
+       * 3: On, DHCP after DHCP authentication and re-authentication with new ip
        */
-      if (sender.m_dhcpmode == 3)
+      if (sender.m_dhcpmode == 3 && sender.m_state == 0)
         {
+          if( sender.m_state=2)
           if (system(cmd))
             {
               err_quit("DHCP error!");
             }
-          sender.m_dhcpmode = 0;
-          sender.m_ip = 0;
-          tryed = 0;
+          sender.m_ip = tryed = 0;
+          sender.m_state = 2;
+          SendEchoPacket(&sender);
           continue; // re-authentication
         }
 
@@ -304,6 +304,7 @@ main(int argc, char* argv[])
     	   * Why the hell we should send echo packet immediately?
     	   * so, sleep ! wa haha
     	   */
+          sender.m_state = 1;
           WaitPacket(&sender,sender.m_echoInterval);
           while (SendEchoPacket(&sender) == 0)
             {
@@ -319,6 +320,7 @@ main(int argc, char* argv[])
         }
       if (sender.m_intelligentReconnect > 10)
         {
+          sender.m_state = 1;
           time_t time_recon = time(NULL);
           while (1)
             {
