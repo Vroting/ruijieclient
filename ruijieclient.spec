@@ -2,7 +2,7 @@
 %define debug_package %{nil}
 
 Name:      ruijieclient
-Version:   0.7.9
+Version:   0.8.1
 Release:   %{build_number}%{?dist}
 Summary:   a ruijie network supplicant for GNU/Linux
 
@@ -48,5 +48,5 @@ update-desktop-database %{_datadir}/applications &>/dev/null || :
 
 %changelog
 
-* Sat Jun 13 2009 Gong Han <gong@fedoraproject.org> - 0.7-9
+* Sat Jun 13 2009 Gong Han <gong@fedoraproject.org> - 0.8-1
 - Creat a spec file

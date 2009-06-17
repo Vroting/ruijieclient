@@ -478,6 +478,8 @@ int GenSetting()
   char errbuf[256];
   pcap_if_t *if_t, *cur_nic;
 
+#ifdef USE_DYLIB
+
   void *libpcap =FindLibPcap();
 
   int   (*pcapfindalldevs)(pcap_if_t **, char *);
@@ -486,6 +488,11 @@ int GenSetting()
   pcapfindalldevs = dlsym(libpcap,"pcap_findalldevs");
 
   pcapfreealldevs = dlsym(libpcap,"pcap_freealldevs");
+#else
+#define pcapfindalldevs(z,x) pcap_findalldevs(z,x)
+#define pcapfreealldevs(x) pcap_freealldevs(x)
+#endif
+
 
   pcapfindalldevs(&if_t,errbuf);
   //Can not open ?
@@ -499,6 +506,9 @@ int GenSetting()
       //else //OMG, all you have got is a loopbake devive
       pcapfreealldevs(if_t);
     }
+#ifdef USE_DYLIB
+  dlclose(libpcap);
+#endif
   return Gensetting(cfgtags);
 }
 

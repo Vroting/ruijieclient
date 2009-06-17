@@ -158,7 +158,7 @@ GetNicParam(ruijie_packet *this);
 
 /* send server finding packet */
 int
-SendFindServerPacket(ruijie_packet *l);
+SendFindServerPacket(ruijie_packet *);
 
 /* send authenticate name packet */
 int
