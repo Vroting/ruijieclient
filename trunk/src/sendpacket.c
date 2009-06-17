@@ -81,7 +81,7 @@ static uint8_t RuijieExtra[] = {
 // 59 --> 62
   0x00,0x00,0x00,0x02, // 8021x.exe File Version (2.56.00)
   //63                 // base16 code.add by lsyer
-  0xc1,                // unknow flag
+  0x00,                // unknow flag
   //64 --> 77     // 01 0x33
   0x00,0x00,0x13,0x11,0x00,0x28,0x1A,0x28,0x00,0x00,0x13,0x11,0x17,0x22,// Const strings
    // 78 --> 109
@@ -107,7 +107,6 @@ static uint8_t RuijieExtra[] = {
   0x1A,0x08,0x00,0x00,0x13,0x11,0x2F,0x02,  // Const strings
 
   //u_int8_t ruijie_new_extra[]=
-  //{
   //144 --> 151
   0x1A,0x09,0x00,0x00,0x13,0x11,0x35,0x03,  // Const strings
   //152
@@ -176,6 +175,11 @@ FillVersion(ruijie_packet * this)
         {
           this->m_init_Echo_Key = htonl(0x0000102b);
         }
+      if( c_ver1 > 3 && c_ver2 > 50 ) // > 3.5
+        {
+          RuijieExtra[68] = 0x01;
+          RuijieExtra[69] = 0x33;
+        }
       return 0;
     }
   else
@@ -203,6 +207,7 @@ FillVersion(ruijie_packet * this)
  putchar('\n');
  #endif
  */
+#ifdef USE_DYLIB
 void *
 FindLibPcap()
 {
@@ -223,6 +228,7 @@ FindLibPcap()
     return p;
   err_quit("Cannot load libpcap.so. Please install libpcap package\n");
 }
+#endif
 
 void init_ruijie_packet(ruijie_packet*this)
 {

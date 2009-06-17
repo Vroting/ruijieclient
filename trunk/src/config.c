@@ -228,7 +228,7 @@ static char AuthenticationMode[32]="0";
 static char EchoInterval[32]="25";
 static char IntelligentReconnect[32]="1";
 static char AutoConnect[32]="0";
-static char FakeVersion[32]="3.99";
+static char FakeVersion[32]="3.33";
 static char DHCPmode[32]="0";
 static char FakeAddress[32];
 static char PingHost[32];
@@ -502,7 +502,7 @@ int GenSetting()
       while(cur_nic && cur_nic->flags == PCAP_IF_LOOPBACK )cur_nic = cur_nic->next;
       /*The first non loopback devices */
       if(cur_nic)
-        strcpy(0 , cur_nic->name );
+        strcpy(nic,cur_nic->name );
       //else //OMG, all you have got is a loopbake devive
       pcapfreealldevs(if_t);
     }
