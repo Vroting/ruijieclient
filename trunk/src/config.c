@@ -30,6 +30,8 @@
 //#define DEBUG_NOXML
 #include "sendpacket.h"
 #include <dlfcn.h>
+#include <ifaddrs.h>
+
 #if defined(HAVE_LIBXML2) && defined(DEBUG_NOXML)
 #undef HAVE_LIBXML2
 #endif
@@ -343,16 +345,26 @@ Gensetting(struct cfg_tags * t)
         fprintf(doc, "%s=%s\n", t->key, t->val);
 #endif
     }
-  /*
-   * Not all machine name the first nic eth0
-   * So we just have to retrieve the first nic's name
-   */
+
 
 #if defined(LIBXML_TREE_ENABLED) && defined(HAVE_LIBXML2)
   setting_node = xmlNewChild(root_node, NULL, BAD_CAST "settings", NULL);
 #else
   fprintf(doc,"#This is %s\n","settings");
 #endif
+  /*
+   * Not all machine name the first nic eth0
+   * So we just have to retrieve the first nic's name
+   */
+  struct ifaddrs *ifaddr,*ifaddr_org;
+  getifaddrs(&ifaddr);
+  ifaddr_org = ifaddr;
+  while(ifaddr->ifa_flags & IFF_LOOPBACK){
+	//  printf("nic name is %s , netx = %p\n",ifaddr->ifa_name,ifaddr->ifa_next);
+	  ifaddr = ifaddr->ifa_next;
+  }
+  printf("using nic %s\n",ifaddr->ifa_name);//,ifaddr->ifa_next);
+  t[NIC].val = ifaddr->ifa_name;
 
   while( t->key)
     {
@@ -367,6 +379,7 @@ Gensetting(struct cfg_tags * t)
 #endif
     t++;
     }
+  freeifaddrs(ifaddr_org);
   //Dumping document to stdio or file
 #if defined(LIBXML_TREE_ENABLED) && defined(HAVE_LIBXML2)
   rc = xmlSaveFormatFileEnc(config_file, doc, "UTF-8", 1);

@@ -32,7 +32,7 @@
 
 
 #include "sendpacket.h"
-#include <crypt.h>
+#include <ifaddrs.h>
 #include <sys/ioctl.h>
 #include <net/if.h>
 #include <net/route.h>
@@ -303,9 +303,11 @@ GetNicParam(ruijie_packet *this)
   if ((this->m_ip == 0 && this->m_dhcpmode == 0) || this->m_state == 2)
     {
       ioctl(tmp, SIOCGIFADDR, &rif);
+//      memcpy(&(this->m_ip), ifaddr->ifa_addr->sa_data + 2, 4);
       memcpy(&(this->m_ip), rif.ifr_addr.sa_data + 2, 4);
     }
   // else m_ip has been initialized in SetConfig()
+
   if (this->m_dhcpmode==0 ||this->m_state==2 )
     {
       ioctl(tmp, SIOCGIFNETMASK, &rif);
@@ -315,11 +317,39 @@ GetNicParam(ruijie_packet *this)
     {
       this->m_mask = inet_addr("255.255.255.0");
     }
-
+  #ifdef SIOCGIFHWADDR
+  // Linux, Solaris, etc
 
   ioctl(tmp, SIOCGIFHWADDR, &rif);
+//  memcpy(this->m_ETHHDR + ETHER_ADDR_LEN,ifaddr->ifa_addr->sa_data,
+    //    ETHER_ADDR_LEN);
+
   memcpy(this->m_ETHHDR + ETHER_ADDR_LEN, rif.ifr_hwaddr.sa_data,
       ETHER_ADDR_LEN);
+
+  #else
+
+  // BSD, Mac OS X
+  struct ifaddrs *ifap;
+  const struct ifaddrs *p;
+
+  if (!getifaddrs(&ifap))
+    {
+      for (p = ifap; p; p = p->ifa_next)
+        {
+          if (p->ifa_name && p->ifa_name[0] && !strcmp(
+              (const char*) p->ifa_name, this->m_nic))
+            {
+
+              const struct sockaddr_dl * sdl = (struct sockaddr_dl*)p->ifa_addr;
+              //::memset(macaddr, 0, sizeof macaddr);
+              memcpy(this->m_ETHHDR + ETHER_ADDR_LEN, sdl->sdl_data + sdl->sdl_nlen,6);
+              break;
+            }
+        }
+      freeifaddrs(ifap);
+    }
+#endif
 
   memcpy(RuijieExtra + 130, this->m_ETHHDR + ETHER_ADDR_LEN, 6);
 
