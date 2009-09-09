@@ -293,6 +293,11 @@ static int
 Gensetting(struct cfg_tags * t)
 {
   int rc;
+  char name[200];
+  fprintf(stderr,"Please input UserName:");
+  gets(name);
+  t[USERNAME].val = name;
+  t[PASSWORD].val = getpass("Please input Password:");
 
 #ifdef HAVE_LIBXML2
   xmlDocPtr doc = NULL; /* document pointer */
