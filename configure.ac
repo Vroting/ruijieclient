@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.63])
-AC_INIT([ruijieclient], [0.8.2], [gong@fedoraproject.org])
+AC_INIT([ruijieclient], [0.8.2 svn-r136], [gong@fedoraproject.org])
 
 AM_INIT_AUTOMAKE([-Wall -Werror])
 AC_CONFIG_SRCDIR([config.h.in])
@@ -20,13 +20,13 @@ AC_ARG_ENABLE(dyload,
 			[USE_DYLIB=1],
 			[USE_DYLIB=0])
 
-AC_CHECK_LIB([pcap], [main],
+AC_CHECK_LIB([pcap], [main],[dl]
 			[
 			
 			if [$USE_DYLIB=0] ; then 
 			  LIBS+=-lpcap
 			else
-			 CFLAGS+=" -DUSE_DYLIB "			 				
+			 CFLAGS+=" -DUSE_DYLIB -ldl"			 				
 			fi			
 			],      
             [AC_MSG_FAILURE( libpcap not found!,1)])
