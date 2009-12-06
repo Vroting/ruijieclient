@@ -23,19 +23,21 @@ AC_PROG_INSTALL
 AC_SUBST(have_xml,"no")
 AC_SUBST(have_pcap,"no")
 
-AC_ARG_ENABLE(dyload,
-			[
-			AC_HELP_STRING([--enable-dyload],[do not link to libpcap.so, but lookup libpcap.so when program starts])
-			],[],[enable_dyload="no"]
+AC_ARG_ENABLE(dyload,[AC_HELP_STRING([--enable-dyload],[do not link to libpcap.so, but lookup libpcap.so when program starts])],
+		[],[enable_dyload="no"]
 		)
+AC_ARG_WITH([dbus],
+	[AC_HELP_STRING([--with-dbus],[use dbus to cooperate with NetworkManager and auto-auth when network cable plugin])],
+	[PKG_PROG_PKG_CONFIG]
+	)
+
 
 AC_ARG_WITH([xml],
 		[AC_HELP_STRING([--with-xml,--with-xml=HEADERDIR],[use libxml2 to prase config files, if not install at /usr/include/libxml2, please get the installation dir])],
 		[],[with_xml="no"])
 
 AC_ARG_ENABLE(debug,
-				[
-              	  AC_HELP_STRING([--enable-debug],
+		[AC_HELP_STRING([--enable-debug],
                 			[Enable DEBUG output. This is a debugging feature  which should not be only enabled by develpoers])],
                 [],
                 [ enable_debug="no"]
@@ -81,13 +83,21 @@ AS_IF( [ test ! x"$with_xml" = xno ],
 	]
 )
 
+
+
 AC_SUBST_FILE(XML_INCLUDE)
 
-AM_CONDITIONAL(USE_XML,[ test x"$have_xml" = xyes ])
+AM_CONDITIONAL(USE_XML,[ test "x$have_xml" = "xyes" ])
 
-AS_IF( [ test x"$have_xml" = xyes] ,[ AC_DEFINE([HAVE_LIBXML2],1,[Define to 1 if you have the libxml2 header file])])
+AS_IF( [ test "x$have_xml" = "xyes" ] ,[ AC_DEFINE([HAVE_LIBXML2],1,[Define to 1 if you have the libxml2 header file])])
 
-AS_IF( [test x"$enable_debug" = xyes] ,[CFLAGS+="-g3 -O0"])
+AS_IF( [test "x$enable_debug" = "xyes" ] ,[CFLAGS+="-g3 -O0"])
+
+AS_IF( [ test "x$with_dbus" = "xyes" ], [
+
+PKG_CHECK_MODULES(DBUS,[dbus-1 >= 1.2 ])
+
+] ) 
 
 # Checks for header files.
 
