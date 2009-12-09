@@ -28,6 +28,12 @@
  * Boston, MA 02111-1307, USA.
  */
 //#define DEBUG_NOXML
+#ifdef HAVE_CONFIG_H
+#include  <config.h>
+#else
+#error <please run configure>
+#endif
+
 #include "sendpacket.h"
 #include <dlfcn.h>
 #include <ifaddrs.h>
@@ -297,7 +303,7 @@ Gensetting(struct cfg_tags * t)
   int rc;
   char name[200];
   fprintf(stderr,"Please input UserName:");
-  gets(name);
+  scanf("%s\n",name);
   t[USERNAME].val = name;
   t[PASSWORD].val = getpass("Please input Password:");
 
