@@ -75,7 +75,7 @@ open_lib()
 #endif
 
 int
-pkt_open_nic(const char * _nic_name)
+pkt_open_link(const char * _nic_name)
 {
   struct ifaddrs * pifaddrs, *pifaddr;
 #ifndef HAVE_NET_IF_DL_H
@@ -161,17 +161,50 @@ pkt_open_nic(const char * _nic_name)
       return 1;
     }
   pcap_freecode(&filter_code); // avoid  memory-leak
+
+
+
   return (0);
 }
 
 int
-pkt_set_param()
+pkt_get_param(int what,struct sockaddr * sa_data)
 {
+
   return -1;
 }
 
-int
-pkt_reset_prarm()
+int pkt_build_ruijieextra()
+{
+
+}
+
+int pkt_build_ruijie()
+{
+
+}
+
+int pkt_build_eap()
+{
+
+}
+
+int pkt_build_pap()
+{
+
+}
+
+int pkt_build_ethernet()
+{
+
+}
+
+int pkt_write_link()
+{
+
+}
+
+int pkt_read_link()
 {
 
 }
