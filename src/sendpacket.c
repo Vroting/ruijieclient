@@ -30,6 +30,11 @@
  * Boston, MA 02111-1307, USA.
  */
 
+#ifdef HAVE_CONFIG_H
+#include  <config.h>
+#else
+#error <please run configure>
+#endif
 
 #include "sendpacket.h"
 #include <ifaddrs.h>
@@ -41,7 +46,6 @@
 #include <dlfcn.h>
 #include "md5.h"
 #include "blog.h"// broadcast packet for finding server
-
 
 // echo packet incorporating user name and MD5 sum
 static

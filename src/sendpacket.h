@@ -32,17 +32,19 @@
 #ifndef SENDPACKET_H
 #define SENDPACKET_H
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 #include <netinet/in.h>
 #ifdef HAVE_NET_ETHERNET_H
 #include <net/ethernet.h>
-#else
-#define ETHER_ADDR_LEN  ETH_HLEN
-
 #endif
+#ifndef ETH_ALEN
+#define ETH_ALEN 6
+#endif
+
+#ifndef ETHER_ADDR_LEN
+#define ETHER_ADDR_LEN  ETH_HLEN
+#define ETH_HLEN 14
+#endif
+
 #include <pcap.h>
 #include <string.h>
 #include <sys/ioctl.h>

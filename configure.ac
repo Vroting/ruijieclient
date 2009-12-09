@@ -28,9 +28,13 @@ AC_ARG_ENABLE(dyload,[AC_HELP_STRING([--enable-dyload],[do not link to libpcap.s
 		)
 AC_ARG_WITH([dbus],
 	[AC_HELP_STRING([--with-dbus],[use dbus to cooperate with NetworkManager and auto-auth when network cable plugin])],
-	[PKG_PROG_PKG_CONFIG]
+	[PKG_PROG_PKG_CONFIG],[PKG_PROG_PKG_CONFIG
+	with_dbus="yes"]
 	)
-
+	
+AC_ARG_WITH([conf],
+	[AC_HELP_STRING([--with-conf=/etc/ruijie.conf],[use this to override default config file that used])],
+	[],[])
 
 AC_ARG_WITH([xml],
 		[AC_HELP_STRING([--with-xml,--with-xml=HEADERDIR],[use libxml2 to prase config files, if not install at /usr/include/libxml2, please get the installation dir])],
@@ -93,11 +97,12 @@ AS_IF( [ test "x$have_xml" = "xyes" ] ,[ AC_DEFINE([HAVE_LIBXML2],1,[Define to 1
 
 AS_IF( [test "x$enable_debug" = "xyes" ] ,[CFLAGS+="-g3 -O0"])
 
-AS_IF( [ test "x$with_dbus" = "xyes" ], [
+AS_IF( [ test "x$with_dbus" = "xyes" ],[
+	PKG_CHECK_MODULES(DBUS,[ dbus-glib-1 ])
+	AC_DEFINE([USE_DBUS],[1],[defined if enabled dbus support])
+])
 
-PKG_CHECK_MODULES(DBUS,[dbus-1 >= 1.2 ])
-
-] ) 
+AM_CONDITIONAL(WITH_DBUS,[test "x$with_dbus" = "xyes"]) 
 
 # Checks for header files.
 

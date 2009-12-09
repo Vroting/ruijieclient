@@ -29,15 +29,20 @@
  * Boston, MA 02111-1307, USA.
  */
 
+#ifdef HAVE_CONFIG_H
+#include  "config.h"
+#else
+#error <please run configure>
+#endif
+
 #include "ruijieclient.h"
 #include "sendpacket.h"
 #include "myerr.h"
 #include "blog.h"
 #include "prase.h"
-
-// fake MAC, e.g. "00:11:D8:44:D5:0D"
-//static char *m_fakeMAC = NULL;
-
+#ifdef USE_DBUS
+#include "dbus.h"
+#endif
 // flag of afterward DHCP status
 
 char config_file[256] = "/etc/ruijie.conf";
@@ -79,7 +84,22 @@ logoff(int signo)
     }
   _exit(0);
 }
+#ifdef USE_DBUS
+int print_state(){
+        if (is_networ_ready()){
+                printf("Now state is ready\n");
+        }else{
+                printf("Now state is NOT ready\n");
+        }
+        return 0;
+}
 
+int callback(){
+        printf("I am Callllled~\n");
+        print_state();
+}
+
+#endif
 int
 main(int argc, char* argv[])
 {
@@ -130,7 +150,6 @@ main(int argc, char* argv[])
   if (showversion)
     err_quit("%s", PACKAGE_VERSION);
 
-
   // if '-g' is passed as argument then generate a sample configuration
   if (genfile)
     {
@@ -146,7 +165,9 @@ main(int argc, char* argv[])
             "Can not kill ruijieclient, permission denied or no such process");
       exit(EXIT_SUCCESS);
     }
+
   init_ruijie_packet(&sender);
+
 
   if (!sender.m_nocofigfile)
     {
@@ -178,13 +199,25 @@ main(int argc, char* argv[])
   if (sender.m_nocofigfile)
     check_as_root();
 
-  //print copyright and bug report message
+    //print copyright and bug report message
   printf("\n\n%s - a powerful ruijie Supplicant for UNIX, base on mystar.\n"
     "Copyright %s\n\n"
     "Please see/send bug report to \n%s\n"
     "or mail to %s \n\n", PACKAGE,
       "Gong Han, Chen Tingjun, Microcai, sthots, and others",
       "http://code.google.com/p/ruijieclient/issues/list", PACKAGE_BUGREPORT);
+
+#ifdef USE_DBUS
+    g_type_init();
+    dbus_init();
+  //把回调函数连接到信号上～
+    connect_to_sig_StateChanged (&callback, NULL );
+
+    g_loop_run();
+
+#else
+
+
 
   int tryed;
   for (tryed = 0; (tryed < try_time); ++tryed)
@@ -341,6 +374,8 @@ LABE_FINDDSERVER:
   if (tryed >= 3)
     fprintf(stderr, "##重试太多，退出\n");
   return (EXIT_FAILURE);
+
+#endif //USE_DBUS
 }
 
 static int
