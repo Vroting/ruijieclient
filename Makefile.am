@@ -1,6 +1,6 @@
-SUBDIRS = src
+SUBDIRS = src packet
 dist_doc_DATA = README
-EXTRA_DIST = ruijieclient.spec
+EXTRA_DIST = debian ruijieclient.spec
 
 rpm: dist-bzip2
 	mkdir -p ~/rpmbuild/SOURCES/
