@@ -213,7 +213,7 @@ main(int argc, char* argv[])
   //把回调函数连接到信号上～
     connect_to_sig_StateChanged (&callback, NULL );
 
-    g_loop_run();
+    return g_loop_run();
 
 #else
 

@@ -15,6 +15,7 @@ AC_CONFIG_HEADERS([config.h])
 AC_CANONICAL_TARGET
 
 AC_PROG_CC
+AC_PROG_RANLIB
 
 AM_INIT_AUTOMAKE([-Wall -Werror])
 
@@ -56,7 +57,7 @@ AC_CHECK_FUNCS([memset strerror])
 
 AC_CHECK_HEADER(pcap.h,[], [AC_MSG_FAILURE( libpcap development files not found!, 1)])
 
-AC_CHECK_HEADERS([iconv.h sys/socket.h sys/time.h unistd.h net/ethernet.h])
+AC_CHECK_HEADERS([net/if_dl.h iconv.h sys/socket.h sys/time.h unistd.h net/ethernet.h])
 
 AC_CHECK_FILE([/usr/include/linux/rtnetlink.h],[AC_DEFINE_UNQUOTED([HAVE_LINUX_RTNETLINK_H],[1],[define to 1 if linux/rtnetlink.h present ])])
 
@@ -107,5 +108,6 @@ AM_CONDITIONAL(WITH_DBUS,[test "x$with_dbus" = "xyes"])
 # Checks for header files.
 
 AC_CONFIG_FILES([Makefile
+                 packet/Makefile
                  src/Makefile])
 AC_OUTPUT
