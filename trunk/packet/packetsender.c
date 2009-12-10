@@ -34,7 +34,7 @@
 #include <ifaddrs.h>
 #include <netinet/in.h>
 #include <net/if.h>
-#include <pcap.h>
+#include <pcap/pcap.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 
@@ -61,6 +61,9 @@ static char             pcap_errbuf[PCAP_ERRBUF_SIZE];
 static in_addr_t        nic_ip, nic_mask, nic_route, nic_dns;
 static char             nic_name[PCAP_ERRBUF_SIZE];
 static char             nic_hwaddr[6];
+static char             pkt_buffer[ETH_MTU];
+static int              pkt_length;
+
 /*
  * open libpcap.so.*
  */
@@ -184,27 +187,40 @@ int pkt_build_ruijie()
 
 }
 
-int pkt_build_eap()
+int pkt_build_eap(size_t paylodlen)
 {
 
 }
 
-int pkt_build_pap()
+int pkt_build_pap(size_t paylodlen)
 {
 
 }
 
-int pkt_build_ethernet()
+int pkt_build_ethernet(u_char*dest,u_char*src,size_t paylodlen,int protocol)
 {
-
+  //we make sure that
+  memmove(pkt_buffer + 14,pkt_buffer,paylodlen);
+  memcpy(pkt_buffer,dest,6);
+  memcpy(pkt_buffer+6,src,6);
+  *((uint16_t*)(pkt_buffer +12 )) = protocol ;
 }
 
 int pkt_write_link()
 {
-
+  return pcap_sendpacket(pcap_handle,pkt_buffer,pkt_length);
 }
 
-int pkt_read_link()
+u_char* pkt_read_link()
 {
+  struct pcap_pkthdr *  pkt_hdr;
+  const u_char *              packet;
+  int                   ret;
 
+  if( !(ret =  pcap_next_ex(pcap_handle,&pkt_hdr,&packet)))
+    {
+      memcpy(pkt_buffer,packet,pkt_hdr->caplen);
+      return pkt_buffer;
+    }
+  return NULL;
 }

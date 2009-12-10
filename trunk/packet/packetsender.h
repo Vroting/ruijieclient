@@ -8,6 +8,8 @@
 #ifndef PACKETSENDER_H_
 #define PACKETSENDER_H_
 
+#define ETH_MTU 1500
+
 #define USE_DYLIBPCAP
 
 #ifdef USE_DYLIBPCAP
