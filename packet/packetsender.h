@@ -24,7 +24,11 @@
 #define PACKETSENDER_H_
 
 #define ETH_MTU 1500
+#ifdef WORDS_BIGENDIAN
 #define ETH_PROTO_8021X 0x8E88
+#else
+#define ETH_PROTO_8021X 0x808E
+#endif
 
 #define PKT_PG_HWADDR 1
 #define PKT_PG_IPADDR 2
@@ -47,7 +51,7 @@ int pkt_build_8021x_ext(u_char code, u_char id, uint16_t length,const char* extr
 int pkt_build_8021x(u_char version, u_char type, uint16_t length);
 int pkt_build_ethernet(u_char*dest,u_char*src,uint16_t protocol);
 int pkt_write_link();
-u_char* pkt_read_link();
+int pkt_read_link(const u_char**packet);
 int close_nic();
 
 

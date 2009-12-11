@@ -29,6 +29,9 @@
 #define RJ_PKT_START 01
 #define RJ_PKT_STOP  02
 
+#define EAP_RESPONSE 1
+
+
 int start_auth(char * name,char*passwd,char* nic_name,int authmode);
 
 
