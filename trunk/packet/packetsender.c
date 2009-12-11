@@ -284,11 +284,12 @@ int pkt_build_ethernet(u_char*dest,u_char*src,uint16_t protocol)
 {
   //we make sure that
   memmove(pkt_buffer + 14,pkt_buffer,pkt_length);
-  memcpy(pkt_buffer,dest,6);
-  if(!src)
+  memcpy(pkt_buffer, dest, 6);
+  if (!src)
     src = nic_hwaddr;
-    memcpy(pkt_buffer+6,src,6);
-  *((uint16_t*)(pkt_buffer +12 )) = protocol ;
+  memcpy(pkt_buffer + 6, src, 6);
+  pkt_buffer[12] = HIBYTE(protocol);
+  pkt_buffer[13] = LOBYTE(protocol);
   pkt_length += 14;
 }
 
@@ -300,9 +301,14 @@ int pkt_write_link()
 int pkt_read_link(const u_char**packet)
 {
   struct pcap_pkthdr *  pkt_hdr;
-  return pcap_next_ex(pcap_handle,&pkt_hdr,packet);
+  int                   ret;
+  ret = pcap_next_ex(pcap_handle,&pkt_hdr,packet);
+  if(!ret)
+    memcpy(pkt_buffer,packet,pkt_hdr->caplen);
+  return ret;
 }
-int close_nic()
+
+int pkt_close()
 {
   pcap_close(pcap_handle);
 }
