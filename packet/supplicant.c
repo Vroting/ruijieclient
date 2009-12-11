@@ -138,6 +138,8 @@ static uint8_t   ruijie_privatedata[]={
 static u_char           circleCheck[2];
 static u_char           ruijie_dest[6];
 static uint32_t         ruijie_Echo_Key;
+static uint32_t         ruijie_Echo_Diff;
+static const    u_char* ruijie_recv;
 
 static int gen_ruijie_private_packet(int dhcpstate,int dhcpmode,char*version)
 {
@@ -247,17 +249,12 @@ static int ruijie_start(int broadcastmethod)
         { 0x01, 0xD0, 0xF8, 0x00, 0x00, 0x03 } // ruijie private broadcast addr
     };
   const  u_char *       packet;
-  int                   ret;
 
+  pkt_build_start();
   pkt_build_ruijie(sizeof(ruijie_privatedata),ruijie_privatedata);
-  pkt_build_8021x(1,EAP_START,4);
+  pkt_build_8021x(1,EAP_START,4,0,0);
   pkt_build_ethernet(broadcast[broadcastmethod?1:0],0,ETH_PROTO_8021X);
-  pkt_write_link();
-  if(! (ret =pkt_read_link(&packet)))
-    {
-      memcpy(ruijie_dest,packet,6);
-    }
-  return ret;
+  return pkt_write_link();
 }
 
 static int ruijie_ack_name(int id,char*name)
@@ -268,10 +265,12 @@ static int ruijie_ack_name(int id,char*name)
   payload[0] = 1; // EAP type
   payload_len = strlen(name)+1;
 
+  pkt_build_start();
+
   pkt_build_ruijie(sizeof(ruijie_privatedata),ruijie_privatedata);
   strncpy(payload + 1, name, 128);
   pkt_build_8021x_ext(EAP_RESPONSE,id,payload_len,payload);
-  pkt_build_8021x(1,1,payload_len+4);
+  pkt_build_8021x(1,1,payload_len+4,0,0);
   pkt_build_ethernet(ruijie_dest,0,ETH_PROTO_8021X);
   return pkt_write_link();
 }
@@ -295,6 +294,7 @@ static int ruijie_ack_password(int id,char*name,char*passwd,const u_char* MD5val
 
   Computehash(md5Data, md5Len,md5Dig);
 
+  pkt_build_start();
 
   pkt_build_ruijie(sizeof(ruijie_privatedata),ruijie_privatedata);
   EAP_EXTRA[0] = 4 ;// Type: MD5-Challenge [RFC3748] (4)
@@ -302,64 +302,123 @@ static int ruijie_ack_password(int id,char*name,char*passwd,const u_char* MD5val
   memcpy(EAP_EXTRA+2,md5Dig,16); // md5 encrypt passwd
   strcpy(EAP_EXTRA+18,name);//user name
   pkt_build_8021x_ext(EAP_RESPONSE,id,22+strlen(name),EAP_EXTRA);
-  pkt_build_8021x(1,0,22+strlen(name));
+  pkt_build_8021x(1,0,22+strlen(name),0,0);
   pkt_build_ethernet(ruijie_dest,0,ETH_PROTO_8021X);
   return pkt_write_link();
 }
 
 static int ruijie_ripe_success_info(char * raw_encode_message_out,int * length)
 {
+  //get 心跳信息初始码
+  //uTemp.ulValue = *(((u_long *)(pkt_data+0x9d)));
+  u_int16_t offset;
 
+  offset = MAKEWORD(ruijie_recv[0x10],ruijie_recv[0x11]);
+
+  union
+  {
+    u_int32_t l;
+    u_char s[4];
+  } tmp;
+
+  tmp.s[0] = Alog(ruijie_recv[offset + 0x9]);//0xff
+  tmp.s[1] = Alog(ruijie_recv[offset + 0xa]);//0xff
+  tmp.s[2] = Alog(ruijie_recv[offset + 0xb]);//0x19
+  tmp.s[3] = Alog(ruijie_recv[offset + 0xc]);//0x09
+
+  ruijie_Echo_Diff = ntohl(tmp.l);
+  return 0;
 }
 
 static int ruijie_echo()
 {
 
+  union
+  {
+    u_int32_t l;
+    u_char s[4];
+
+  } tmp;
+
+  char  EchoData[30] = {
+      0xFF,0xFF,0x37,0x77,0x7F,0x9F,0xF7,0xFF,0x00,0x00,0xFF,0xFF,0x37,0x77,0x7F,
+      0x9F,0xF7,0xFF,0x00,0x00,0xFF,0xFF,0x37,0x77,0x7F,0x3F,0xFF,0x00,0x00,0x00
+  };
+
+  tmp.l = ruijie_Echo_Diff;
+
+  EchoData[0x10] = Alog(tmp.s[0]);
+  EchoData[0x11] = Alog(tmp.s[1]);
+  EchoData[0x12] = Alog(tmp.s[2]);
+  EchoData[0x13] = Alog(tmp.s[3]);
+
+  tmp.l = htonl(ntohl(ruijie_Echo_Key) + ruijie_Echo_Diff);
+
+  EchoData[6] = Alog(tmp.s[0]);
+  EchoData[7] = Alog(tmp.s[1]);
+  EchoData[8] = Alog(tmp.s[2]);
+  EchoData[9] = Alog(tmp.s[3]);
+  pkt_build_start();
+  pkt_build_8021x(1, 191, 30,EchoData,30);
+  pkt_build_ethernet(ruijie_dest,0,ETH_PROTO_8021X);
+  return pkt_write_link();
 }
 
 static int ruije_logoff()
 {
+  pkt_build_start();
+  pkt_build_8021x(1,2,0,0,0);
+  pkt_build_ethernet(ruijie_dest,0,ETH_PROTO_8021X);
+  pkt_write_link();
   pkt_close();
+  return 0;
 }
 
-int start_auth(char * name,char*passwd,char* nic_name,int authmode)
+int start_auth(char * name, char*passwd, char* nic_name, int authmode)
 {
   ruijie_Echo_Key = htonl(0x1b8b4563);
 
-  char * msg, * utf8_msg;
+  char * msg, *utf8_msg;
   int msg_len;
 
-
-  const u_char * packet;
+  int success=1,tryed=0;
 
   pkt_open_link(nic_name);
-  gen_ruijie_private_packet(1,0,"3.33");
-  ruijie_start( authmode & 0x1F );
-  pkt_read_link(&packet);
+  gen_ruijie_private_packet(1, 0, "3.33");
+  ruijie_start(authmode & 0x1F);
 
-  switch(packet[0x12])
-  {
-    case EAP_RESPONSE:
-    switch (packet[0x16])
-      {
-    case 1: //Type: Identity [RFC3748] (1)
-      ruijie_ack_name(packet[0x13], name);
-      break;
-    case 4://Type: MD5-Challenge [RFC3748] (4)
-    default:
-      ruijie_ack_password(packet[0x13], name, passwd, packet + 0x18, packet[0x17]);
-      break;
-      }
-  case EAP_SUCCESS:
-    ruijie_ripe_success_info(0,0);
-    break;
-  }
-
-  return 0;
+  do
+    {
+      while (!pkt_read_link(&ruijie_recv))
+        {
+          switch (ruijie_recv[0x12])
+            {
+          case EAP_RESPONSE:
+            switch (ruijie_recv[0x16])
+              {
+            case 1: //Type: Identity [RFC3748] (1)
+              ruijie_ack_name(ruijie_recv[0x13], name);
+              break;
+            case 4://Type: MD5-Challenge [RFC3748] (4)
+            default:
+              ruijie_ack_password(ruijie_recv[0x13], name, passwd, ruijie_recv + 0x18, ruijie_recv[0x17]);
+              break;
+              }
+          case EAP_SUCCESS:
+            ruijie_ripe_success_info(0, 0);
+            success = 0;
+            break;
+            }
+        }
+      tryed += success;
+      ruijie_start(authmode & 0x1F);
+    }
+  while (success && tryed < 5);
+  return success;
 }
 
 int stop_auth()
 {
-  ruije_logoff();
+  return ruije_logoff();
 }
 

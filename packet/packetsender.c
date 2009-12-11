@@ -171,6 +171,9 @@ int pkt_open_link(const char * _nic_name)
   close(sock);
 
 #endif //SIOCGIFHWADDR
+  if(pcap_handle)
+    pcap_close(pcap_handle);
+
   if (!(pcap_handle = pcap_open_live(nic_name, 65536, 0, 2000, pcap_errbuf)))
     {
       snprintf(pkt_errbuff,sizeof(pkt_errbuff), "Cannot open nic %s :%s", nic_name, pcap_errbuf);
@@ -249,10 +252,16 @@ int pkt_get_param(int what,struct sockaddr * sa_data)
   return 0;
 }
 
+int pkt_build_start()
+{
+  pkt_length = 0;
+}
+
 int pkt_build_ruijie(int lengh,const char* ruijiedata)
 {
+  memmove(pkt_buffer+lengh,pkt_buffer,pkt_length);
   memcpy(pkt_buffer,ruijiedata,lengh);
-  pkt_length = lengh;
+  pkt_length += lengh;
   return 0;
 }
 
@@ -268,15 +277,15 @@ int pkt_build_8021x_ext(u_char code, u_char id, uint16_t length,const char* extr
   return 0;
 }
 
-int pkt_build_8021x(u_char version, u_char type, uint16_t length)
+int pkt_build_8021x(u_char version, u_char type, uint16_t length,void*paylod,int payloadlen)
 {
-  memmove(pkt_buffer + 4, pkt_buffer, pkt_length);
+  memmove(pkt_buffer + 4 + payloadlen , pkt_buffer, pkt_length);
   pkt_buffer[0] = version;
   pkt_buffer[1] = type;
-
   pkt_buffer[2] = HIBYTE(length);
   pkt_buffer[3] = LOBYTE(length);
-  pkt_length += 4;
+  memcpy(pkt_buffer+4,paylod,payloadlen);
+  pkt_length += 4 + payloadlen;
   return 0;
 }
 
