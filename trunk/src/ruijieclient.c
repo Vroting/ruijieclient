@@ -36,9 +36,7 @@
 #endif
 
 #include "ruijieclient.h"
-#include "sendpacket.h"
 #include "myerr.h"
-#include "blog.h"
 #include "prase.h"
 #ifdef USE_DBUS
 #include "dbus.h"

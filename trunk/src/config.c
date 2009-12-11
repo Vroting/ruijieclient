@@ -34,7 +34,6 @@
 #error <please run configure>
 #endif
 
-#include "sendpacket.h"
 #include <dlfcn.h>
 #include <ifaddrs.h>
 
@@ -50,6 +49,8 @@
 #endif
 
 #include "ruijieclient.h"
+struct ruijie_packet;
+typedef struct ruijie_packet ruijie_packet;
 
 static char fakeVersion[8];
 //static char fakeMAC[32];

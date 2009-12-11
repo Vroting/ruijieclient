@@ -376,6 +376,8 @@ static int ruije_logoff()
 
 int start_auth(char * name, char*passwd, char* nic_name, int authmode)
 {
+  open_lib();
+
   ruijie_Echo_Key = htonl(0x1b8b4563);
 
   char * msg, *utf8_msg;

@@ -112,5 +112,6 @@ AM_CONDITIONAL(WITH_DBUS,[test "x$with_dbus" = "xyes"])
 
 AC_CONFIG_FILES([Makefile
                  packet/Makefile
+                 configer/Makefile
                  src/Makefile])
 AC_OUTPUT
