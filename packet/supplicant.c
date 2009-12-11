@@ -276,7 +276,7 @@ static int ruijie_ack_name(int id,char*name)
   return pkt_write_link();
 }
 
-static int ruijie_ack_password(int id,char*name,char*passwd,void* MD5value, int MD5value_len)
+static int ruijie_ack_password(int id,char*name,char*passwd,const u_char* MD5value, int MD5value_len)
 {
   char          EAP_EXTRA[128];
   unsigned char md5Data[256]=""; // password,md5 buffer
@@ -301,28 +301,65 @@ static int ruijie_ack_password(int id,char*name,char*passwd,void* MD5value, int 
   EAP_EXTRA[1] = 16 ; //Value-Size: 16
   memcpy(EAP_EXTRA+2,md5Dig,16); // md5 encrypt passwd
   strcpy(EAP_EXTRA+18,name);//user name
-  pkt_build_8021x_ext(2,id,22+strlen(name),EAP_EXTRA);
+  pkt_build_8021x_ext(EAP_RESPONSE,id,22+strlen(name),EAP_EXTRA);
+  pkt_build_8021x(1,0,22+strlen(name));
+  pkt_build_ethernet(ruijie_dest,0,ETH_PROTO_8021X);
+  return pkt_write_link();
+}
 
+static int ruijie_ripe_success_info(char * raw_encode_message_out,int * length)
+{
 
+}
+
+static int ruijie_echo()
+{
+
+}
+
+static int ruije_logoff()
+{
+  pkt_close();
 }
 
 int start_auth(char * name,char*passwd,char* nic_name,int authmode)
 {
   ruijie_Echo_Key = htonl(0x1b8b4563);
 
+  char * msg, * utf8_msg;
+  int msg_len;
+
+
+  const u_char * packet;
+
   pkt_open_link(nic_name);
   gen_ruijie_private_packet(1,0,"3.33");
-
-
   ruijie_start( authmode & 0x1F );
+  pkt_read_link(&packet);
 
-
-
-
-
-
+  switch(packet[0x12])
+  {
+    case EAP_RESPONSE:
+    switch (packet[0x16])
+      {
+    case 1: //Type: Identity [RFC3748] (1)
+      ruijie_ack_name(packet[0x13], name);
+      break;
+    case 4://Type: MD5-Challenge [RFC3748] (4)
+    default:
+      ruijie_ack_password(packet[0x13], name, passwd, packet + 0x18, packet[0x17]);
+      break;
+      }
+  case EAP_SUCCESS:
+    ruijie_ripe_success_info(0,0);
+    break;
+  }
 
   return 0;
 }
 
+int stop_auth()
+{
+  ruije_logoff();
+}
 
