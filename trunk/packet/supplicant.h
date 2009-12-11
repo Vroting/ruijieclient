@@ -33,6 +33,8 @@
 #define EAP_RESPONSE    2
 #define EAP_SUCCESS     3
 
+#define MAKEWORD(hibyte,lobyte) ((hibyte<<8 & 0xFF00)| (lobyte&0XFF))
+
 int start_auth(char * name,char*passwd,char* nic_name,int authmode);
 
 
