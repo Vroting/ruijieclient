@@ -173,28 +173,60 @@ pkt_open_link(const char * _nic_name)
 int
 pkt_get_param(int what,struct sockaddr * sa_data)
 {
-
-  return -1;
+  sa_data->sa_family = 0;
+  switch (what) {
+    case PKT_PG_HWADDR:
+      memcpy(sa_data->sa_data,nic_hwaddr,6);
+      break;
+    case PKT_PG_IPADDR:
+      ((struct sockaddr_in*)sa_data)->sin_family = AF_INET;
+      ((struct sockaddr_in*)sa_data)->sin_addr.s_addr = nic_ip;
+      break;
+    case PKT_PG_IPMASK:
+      ((struct sockaddr_in*)sa_data)->sin_family = PF_INET;
+      ((struct sockaddr_in*)sa_data)->sin_addr.s_addr = nic_mask;
+      break;
+    default:
+      return -1;
+  }
+  return 0;
 }
 
-int pkt_build_ruijieextra()
+int pkt_build_ruijieextra(uint16_t len,const char* extra)
 {
-
+  memcpy(pkt_buffer,extra,len);
+  pkt_length = len;
+  return 0;
 }
 
-int pkt_build_ruijie()
+int pkt_build_ruijie(int lengh,const char* ruijiedata)
 {
-
+  memcpy(pkt_buffer,ruijiedata,lengh);
+  return 0;
 }
 
-int pkt_build_eap(size_t paylodlen)
+int pkt_build_8021x_ext(u_char code, u_char id, uint16_t length,const char* extra)
 {
-
+  memmove(pkt_buffer + length,pkt_buffer, pkt_length);
+  pkt_buffer[0] = code;
+  pkt_buffer[1] = id;
+  pkt_buffer[2] = HIBYTE(length);
+  pkt_buffer[3] = LOBYTE(length);
+  memcpy(pkt_buffer+4,extra,length-4);
+  pkt_length += length;
+  return 0;
 }
 
-int pkt_build_pap(size_t paylodlen)
+int pkt_build_8021x(u_char version, u_char type, uint16_t length)
 {
+  memmove(pkt_buffer + 4, pkt_buffer, pkt_length);
+  pkt_buffer[0] = version;
+  pkt_buffer[1] = type;
 
+  pkt_buffer[2] = HIBYTE(length);
+  pkt_buffer[3] = LOBYTE(length);
+  pkt_length += 4;
+  return 0;
 }
 
 int pkt_build_ethernet(u_char*dest,u_char*src,size_t paylodlen,int protocol)
