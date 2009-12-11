@@ -33,7 +33,6 @@
 #error <please run configure>
 #endif
 
-#include "sendpacket.h"
 #include "codeconv.h"
 
 #if defined( HAVE_ICONV_H) && defined (_ICONV_H)
@@ -66,7 +65,7 @@ code_convert(char *outbuf, size_t outlen, char *inbuf, size_t inlen)
 }
 
 #endif
-
+#if 0
 int
 GetServerMsg(ruijie_packet*this, char*outbuf, size_t buflen)
 {
@@ -104,3 +103,4 @@ GetServerMsg(ruijie_packet*this, char*outbuf, size_t buflen)
   code_convert(outbuf, buflen, msgBuf, strlen(msgBuf));
 #endif
 }
+#endif

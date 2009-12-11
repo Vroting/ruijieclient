@@ -49,6 +49,18 @@
 /**************************************
  * Define pcap_* macro , to use or no to use static link
  **************************************/
+  pcap_t *      (*ppcap_open_live)(const char *, int, int, int, char *);
+  int           (*ppcap_fileno)(pcap_t *);
+  char   *      (*ppcap_geterr)(pcap_t *);
+
+  //The BPF
+  int           (*ppcap_compile)(pcap_t *, struct bpf_program *, const char *, int, bpf_u_int32);
+  int           (*ppcap_setfilter)(pcap_t *, struct bpf_program *);
+  void          (*ppcap_freecode)(struct bpf_program *);
+
+  int           (*ppcap_sendpacket)(pcap_t *, const u_char *, int);
+  void          (*ppcap_close)(pcap_t *);
+  int           (*ppcap_next_ex)(pcap_t *, struct pcap_pkthdr **, const u_char **);
 
 /**************************************
  * static variable here
@@ -95,7 +107,33 @@ int open_lib()
       return -1;
     }
 // Now bind the fucntion
-  //TODO
+
+  ppcap_open_live = dlsym(plibpcap,"pcap_open_live");
+#define pcap_open_live(z,x,c,v,b) pcap_open_live(z,x,c,v,b)
+
+  ppcap_fileno = dlsym(plibpcap,"pcap_fileno");
+#define pcap_fileno(x) ppcap_fileno(x)
+
+  ppcap_geterr = dlsym(plibpcap,"pcap_geterr");
+#define pcap_geterr(x) ppcap_geterr(x)
+
+  ppcap_compile = dlsym(plibpcap,"pcap_compile");
+#define pcap_compile(z,x,c,v,b) ppcap_compile(z,x,c,v,b)
+
+  ppcap_setfilter = dlsym(plibpcap,"pcap_setfilter");
+#define pcap_setfilter(x,c) ppcap_setfilter(x,c)
+
+  ppcap_freecode = dlsym(plibpcap,"pcap_freecode");
+#define pcap_freecode(x) ppcap_freecode(x)
+
+  ppcap_next_ex = dlsym(plibpcap,"pcap_next_ex");
+#define pcap_next_ex(z,x,c) ppcap_next_ex(z,x,c)
+
+  ppcap_sendpacket = dlsym(plibpcap,"pcap_sendpacket");
+#define pcap_sendpacket(z,x,c) ppcap_sendpacket(z,x,c)
+
+  ppcap_close = dlsym(plibpcap,"pcap_close");
+#define pcap_close(x) ppcap_close(x)
 
 #endif
 }
