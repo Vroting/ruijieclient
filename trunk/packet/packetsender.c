@@ -4,9 +4,6 @@
  *  Created on: 2009-12-9
  *      Author: microcai <microcai AT sina.com > from ZSTU
  *
- *
- *
- *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -29,6 +26,7 @@
 #endif
 
 #include <sys/types.h>
+#include <stdint.h>
 #include <string.h>
 #include <stdio.h>
 #include <ifaddrs.h>
@@ -77,8 +75,7 @@ open_lib()
 
 #endif
 
-int
-pkt_open_link(const char * _nic_name)
+int pkt_open_link(const char * _nic_name)
 {
   struct ifaddrs * pifaddrs, *pifaddr;
 #ifndef HAVE_NET_IF_DL_H
@@ -170,8 +167,7 @@ pkt_open_link(const char * _nic_name)
   return (0);
 }
 
-int
-pkt_get_param(int what,struct sockaddr * sa_data)
+int pkt_get_param(int what,struct sockaddr * sa_data)
 {
   sa_data->sa_family = 0;
   switch (what) {
@@ -189,13 +185,6 @@ pkt_get_param(int what,struct sockaddr * sa_data)
     default:
       return -1;
   }
-  return 0;
-}
-
-int pkt_build_ruijieextra(uint16_t len,const char* extra)
-{
-  memcpy(pkt_buffer,extra,len);
-  pkt_length = len;
   return 0;
 }
 
@@ -229,13 +218,14 @@ int pkt_build_8021x(u_char version, u_char type, uint16_t length)
   return 0;
 }
 
-int pkt_build_ethernet(u_char*dest,u_char*src,size_t paylodlen,int protocol)
+int pkt_build_ethernet(u_char*dest,u_char*src,uint16_t protocol)
 {
   //we make sure that
-  memmove(pkt_buffer + 14,pkt_buffer,paylodlen);
+  memmove(pkt_buffer + 14,pkt_buffer,pkt_length);
   memcpy(pkt_buffer,dest,6);
   memcpy(pkt_buffer+6,src,6);
   *((uint16_t*)(pkt_buffer +12 )) = protocol ;
+  pkt_length += 14;
 }
 
 int pkt_write_link()
@@ -246,7 +236,7 @@ int pkt_write_link()
 u_char* pkt_read_link()
 {
   struct pcap_pkthdr *  pkt_hdr;
-  const u_char *              packet;
+  const u_char *        packet;
   int                   ret;
 
   if( !(ret =  pcap_next_ex(pcap_handle,&pkt_hdr,&packet)))
@@ -255,4 +245,8 @@ u_char* pkt_read_link()
       return pkt_buffer;
     }
   return NULL;
+}
+int close_nic()
+{
+  pcap_close(pcap_handle);
 }
