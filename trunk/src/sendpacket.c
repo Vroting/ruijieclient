@@ -44,7 +44,7 @@
 #include <poll.h>
 #include <errno.h>
 #include <dlfcn.h>
-#include "md5.h"
+#include "../packet/md5.h"
 #include "blog.h"// broadcast packet for finding server
 
 // echo packet incorporating user name and MD5 sum

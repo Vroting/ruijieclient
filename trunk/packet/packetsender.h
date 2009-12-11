@@ -29,6 +29,8 @@
 #define PKT_PG_HWADDR 1
 #define PKT_PG_IPADDR 2
 #define PKT_PG_IPMASK 3
+#define PKT_PG_DEFAULTROUTE     4
+#define PKT_PG_DNS              5
 
 
 #define HIBYTE(word) (( ((word) & 0xFF00 ) >>8) & 0xFF)
@@ -36,11 +38,7 @@
 
 #define USE_DYLIBPCAP
 
-#ifdef USE_DYLIBPCAP
 int open_lib();
-#else
-#define open_lib() do{;}while(0)
-#endif
 
 int pkt_open_link(const char * _nic_name);
 
