@@ -4,10 +4,9 @@ bin_PROGRAMS = ruijieclient
 
 ruijieclient_SOURCES = blog.c codeconv.h myerr.c ruijieclient.h  \
 		sendpacket.h blog.h myerr.h codeconv.c ruijieclient.c sendpacket.c \
-		 conn_monitor.c conn_monitor.h prase.c prase.h md5.c md5.h \
-		 config.c 
+		 conn_monitor.c conn_monitor.h config.c prase.c prase.h
 
-ruijieclient_LDADD = $(EXT_LIBS)
+ruijieclient_LDADD = $(EXT_LIBS) -L../packet -lruijie
 ruijieclient_CFLAGS := 
 	
 if USE_XML 

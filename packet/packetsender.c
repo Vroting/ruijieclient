@@ -61,19 +61,50 @@ static char             nic_name[PCAP_ERRBUF_SIZE];
 static char             nic_hwaddr[6];
 static char             pkt_buffer[ETH_MTU];
 static int              pkt_length;
+static char             pkt_errbuff[PCAP_ERRBUF_SIZE];
 
 /*
  * open libpcap.so.*
  */
 #ifdef USE_DYLIBPCAP
+#include <dlfcn.h>
+#endif
 
-int
-open_lib()
+int open_lib()
 {
+#ifndef USE_DYLIBPCAP
+  return 0;
+#else
+  char libpcap[4][32]={
+      {"libpcap.so.1"},
+      {"libpcap.so.0.9"},
+      {"libpcap.so.0.8"},
+      {"libpcap.so.0.7"},
+  };
+  void  *plibpcap;
+  int   index = 0;
 
-}
+  do{
+    plibpcap = dlopen(libpcap[index],RTLD_LOCAL);
+    index ++;
+  }while(plibpcap && index < 4);
+
+  if(!plibpcap)
+    {
+      fprintf(stderr,"Err loading libpcap.so. Please install libpcap\n");
+      return -1;
+    }
+// Now bind the fucntion
+  //TODO
 
 #endif
+}
+
+char* pkt_lasterr()
+{
+  return pkt_errbuff;
+}
+
 
 int pkt_open_link(const char * _nic_name)
 {
@@ -89,7 +120,7 @@ int pkt_open_link(const char * _nic_name)
 
   if (getifaddrs(&pifaddrs))
     {
-      fprintf(stderr, "cannot get net interfaces!\n");
+      snprintf(pkt_errbuff,sizeof(pkt_errbuff), "cannot get net interfaces!\n");
       return -1;
     }
 #ifndef SIOCGIFHWADDR
@@ -112,6 +143,7 @@ int pkt_open_link(const char * _nic_name)
     }
   else
     {
+      snprintf(pkt_errbuff,sizeof(pkt_errbuff),"cannot get nic:%s paramters",nic_name);
       return -1;
     }
 #else
@@ -124,7 +156,7 @@ int pkt_open_link(const char * _nic_name)
     }
   else
     {
-      fprintf(stderr, "Err getting %s address\n", nic_name);
+      snprintf(pkt_errbuff,sizeof(pkt_errbuff), "Err getting %s address\n", nic_name);
       close(sock);
       return -1;
     }
@@ -141,7 +173,7 @@ int pkt_open_link(const char * _nic_name)
 #endif //SIOCGIFHWADDR
   if (!(pcap_handle = pcap_open_live(nic_name, 65536, 0, 2000, pcap_errbuf)))
     {
-      fprintf(stderr, "Cannot open nic %s :%s", nic_name, pcap_errbuf);
+      snprintf(pkt_errbuff,sizeof(pkt_errbuff), "Cannot open nic %s :%s", nic_name, pcap_errbuf);
       return -1;
     }
 
@@ -162,16 +194,15 @@ int pkt_open_link(const char * _nic_name)
     }
   pcap_freecode(&filter_code); // avoid  memory-leak
 
-
-
   return (0);
 }
 
 int pkt_get_param(int what,struct sockaddr * sa_data)
 {
-  sa_data->sa_family = 0;
+  ((struct sockaddr_in*)sa_data)->sin_family = PF_INET;
   switch (what) {
     case PKT_PG_HWADDR:
+      sa_data->sa_family = 0;
       memcpy(sa_data->sa_data,nic_hwaddr,6);
       break;
     case PKT_PG_IPADDR:
@@ -182,6 +213,36 @@ int pkt_get_param(int what,struct sockaddr * sa_data)
       ((struct sockaddr_in*)sa_data)->sin_family = PF_INET;
       ((struct sockaddr_in*)sa_data)->sin_addr.s_addr = nic_mask;
       break;
+    case PKT_PG_DEFAULTROUTE:
+      ((struct sockaddr_in*)sa_data)->sin_family = PF_INET;
+      ((struct sockaddr_in*)sa_data)->sin_addr.s_addr = nic_mask ;
+      sa_data->sa_data[3] = 1;
+      break;
+    case PKT_PG_DNS:
+      {
+        FILE    *       fresolv;
+        char            line[128];
+        int             nameserver_ip[4]={0};
+
+        ((struct sockaddr_in*)sa_data)->sin_family = PF_INET;
+
+        if(fresolv = fopen("/etc/resolv.conf","r"))
+          {
+            while(fgets(line,80,fresolv) > 0)
+                if(sscanf(line,"nameserver%d.%d.%d.%d", nameserver_ip,nameserver_ip+1,nameserver_ip+2,nameserver_ip+3))break;
+
+            sa_data->sa_data[2] = nameserver_ip[0];
+            sa_data->sa_data[3] = nameserver_ip[1];
+            sa_data->sa_data[4] = nameserver_ip[2];
+            sa_data->sa_data[5] = nameserver_ip[3];
+
+            fclose(fresolv);
+          }
+        else
+          {
+            ((struct sockaddr_in*)sa_data)->sin_addr.s_addr = 0;
+          }
+      }break;
     default:
       return -1;
   }
@@ -191,6 +252,7 @@ int pkt_get_param(int what,struct sockaddr * sa_data)
 int pkt_build_ruijie(int lengh,const char* ruijiedata)
 {
   memcpy(pkt_buffer,ruijiedata,lengh);
+  pkt_length = lengh;
   return 0;
 }
 
