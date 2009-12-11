@@ -32,6 +32,8 @@
 
 #include "packetsender.h"
 
+#include "supplicant.h"
+
 #define EAP_START       1
 
 #include "Tables.h"
@@ -137,23 +139,6 @@ static u_char           circleCheck[2];
 static u_char           ruijie_dest[6];
 static uint32_t         ruijie_Echo_Key;
 
-int ruijie_start(int broadcastmethod)
-{
-  u_char broadcast[2][6]=
-    {
-        { 0x01, 0x80, 0xC2, 0x00, 0x00, 0x03 }, // standard broadcast addr
-        { 0x01, 0xD0, 0xF8, 0x00, 0x00, 0x03 } // ruijie private broadcast addr
-    };
-  struct sockaddr       so_addr;
-
-  pkt_build_ruijie(0,0);
-  pkt_build_8021x(1,EAP_START,4);
-  pkt_get_param(PKT_PG_HWADDR,&so_addr);
-  pkt_build_ethernet(broadcast[broadcastmethod&1],so_addr.sa_data,ETH_PROTO_8021X);
-  pkt_write_link();
-  pkt_read_link();
-}
-
 static int gen_ruijie_private_packet(int dhcpstate,int dhcpmode,char*version)
 {
   int iCircle = 0x15;
@@ -176,6 +161,8 @@ static int gen_ruijie_private_packet(int dhcpstate,int dhcpmode,char*version)
       ruijie_privatedata[0x3B] = c_ver1;
       ruijie_privatedata[0x3C] = c_ver2;
     }
+  if( c_ver1 >=3 && c_ver2 >= 50)
+    ruijie_Echo_Key = htonl(0x0000102b);
 
   pkt_get_param(PKT_PG_HWADDR, &so_addr);
   memcpy(ruijie_privatedata + 130, so_addr.sa_data, 6);
@@ -252,11 +239,87 @@ static int gen_ruijie_private_packet(int dhcpstate,int dhcpmode,char*version)
   return 0;
 }
 
+static int ruijie_start(int broadcastmethod)
+{
+  u_char broadcast[2][6]=
+    {
+        { 0x01, 0x80, 0xC2, 0x00, 0x00, 0x03 }, // standard broadcast addr
+        { 0x01, 0xD0, 0xF8, 0x00, 0x00, 0x03 } // ruijie private broadcast addr
+    };
+  const  u_char *       packet;
+  int                   ret;
+
+  pkt_build_ruijie(sizeof(ruijie_privatedata),ruijie_privatedata);
+  pkt_build_8021x(1,EAP_START,4);
+  pkt_build_ethernet(broadcast[broadcastmethod?1:0],0,ETH_PROTO_8021X);
+  pkt_write_link();
+  if(! (ret =pkt_read_link(&packet)))
+    {
+      memcpy(ruijie_dest,packet,6);
+    }
+  return ret;
+}
+
+static int ruijie_ack_name(int id,char*name)
+{
+  char          payload[128];
+  int           payload_len;
+  payload[127] = 0;
+  payload[0] = 1; // EAP type
+  payload_len = strlen(name)+1;
+
+  pkt_build_ruijie(sizeof(ruijie_privatedata),ruijie_privatedata);
+  strncpy(payload + 1, name, 128);
+  pkt_build_8021x_ext(EAP_RESPONSE,id,payload_len,payload);
+  pkt_build_8021x(1,1,payload_len+4);
+  pkt_build_ethernet(ruijie_dest,0,ETH_PROTO_8021X);
+  return pkt_write_link();
+}
+
+static int ruijie_ack_password(int id,char*name,char*passwd,void* MD5value, int MD5value_len)
+{
+  char          EAP_EXTRA[128];
+  unsigned char md5Data[256]=""; // password,md5 buffer
+  unsigned char md5Dig[32]; // result of md5 sum
+
+  int md5Len = 0;
+
+  int passwordLen = strlen(passwd);
+
+  md5Data[md5Len++] = id;//ID
+  memcpy(md5Data + md5Len, passwd, passwordLen);
+  md5Len += passwordLen; // password
+
+  memcpy(md5Data + md5Len, MD5value, MD5value_len);
+  md5Len += MD5value_len; // private key
+
+  Computehash(md5Data, md5Len,md5Dig);
+
+
+  pkt_build_ruijie(sizeof(ruijie_privatedata),ruijie_privatedata);
+  EAP_EXTRA[0] = 4 ;// Type: MD5-Challenge [RFC3748] (4)
+  EAP_EXTRA[1] = 16 ; //Value-Size: 16
+  memcpy(EAP_EXTRA+2,md5Dig,16); // md5 encrypt passwd
+  strcpy(EAP_EXTRA+18,name);//user name
+  pkt_build_8021x_ext(2,id,22+strlen(name),EAP_EXTRA);
+
+
+}
+
 int start_auth(char * name,char*passwd,char* nic_name,int authmode)
 {
-  ruijie_Echo_Key = htonl(0x0000102b);
+  ruijie_Echo_Key = htonl(0x1b8b4563);
+
   pkt_open_link(nic_name);
   gen_ruijie_private_packet(1,0,"3.33");
+
+
+  ruijie_start( authmode & 0x1F );
+
+
+
+
+
 
 
   return 0;

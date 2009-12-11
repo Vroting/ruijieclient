@@ -263,7 +263,7 @@ int pkt_build_8021x_ext(u_char code, u_char id, uint16_t length,const char* extr
   pkt_buffer[1] = id;
   pkt_buffer[2] = HIBYTE(length);
   pkt_buffer[3] = LOBYTE(length);
-  memcpy(pkt_buffer+4,extra,length-4);
+  memcpy(pkt_buffer+4,extra,length);
   pkt_length += length;
   return 0;
 }
@@ -285,7 +285,9 @@ int pkt_build_ethernet(u_char*dest,u_char*src,uint16_t protocol)
   //we make sure that
   memmove(pkt_buffer + 14,pkt_buffer,pkt_length);
   memcpy(pkt_buffer,dest,6);
-  memcpy(pkt_buffer+6,src,6);
+  if(!src)
+    src = nic_hwaddr;
+    memcpy(pkt_buffer+6,src,6);
   *((uint16_t*)(pkt_buffer +12 )) = protocol ;
   pkt_length += 14;
 }
@@ -295,18 +297,10 @@ int pkt_write_link()
   return pcap_sendpacket(pcap_handle,pkt_buffer,pkt_length);
 }
 
-u_char* pkt_read_link()
+int pkt_read_link(const u_char**packet)
 {
   struct pcap_pkthdr *  pkt_hdr;
-  const u_char *        packet;
-  int                   ret;
-
-  if( !(ret =  pcap_next_ex(pcap_handle,&pkt_hdr,&packet)))
-    {
-      memcpy(pkt_buffer,packet,pkt_hdr->caplen);
-      return pkt_buffer;
-    }
-  return NULL;
+  return pcap_next_ex(pcap_handle,&pkt_hdr,packet);
 }
 int close_nic()
 {

@@ -1,9 +1,6 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-
-CPPINCLUDE="#include"
-
 AC_PREREQ([2.63])
 AC_INIT([ruijieclient], [0.8.2 svn-r136], [gong@fedoraproject.org])
 
@@ -50,7 +47,13 @@ AC_ARG_ENABLE(debug,
 
 # Checks for typedefs, structures, and compiler characteristics.
 
-AC_C_BIGENDIAN
+AC_C_BIGENDIAN(
+	[AC_DEFINE(WORDS_BIGENDIAN,[1],
+		[Define WORDS_BIGENDIAN to 1 if your processor stores words with the most significant
+    byte first (like Motorola and SPARC, unlike Intel).])],
+	[AC_MSG_RESULT([little ending cpu detected!])],
+	[AC_MSG_ERROR([cannot detect cpu ending],[1])]
+)
 
 # Checks for library functions.
 AC_CHECK_FUNCS([memset strerror])
