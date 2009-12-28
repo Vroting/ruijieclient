@@ -3,6 +3,7 @@
 
 =开发者请=
 ` git clone git@github.com:microcai/ruijieclient.git `
+*注意，现在活跃开发分支是dbus*
 
 =HTTP 页面查看请使用=
 
