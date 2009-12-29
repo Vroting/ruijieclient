@@ -3,8 +3,10 @@
 
 =开发者请=
 ` git clone git@github.com:microcai/ruijieclient.git `
-*注意，现在活跃开发分支是dbus*
-
+{{{
+  * 注意，现在活跃开发分支是dbus
+  * 需要 提交的请联系偶，并且附上你的 ssh public key
+}}}
 =HTTP 页面查看请使用=
 
 *_ [http://github.com/microcai/ruijieclient.git ruijieclient on github] _*
