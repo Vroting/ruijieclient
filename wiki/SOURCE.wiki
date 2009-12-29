@@ -17,3 +17,8 @@
 =HTTP 页面仔细浏览请使用=
 
 *_ [http://github.com/microcai/ruijieclient ruijieclient on github] _*
+
+
+=老svn仓库=
+http://code.google.com/p/ruijieclient/source/browse/trunk
+svn 里的版本可能无法使用。不再维护
