@@ -1,3 +1,4 @@
+#labels Featured,Phase-Implementation
 =克隆源码请=
 ` git clone git://github.com/microcai/ruijieclient.git ruijieclient-read-only `
 
@@ -22,3 +23,24 @@
 =老svn仓库=
 http://code.google.com/p/ruijieclient/source/browse/trunk
 svn 里的版本可能无法使用。不再维护
+
+==git 提交解释 ==
+
+git clone [url]
+克隆一个仓库
+
+
+git checkout -b [newbrance] [originbranch]
+以originbranch为起点岔开分支。
+
+git checkout branch
+切换到分支
+
+git commit -a
+提交所有本地改变到本地仓库
+
+git  push
+提交改变到远程仓库
+
+git pull
+与远程仓库同步
