@@ -29,18 +29,14 @@
  * Boston, MA 02111-1307, USA.
  */
 
-#ifdef HAVE_CONFIG_H
-#include  "config.h"
-#else
-#error <please run configure>
-#endif
-
 #include "ruijieclient.h"
 #include "myerr.h"
 #include "prase.h"
-#ifdef USE_DBUS
-#include "dbus.h"
-#endif
+#include "../packet/supplicant.h"
+
+// fake MAC, e.g. "00:11:D8:44:D5:0D"
+//static char *m_fakeMAC = NULL;
+
 // flag of afterward DHCP status
 
 char config_file[256] = "/etc/ruijie.conf";
@@ -59,7 +55,16 @@ static int
 kill_all(char* process);
 /*check root*/
 static void
-check_as_root();
+check_as_root()
+{
+#ifndef DEBUG
+  if (geteuid() != 0)
+    {
+      err_sys("Ruijieclient must be run as root.");
+    }
+#endif
+}
+
 
 /*Get config*/
 void
@@ -76,28 +81,40 @@ static ruijie_packet sender =
 static void
 logoff(int signo)
 {
-  if (sender.m_state)
-    {
-      SendEndCertPacket(&sender);
-    }
+  ruijie_stop_auth();
   _exit(0);
 }
-#ifdef USE_DBUS
-int print_state(){
-        if (is_networ_ready()){
-                printf("Now state is ready\n");
-        }else{
-                printf("Now state is NOT ready\n");
-        }
-        return 0;
+
+// return 0 will abort the auth engine
+static int ruijie_call_back(int reason,const char * current_packet,void*userptr)
+{
+  switch(reason)
+  {
+	case RUIJIE_AUTH_FINDSERVER:
+	  fputs("@@ Detecting Server ...... \n", stdout);
+	  break;
+	case RUIJIE_AUTH_NEEDNAME:
+	  fprintf(stdout, "@@ Server Detected @ %s, authorize as %s ...\n", "gateaway",
+		      sender.m_name);
+	  break;
+	case RUIJIE_AUTH_NEEDPASSWD:
+	  fputs("@@ User name valid, encrpyt password...\n", stdout);
+	  break;
+	case RUIJIE_AUTH_SUCCESS:
+	  fputs("@@ User Authorize!\n", stdout);
+	  break;
+	case RUIJIE_AUTH_FAILED:
+	  fputs("@@ Authorize Failed!\n", stdout);
+	  break;
+  }
+  return 0;
 }
 
-int callback(){
-        printf("I am Callllled~\n");
-        print_state();
+int start_dhcp()
+{
+  return 0;
 }
 
-#endif
 int
 main(int argc, char* argv[])
 {
@@ -164,9 +181,6 @@ main(int argc, char* argv[])
       exit(EXIT_SUCCESS);
     }
 
-  init_ruijie_packet(&sender);
-
-
   if (!sender.m_nocofigfile)
     {
       check_as_root();
@@ -197,183 +211,79 @@ main(int argc, char* argv[])
   if (sender.m_nocofigfile)
     check_as_root();
 
-    //print copyright and bug report message
+  //print copyright and bug report message
   printf("\n\n%s - a powerful ruijie Supplicant for UNIX, base on mystar.\n"
-    "Copyright %s\n\n"
+    "Copyright (C) %s %s\n\n"
     "Please see/send bug report to \n%s\n"
-    "or mail to %s \n\n", PACKAGE,
-      "Gong Han, Chen Tingjun, Microcai, sthots, and others",
-      "http://code.google.com/p/ruijieclient/issues/list", PACKAGE_BUGREPORT);
+    "or mail to %s \n\n", PACKAGE,"2009-2010","Microcai, sthots, Gong Han, Chen Tingjun, and others",
+    "http://code.google.com/p/ruijieclient/issues/list",
+    PACKAGE_BUGREPORT);
+  do
+	{
+	  int dhcpstate[4] =
+		{ 1, 1, 0, 0 };
 
-#ifdef USE_DBUS
-    g_type_init();
-    dbus_init();
-  //把回调函数连接到信号上～
-    connect_to_sig_StateChanged (&callback, NULL );
+	  int dhcped = dhcpstate[sender.m_dhcpmode];
 
-    return g_loop_run();
+	  /*
+	   * DHCP mode:
+	   * 0: Off
+	   * 1: On, DHCP mode
+	   * 2: On, DHCP after authentication
+	   * 3: On, DHCP after DHCP authentication and re-authentication with new ip
+	   */
+	  int dhcpkey[] =
+		{ 0, 1, 1, 5 };
+	  do
+		{
+		  if (ruijie_start_auth(sender.m_name, sender.m_password, sender.m_nic,
+			                    sender.m_authenticationMode << 16
+			                        & dhcpkey[sender.m_dhcpmode] & dhcped < 1,
+			                    ruijie_call_back, 0)) return -1;
+		  if (sender.m_dhcpmode != 3)
+			sender.m_dhcpmode &= 0xFFFFFFFC;
+		  else if (!dhcped)
+			{
+			  sender.m_dhcpmode = 0;
+			}
+		  else
+			{
+			  ruijie_echo();
+			}
+		  if (!dhcped) dhcped = start_dhcp() ? 0 : 1;
+		} while (sender.m_dhcpmode && dhcped == 1);
 
-#else
+	  if (sender.m_echoInterval <= 0)
+		{
+		  pkt_close();
+		  return 0; //user has echo disabled
+		}
+	  // continue echoing
+	  if (nodaemon)
+		fputs("Keeping sending echo...\nPress Ctrl+C to logoff \n", stdout);
+	  else
+		{
+		  fprintf(stdout,
+			      "Daemonize and Keeping sending echo...\nUse %s -K to quit",
+			      PACKAGE_TARNAME);
+		  if (daemon(0, 0))
+			{
+			  err_quit("Init daemon error!");
+			}
+		}
 
-
-
-  int tryed;
-  for (tryed = 0; (tryed < try_time); ++tryed)
-    {
-      sender.m_state = 0;
-#ifdef DEBUG
-      GetNicParam(&sender);
-#else
-      if (GetNicParam(&sender))
-        err_quit("Err getting net parameters");
-#endif
-LABE_FINDDSERVER:
-
-      FillVersion(&sender); // fill 2 bytes with fake version
-      FlushRecvBuf(&sender);
-      // search for the server
-      if (SendFindServerPacket(&sender))
-        {
-          if (try_time == -1)
-            tryed = 0;
-          continue;
-        }
-      else
-        {
-          fputs("@@ Server found, requesting user name...\n", stdout);
-        }
-      LABLE_SENDNAME: if (SendNamePacket(&sender))
-        {
-          if (try_time == -1)
-            tryed = 0;
-          continue;
-        }
-      else
-        {
-          fputs("@@ User name valid, requesting password...\n", stdout);
-        }
-      //LABLE_SENDPASSWD:
-      switch (SendPasswordPacket(&sender))
-        {
-      case -1:
-        if (try_time == -1)
-          tryed = 0;
-        continue;
-      case 1:
-        /* authenticate fail
-         * possible reasons:
-         * 1. user name and password mismatch
-         * 2. not in the right time-period of net accessing
-         * 3. account has been logged at other computers
-         */
-        GetServerMsg(&sender, u_msgBuf, MAX_U_MSG_LEN);
-        fprintf(stdout, "@@ Authentication failed: %s\n", u_msgBuf);
-        SendEndCertPacket(&sender);
-        if (try_time == -1)
-          tryed = 0;
-        continue;
-      case 0:// Authenticate successfully
-        break;
-        }
-
-      if (sender.m_dhcpmode == 2 && noip_afterauth)
-        {
-          if (system(cmd) == -1)
-            {
-              err_quit(
-                  "Fail in retrieving network configuration from DHCP server");
-            }
-          noip_afterauth = 0;
-        }
-      GetServerMsg(&sender, u_msgBuf, MAX_U_MSG_LEN);
-      fprintf(stdout, "@@ Password valid, SUCCESS:\n## Server Message: %s\n",
-          u_msgBuf);
-
-      /*
-       * DHCP mode:
-       * 0: Off
-       * 1: On, DHCP mode
-       * 2: On, DHCP after authentication
-       * 3: On, DHCP after DHCP authentication and re-authentication with new ip
-       */
-      if (sender.m_dhcpmode == 3 && sender.m_state == 0)
-        {
-          if( sender.m_state=2)
-          if (system(cmd))
-            {
-              err_quit("DHCP error!");
-            }
-          sender.m_ip = tryed = 0;
-          sender.m_state = 2;
-          SendEchoPacket(&sender);
-          continue; // re-authentication
-        }
-
-      if (sender.m_echoInterval <= 0)
-        {
-//          sender.pcap_close(sender.m_pcap);
-          return 0; //user has echo disabled
-        }
-      // continue echoing
-      if (nodaemon)
-        fputs("Keeping sending echo...\nPress Ctrl+C to logoff \n", stdout);
-      else
-        {
-          fprintf(stdout,
-              "Daemonize and Keeping sending echo...\nUse %s -K to quit",
-              PACKAGE_TARNAME);
-          if (daemon(0, 0))
-            {
-              err_quit("Init daemon error!");
-            }
-        }
-      FlushRecvBuf(&sender);
-      // start ping monitoring
-      if (sender.m_intelligentReconnect == 1)
-        {
-    	  /*
-    	   * Why the hell we should send echo packet immediately?
-    	   * so, sleep ! wa haha
-    	   */
-          sender.m_state = 1;
-          WaitPacket(&sender,sender.m_echoInterval);
-          while (SendEchoPacket(&sender) == 0)
-            {
-              //printf("heart beat\n");
-              if (IfOnline(&sender))
-                break;
-              //Accelerate the speed of detecting
-              WaitPacket(&sender,sender.m_echoInterval);
-            }
-          // continue this big loop when offline
-          tryed = 0; // or we will not truly re-connect.
-          continue;
-        }
-      if (sender.m_intelligentReconnect > 10)
-        {
-          sender.m_state = 1;
-          time_t time_recon = time(NULL);
-          while (1)
-            {
-              long time_count = time(NULL) - time_recon;
-              if (time_count >= sender.m_intelligentReconnect)
-                {
-                  fputs("Time to reconect!\n", stdout);
-
-                  goto LABE_FINDDSERVER;
-                }
-              sleep(sender.m_echoInterval);
-            }
-        }
-//      pcap_close(sender.m_pcap);
-      return EXIT_FAILURE; // this should never happen.
-      break;
-    }// end while
-  if (tryed >= 3)
-    fprintf(stderr, "##重试太多，退出\n");
-  return (EXIT_FAILURE);
-
-#endif //USE_DBUS
+	  // start ping monitoring
+	  /* Why the hell we should send echo packet immediately?
+	   * so, sleep ! wa haha
+	   */
+	  while (!ruijie_echo())
+		{
+		  //Accelerate the speed of detecting
+		  //       WaitPacket(&sender,sender.m_echoInterval);
+		  sleep(sender.m_echoInterval);
+		}
+	} while (sender.m_intelligentReconnect == 1);
+  return 1;
 }
 
 static int
@@ -389,15 +299,4 @@ kill_all(char * process)
       err_sys("Killall Failure !");
     }
   return cmd_return;
-}
-
-static void
-check_as_root()
-{
-#ifndef DEBUG
-  if (geteuid() != 0)
-    {
-      err_sys("Ruijieclient must be run as root.");
-    }
-#endif
 }

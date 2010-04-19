@@ -49,8 +49,6 @@
 #endif
 
 #include "ruijieclient.h"
-struct ruijie_packet;
-typedef struct ruijie_packet ruijie_packet;
 
 static char fakeVersion[8];
 //static char fakeMAC[32];
@@ -304,8 +302,8 @@ Gensetting(struct cfg_tags * t)
   int rc;
   char name[200];
   fprintf(stderr,"Please input UserName:");
-  scanf("%s\n",name);
-  t[USERNAME].val = name;
+  if(scanf("%s\n",name)==1)
+	  t[USERNAME].val = name;
   t[PASSWORD].val = getpass("Please input Password:");
 
 #ifdef HAVE_LIBXML2
@@ -363,15 +361,9 @@ Gensetting(struct cfg_tags * t)
    * Not all machine name the first nic eth0
    * So we just have to retrieve the first nic's name
    */
-  struct ifaddrs *ifaddr,*ifaddr_org;
-  getifaddrs(&ifaddr);
-  ifaddr_org = ifaddr;
-  while(ifaddr->ifa_flags & IFF_LOOPBACK){
-	//  printf("nic name is %s , netx = %p\n",ifaddr->ifa_name,ifaddr->ifa_next);
-	  ifaddr = ifaddr->ifa_next;
-  }
-  printf("using nic %s\n",ifaddr->ifa_name);//,ifaddr->ifa_next);
-  t[NIC].val = ifaddr->ifa_name;
+  pkt_first_link(nic);
+  printf("using nic %s\n",nic);//,ifaddr->ifa_next);
+  t[NIC].val = nic;
 
   while( t->key)
     {
@@ -386,7 +378,6 @@ Gensetting(struct cfg_tags * t)
 #endif
     t++;
     }
-  freeifaddrs(ifaddr_org);
   //Dumping document to stdio or file
 #if defined(LIBXML_TREE_ENABLED) && defined(HAVE_LIBXML2)
   rc = xmlSaveFormatFileEnc(config_file, doc, "UTF-8", 1);
@@ -500,40 +491,8 @@ GetConfig(ruijie_packet * l)
 
 int GenSetting()
 {
-  char errbuf[256];
-  pcap_if_t *if_t, *cur_nic;
-
-#ifdef USE_DYLIB
-
-  void *libpcap =FindLibPcap();
-
-  int   (*pcapfindalldevs)(pcap_if_t **, char *);
-  void  (*pcapfreealldevs)(pcap_if_t *);
-
-  pcapfindalldevs = dlsym(libpcap,"pcap_findalldevs");
-
-  pcapfreealldevs = dlsym(libpcap,"pcap_freealldevs");
-#else
-#define pcapfindalldevs(z,x) pcap_findalldevs(z,x)
-#define pcapfreealldevs(x) pcap_freealldevs(x)
-#endif
-
-
-  pcapfindalldevs(&if_t,errbuf);
-  //Can not open ?
-  if(if_t)
-    {
-      cur_nic = if_t;
-      while(cur_nic && cur_nic->flags == PCAP_IF_LOOPBACK )cur_nic = cur_nic->next;
-      /*The first non loopback devices */
-      if(cur_nic)
-        strcpy(nic,cur_nic->name );
-      //else //OMG, all you have got is a loopbake devive
-      pcapfreealldevs(if_t);
-    }
-#ifdef USE_DYLIB
-  dlclose(libpcap);
-#endif
+  open_lib();
+  pkt_first_link(nic);
   return Gensetting(cfgtags);
 }
 
