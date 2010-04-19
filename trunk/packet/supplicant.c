@@ -139,9 +139,9 @@ static u_char           circleCheck[2];
 static u_char           ruijie_dest[6];
 static uint32_t         ruijie_Echo_Key;
 static uint32_t         ruijie_Echo_Diff;
-static const    u_char* ruijie_recv;
+static const u_char* 	ruijie_recv;
 
-static int gen_ruijie_private_packet(int dhcpstate,int dhcpmode,char*version)
+static int gen_ruijie_private_packet(int mode,char*version)
 {
   int iCircle = 0x15;
   int i, ax = 0, bx = 0, dx = 0;
@@ -178,11 +178,15 @@ static int gen_ruijie_private_packet(int dhcpstate,int dhcpmode,char*version)
   ForFill[2] = Alog(so_addr.sa_data[4]);
   ForFill[3] = Alog(so_addr.sa_data[5]);
 
-  if (dhcpmode)//Dhcp Enabled
+  if (mode & RUIJIE_AUTHMODE_DHCP)//Dhcp Enabled
     {
       sCircleBase[0x04] = 0x01;
       ruijie_privatedata[0x04] = 0x7f;
-      ruijie_privatedata[0x79] = dhcpstate & 1; // 1 if first auth in dhcp mode
+      if(mode & RUIJIE_AUTHMODE_NOIP)
+    	ruijie_privatedata[0x79] = 1;
+      else
+    	ruijie_privatedata[0x79]= 0 ;
+      //dhcpstate & 1; // 1 if first auth in dhcp mode
     }
   else
     {
@@ -307,7 +311,7 @@ static int ruijie_ack_password(int id,char*name,char*passwd,const u_char* MD5val
   return pkt_write_link();
 }
 
-static int ruijie_ripe_success_info(char * raw_encode_message_out,int * length)
+static int ruijie_ripe_success_info()
 {
   //get 心跳信息初始码
   //uTemp.ulValue = *(((u_long *)(pkt_data+0x9d)));
@@ -327,10 +331,11 @@ static int ruijie_ripe_success_info(char * raw_encode_message_out,int * length)
   tmp.s[3] = Alog(ruijie_recv[offset + 0xc]);//0x09
 
   ruijie_Echo_Diff = ntohl(tmp.l);
+
   return 0;
 }
 
-static int ruijie_echo()
+int ruijie_echo()
 {
 
   union
@@ -361,53 +366,72 @@ static int ruijie_echo()
   pkt_build_start();
   pkt_build_8021x(1, 191, 30,EchoData,30);
   pkt_build_ethernet(ruijie_dest,0,ETH_PROTO_8021X);
+  ruijie_Echo_Key = htonl(ntohl(ruijie_Echo_Key) + 1);
   return pkt_write_link();
 }
 
 static int ruije_logoff()
 {
+  int ret;
   pkt_build_start();
   pkt_build_8021x(1,2,0,0,0);
   pkt_build_ethernet(ruijie_dest,0,ETH_PROTO_8021X);
-  pkt_write_link();
+  ret = pkt_write_link();
   pkt_close();
-  return 0;
+  return ret;
 }
 
-int start_auth(char * name, char*passwd, char* nic_name, int authmode)
+int ruijie_start_auth(char * name, char*passwd, char* nic_name, int authmode,
+	int (*authprogress)(int reason, const char * current_packet, void*userptr),
+	    void * userptr)
 {
-  open_lib();
+  if(open_lib())
+	return -1;
 
-  ruijie_Echo_Key = htonl(0x1b8b4563);
+  if(!(authmode & RUIJIE_AUTHMODE_NOECHOKEY))
+	ruijie_Echo_Key = htonl(0x1b8b4563);
 
   char * msg, *utf8_msg;
   int msg_len;
 
   int success=1,tryed=0;
 
-  pkt_open_link(nic_name);
-  gen_ruijie_private_packet(1, 0, "3.33");
+  if(pkt_open_link(nic_name))
+	{
+	  fprintf(stderr,"%s",pkt_lasterr());
+	  return-1;
+	}
+  gen_ruijie_private_packet(authmode, "3.33");
   ruijie_start(authmode & 0x1F);
+
+  if (authprogress(RUIJIE_AUTH_FINDSERVER, 0, userptr)) return -1;
 
   do
     {
-      while (!pkt_read_link(&ruijie_recv))
+      while (!pkt_read_link(&ruijie_recv) && ruijie_recv )
         {
-          switch (ruijie_recv[0x12])
+          switch ( ruijie_recv[0x12])
             {
+          case EAP_FAILED:
+        	authprogress(RUIJIE_AUTH_FAILED,ruijie_recv,userptr);
+        	break;
           case EAP_RESPONSE:
             switch (ruijie_recv[0x16])
               {
             case 1: //Type: Identity [RFC3748] (1)
+              if (authprogress(RUIJIE_AUTH_NEEDNAME, ruijie_recv, userptr)) return -1;
               ruijie_ack_name(ruijie_recv[0x13], name);
               break;
             case 4://Type: MD5-Challenge [RFC3748] (4)
             default:
+              if(authprogress(RUIJIE_AUTH_NEEDPASSWD,ruijie_recv,userptr)) return -1;
               ruijie_ack_password(ruijie_recv[0x13], name, passwd, ruijie_recv + 0x18, ruijie_recv[0x17]);
               break;
               }
+            break;
           case EAP_SUCCESS:
-            ruijie_ripe_success_info(0, 0);
+            ruijie_ripe_success_info();
+            if (authprogress(RUIJIE_AUTH_SUCCESS, ruijie_recv, userptr)) return -1;
             success = 0;
             break;
             }
@@ -419,8 +443,33 @@ int start_auth(char * name, char*passwd, char* nic_name, int authmode)
   return success;
 }
 
-int stop_auth()
+int ruijie_stop_auth()
 {
   return ruije_logoff();
+}
+
+/*
+ * raw GBK message, return message length
+ */
+int ruijie_get_server_msg( char * raw_encode_message_out,int length)
+{
+  size_t len = ntohs(*((u_int16_t*) (ruijie_recv + 0x10))) - 10;
+
+  if (length < len)
+    // space allocation of buffer exceeded
+    return -1;
+
+  if (len < 0)
+    // did not retrieve any messages from sever.
+    return 0;
+  char *msgBuf = (typeof(msgBuf)) (ruijie_recv + 0x1c);
+
+  //remove the leading "\r\n" which seems always exist!
+  if (len > 3 && (msgBuf[0] == 0xd) && (msgBuf[1] == 0xa))
+    {
+      msgBuf += 2;
+    }
+  strcpy(raw_encode_message_out,msgBuf);
+  return strlen(raw_encode_message_out);
 }
 

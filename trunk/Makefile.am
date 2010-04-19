@@ -1,15 +1,16 @@
-SUBDIRS = packet configer src
+SUBDIRS = packet src
 dist_doc_DATA = README
-EXTRA_DIST = debian ruijieclient.spec
 
-rpm: dist-bzip2
-	mkdir -p ~/rpmbuild/SOURCES/
-	mv ruijieclient-*.tar.bz2 ~/rpmbuild/SOURCES/
-	if [ "" = "$(TARGET)" ] ;then \
-	rpmbuild -bb $(top_srcdir)/ruijieclient.spec ; \
-	else rpmbuild -bb $(top_srcdir)/ruijieclient.spec --target=$(TARGET) ; fi
+love:
+	@ echo ' HI, make love ing ......'
+	@ echo '    ***        ***'
+	@ echo '  **    **  **    **'
+	@ echo ' **       *        **'
+	@ echo '  **              **'
+	@ echo '   **            **'
+	@ echo '     **        **'
+	@ echo '        ** **'
+	@ echo '          *'
+	@ echo Make love complete
 	
-	
-	mv ~/rpmbuild/RPMS/*$(TARGET)/ruijieclient-*$(TARGET).rpm ./
-	rm ~/rpmbuild/SOURCES/ruijieclient*
 	
