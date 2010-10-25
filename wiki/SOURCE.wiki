@@ -5,12 +5,11 @@
 =开发者请=
 ` git clone git@github.com:microcai/ruijieclient.git `
 {{{
-  * 注意，现在活跃开发分支是dbus
   * 需要 提交的请联系偶，并且附上你的 ssh public key
        在偶还没有答复前（可能偶忙啊，没注意啊之类的），暂时可以使用
-       http://code.google.com/p/ruijieclient/source/browse/files/id_rsa 这个 ssh private key 来访问 . 谢谢合作 :)
-
+  * 或者 github 上 fork 出来，到时候要我pull
 }}}
+
 =HTTP 页面查看请使用=
 
 *_ [http://github.com/microcai/ruijieclient.git ruijieclient on github] _*
