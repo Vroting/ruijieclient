@@ -10,25 +10,20 @@
 make
 make install
 }}}
-  * ini类型配置文件版本编译安装（可选，如此不需要依赖libxml2库运行）
-  在config.c中找到
-{{{
-  //#define DEBUG_NOXML
-}}}
-  改为
-{{{
-  #define DEBUG_NOXML
-}}}
-然后按照一般安装步骤编译安装。
 
  ==从安装包安装(rpm, deb etc..)==
    直接使用包管理器安装。
 
 =特定版本配置=
 
- ==版本：0.7, 0.1.1==
+==版本：0.8.3 以上 ==
+
+没有配置文件。直接使用命令行参数。请参考 ruijieclient --help
+
+ ==版本：0.8 到 0.1.1==
 
   * 配置说明
+
     * 简化启动（可选，如果使用站点上提供的安装包安装，可以跳过这步）
 {{{
 sudo chmod 4755 /usr/local/bin/ruijieclient
