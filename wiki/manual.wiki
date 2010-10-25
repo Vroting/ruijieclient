@@ -1,6 +1,8 @@
 #labels Featured,Phase-Support
 #描述了如何使用RuijieClient
 
+从 0.8.3 版本开始，ruijieclient 不再使用配置文件，一切配置都从命令行读取
+
 ==查看命令行参数帮助==
 
 在终端中输入
@@ -16,8 +18,6 @@ ruijieclient --help
 		1: DHCP before auth
 		2: DHCP after auth
                 3: dhcp-authenticate and re-authenticate after DHCP
--f, --config	specify alternative config file
--g		generate a sample configuration automatically
 -k, --kill	kill all RuijieClient daemon
 -n, --nic	specify an identifier of net adapter
     --noconfig	do not read config from file
@@ -37,8 +37,6 @@ ruijieclient --help
 		1: 认证前DHCP
 		2: 认证后DHCP
 		3: 先认证，然后DHCP，然后在DHCP认证后再进行一次认证（有的学校是这样）
--f, --config	指定自定义的配置文件地址
--g		自动生成一份样例配置文件
 -k, --kill	杀死所有RuijieClient进程
 -n, --nic	指定网卡标识
     --noconfig	指定不从配置文件读取配置（全部从参数获取，没有提供的有默认值）
@@ -49,14 +47,14 @@ ruijieclient --help
 -v, --version	显示RuijieClient版本
 }}}
 ==部分使用实例==
-  * 生成配置文件
+  * 使用网卡 eth0 用户名 cai 密码 cai 登录
 {{{
-sudo ruijieclient -g
+sudo ruijieclient -n eth0 -u cai -p cai
 }}}
    文件将生成在'/etc/ruijie.conf'
   * 如何不以daemon运行？这样我可以保留一个终端窗口直接控制登出。
 {{{
-sudo ruijieclient -D
+sudo ruijieclient -D -n eth0 -u cai -p cai
 }}}
   * 如何登出？
    * 以默认daemon方式运行
@@ -66,33 +64,17 @@ sudo ruijieclient -k
    或者向程序发送SIGINT(3)信号。
    * 以非Deamon方式认证
    可以按键盘上的ctrl+c，或者向程序发送SIGINT(3)信号。
-  * 以传参方式用提供用户名、密码认证
-{{{
-sudo ruijieclient -u name -p 1234
-}}}
-  * 不使用配置文件认证，以传参方式用提供用户名、密码认证
-  和上面的相比，区别在于本次的其他参数是程序 *内定的默认值* ，本次不需要读取配置文件，而上面的_其他参数定义，还要再从_配置文件读取。
-{{{
-sudo ruijieclient --noconfig -u name -p 1234
-}}}
-  * 用自己提供的配置文件认证
-{{{
-sudo ruijieclient -f /home/pretty_gril/ruijie.conf
-}}}
-  * 用其他网卡认证（比如eth1）
-{{{
-sudo ruijieclient -n eth1
-}}}
+
   * 不通过网关测试网络连通性，使用自定义的地址（比如 4.2.2.2 一个美国的DNS服务器）
   _因为有些学校，没有经过认证，网关也可以Ping得通。_
 {{{
-sudo ruijieclient --pinghost 4.2.2.2
+sudo ruijieclient --pinghost 4.2.2.2  -n eth0 -u cai -p cai
 }}}
   * 使用认证后DHCP方式认证
 {{{
-sudo ruijieclient --dhcpmode 2
+sudo ruijieclient --dhcpmode 2  -n eth0 -u cai -p cai
 }}}
   * 限制网络测试次数为3，超过后退出
 {{{
-sudo ruijieclient --try 3
+sudo ruijieclient --try 3  -n eth0 -u cai -p cai 
 }}}
